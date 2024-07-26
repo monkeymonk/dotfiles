@@ -1,0 +1,71 @@
+#!/bin/bash
+#    _______   ____ ___
+#   ╱       ╲╲╱    ╱   ╲
+#  ╱        ╱╱         ╱    Monkey Monk
+# ╱         ╱╱       _╱     http://monkeymonk.be
+# ╲__╱__╱__╱╲╲___╱___╱
+#
+# env.sh
+
+# Set PATH variable
+PATH=/bin:$PATH
+
+# Add user bin
+if [ -d "$HOME/bin" ]; then
+	PATH="$HOME/bin:$PATH"
+fi
+
+# Add local bin
+if [ -d "/usr/local/bin" ]; then
+	PATH="/usr/local/bin:$PATH"
+fi
+
+# Add snap bin
+if [ -d "/snap/bin" ]; then
+	PATH="/snap/bin:$PATH"
+fi
+
+# Add cargo bin
+if [ -d "$HOME/.cargo/bin" ]; then
+	PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# Add haskell
+if [ -d "$HOME/.ghcup/bin" ]; then
+	PATH="$HOME/.ghcup/bin:$PATH"
+fi
+
+# Add composer bin
+if [ -d "$HOME/.config/composer/vendor/bin" ]; then
+	PATH="$HOME/.config/composer/vendor/bin:$PATH"
+fi
+
+# Add deno
+if [ -d "$HOME/.deno/bin" ]; then
+	PATH="$HOME/.deno/bin:$PATH"
+fi
+
+# Add pyenv if installed
+if command -v pyenv &>/dev/null; then
+	export PYENV_ROOT="$HOME/.pyenv"
+	PATH="$PYENV_ROOT/bin:$PATH"
+	eval "$(pyenv init --path)"
+fi
+
+# Add nvm if installed
+if [ -d "$HOME/.nvm" ]; then
+	export NVM_DIR="$HOME/.nvm"
+	[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+fi
+
+# Add local bin
+if [ -d "$HOME/.local/bin" ]; then
+	PATH="$HOME/.local/bin:$PATH"
+fi
+
+# see ~/.aws/mfa.sh
+if [ -f "$HOME/.aws/.mfa_session" ]; then
+	source "$HOME/.aws/.mfa_session"
+fi
+
+export PATH
