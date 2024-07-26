@@ -278,8 +278,11 @@ fi
 # Configure fzf to use fd by default (fd respects .gitignore defaults)
 export FZF_DEFAULT_COMMAND="fd --type f"
 
-# Open Dotfiles Configuration
+# Manage dotfiles
 alias dotfiles="/usr/bin/git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+alias secretfiles="/usr/bin/git --git-dir=$HOME/.secretfiles --work-tree=$HOME"
+
+# Open Dotfiles Configuration
 alias dotconfig="cd ~ && nvim"
 alias binconfig="cd ~/.local/bin && nvim"
 alias shellconfig="cd ~/.config/shell && nvim"
