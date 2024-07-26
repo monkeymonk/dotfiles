@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+
+# Neovim Management Script for Ubuntu-based systems
+# Automates installation, update, and removal of Neovim
+# Author: Stéphan Zych
+
+# To make the script executable as the "manage-neovim" command, follow these steps:
+# 1. Save the cleaned-up script to a file, for example, `manage-neovim`.
+# 2. Make the file executable with the following command:
+#    ```bash
+#    chmod +x manage-neovim
+#    ```
+# 3. Move the script to a directory included in your `$PATH` environment variable or add its location to the `$PATH`. Example:
+#    ```bash
+#    mv manage-neovim /usr/local/bin/manage-neovim
+#    ```
+# 4. Now you can use `manage-neovim` as a command in your terminal. Example usage:
+#    - To install Neovim: `manage-neovim install [version]`
+#    - To update Neovim: `manage-neovim update [version]`
+#    - To remove Neovim: `manage-neovim remove`
+
+# ======= Configuration =======
+MANAGE_NEOVIM_REPO="https://github.com/neovim/neovim.git"
+MANAGE_NEOVIM_INSTALL_PREFIX="$HOME/neovim"
+MANAGE_NEOVIM_BUILD_DIR="$HOME/neovim_build"
+MANAGE_NEOVIM_BIN_PATH="/usr/local/bin/nvim"
+
+# ======= Helper functions =======
+print_green() {
+	local GREEN='\033[0;32m'
+	local NC='\033[0m' # No Color
+	echo -e "${GREEN}$1${NC}"
+}
+
+print_red() {
+	local RED='\033[0;31m'
+	local NC='\033[0m' # No Color
+	echo -e "${RED}$1${NC}"
+}
+
+check_and_install_dependencies() {
+	local dependencies=("git" "make" "cmake" "gcc")
+	local missing_deps=()
+
+	for dep in "${dependencies[@]}"; do
+		if ! command -v $dep &>/dev/null; then
+			missing_deps+=($dep)
+		fi
+	done
+
+	if [ ${#missing_deps[@]} -ne 0 ]; then
+		echo "The following dependencies are missing: ${missing_deps[*]}"
+		read -p "Do you want to install them? [Y/n] " answer
+
+		if [[ $answer =~ ^[Nn]$ ]]; then
+			print_red "Installation aborted. Missing dependencies."
+			exit 1
+		fi
+
+		sudo apt-get update
+		sudo apt-get install -y "${missing_deps[@]}"
+
+		print_green "Dependencies installed."
+	else
+		print_green "All dependencies are present."
+	fi
+}
+
+make_nvim_executable_globally() {
+	if [ ! -f "$MANAGE_NEOVIM_BIN_PATH" ]; then
+		sudo ln -s "$MANAGE_NEOVIM_INSTALL_PREFIX/bin/nvim" "$MANAGE_NEOVIM_BIN_PATH"
+		print_green "Neovim is now globally executable as 'nvim'."
+	else
+		print_green "Global executable for Neovim already exists."
+	fi
+}
+
+# ======= Actions =======
+
+install_neovim() {
+	local version="${1:-stable}"
+
+	print_green "Checking for dependencies..."
+	check_and_install_dependencies
+
+	print_green "Installing Neovim version $version from source..."
+	mkdir -p $MANAGE_NEOVIM_BUILD_DIR && cd $MANAGE_NEOVIM_BUILD_DIR
+
+	if [ ! -d "neovim" ]; then
+		git clone $MANAGE_NEOVIM_REPO neovim || {
+			print_red "Failed to clone Neovim repository."
+			exit 1
+		}
+	fi
+
+	cd neovim
+
+	git fetch --all
+	git checkout $version
+	git pull
+
+	make distclean
+	make deps
+	make install CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=$MANAGE_NEOVIM_INSTALL_PREFIX
+
+	make_nvim_executable_globally
+}
+
+update_neovim() {
+	install_neovim "$1"
+}
+
+remove_neovim() {
+	print_green "Removing Neovim..."
+
+	sudo rm -f $MANAGE_NEOVIM_BIN_PATH
+	rm -rf $MANAGE_NEOVIM_INSTALL_PREFIX
+
+	print_green "Neovim removed. Optionally, delete the build directory: $MANAGE_NEOVIM_BUILD_DIR"
+}
+
+# ======= Command line argument processing =======
+
+case "$1" in
+install)
+	shift
+	install_neovim "$@"
+	;;
+update)
+	shift
+	update_neovim "$@"
+	;;
+remove)
+	remove_neovim
+	;;
+*)
+	echo "Usage: $0 {install|update|remove} [version]"
+	echo "Example: $0 install v0.4.3"
+	exit 1
+	;;
+esac

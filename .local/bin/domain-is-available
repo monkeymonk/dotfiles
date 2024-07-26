@@ -1,0 +1,20 @@
+#!/bin/bash
+
+domain_is_available() {
+    local name=$(echo "${2// /}" | tr '[:upper:]' '[:lower:]')
+    local tlds=($(echo "$4" | tr ',' '\n'))
+
+    for tld in "${tlds[@]}"; do
+        local domain="$name.$tld"
+        local result=$(whois "$domain" | grep -i "no match")
+
+        if [ -n "$result" ]; then
+            echo "$domain: Available"
+        else
+            echo "$domain: Not Available"
+        fi
+    done
+}
+
+# Example usage:
+# domain_is_available "domain.tld" "domain2.tld"
