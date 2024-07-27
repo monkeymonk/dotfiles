@@ -1,0 +1,5 @@
+return {
+  {
+    "yuchanns/phpfmt.nvim",
+  },
+}
