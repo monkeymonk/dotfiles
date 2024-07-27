@@ -1,4 +1,4 @@
-# Dotfiles
+# <img src="dotfiles-logo.png" alt="Dotfiles" width="200" />
 
 > Dotfiles are managed using [git bare](https://www.atlassian.com/git/tutorials/dotfiles).
 
@@ -102,3 +102,21 @@ secretfiles commit -m "Add somefile"
 secretfiles push --set-upstream origin main
 secretfiles push
 ```
+
+
+---
+
+
+# TODO
+
+- Update README.md with real examples and commands
+- Migrate from [kitty](https://sw.kovidgoyal.net/kitty/) to [wezterm](https://wezfurlong.org/wezterm/index.html)
+- Cleanup and refactor [Lazyvim](https://www.lazyvim.org/) config
+- Cleanup and refactor [Tmux](https://github.com/tmux/tmux) config
+- Cleanup and refactor .config/shell
+
+
+---
+
+
+dotfiles' logo by [Joel Glovier](https://github.com/jglovier/dotfiles-logo)
