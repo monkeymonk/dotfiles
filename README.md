@@ -39,6 +39,7 @@ dotfiles add .somefile
 dotfiles add .someotherfile
 dotfiles reset HEAD -- .someotherfile
 dotfiles commit -m "Add somefile"
+dotfiles push --set-upstream origin main
 dotfiles push
 ```
 
@@ -98,5 +99,6 @@ secretfiles reset HEAD -- .someotherfile
 secretfiles secret hide # encrypt files
 secretfiles add .somefile.secret # this is the file we want to save
 secretfiles commit -m "Add somefile"
+secretfiles push --set-upstream origin main
 secretfiles push
 ```
