@@ -43,67 +43,7 @@ function run_cd() {
 # Shortcuts for navigation
 alias cd="run_cd"
 alias home="cd ~"
-
-function run_project() {
-	local projects=""
-	local selected_project=""
-	local project_name=""
-
-	if [ -z "$1" ]; then
-		# No project name provided, list all projects and use fzf to select
-		projects=$(for dir in "${PROJECTS_BASE_DIRS[@]}"; do
-			find "$dir" -maxdepth 1 -type d
-		done | fzf --prompt="Projects > " --height=~50% --layout=reverse --border --exit-0)
-
-		# If no project is selected, do nothing
-		[[ -z $projects ]] && echo "No project selected" && return
-	else
-		project_name="$1"
-
-		# Find the given project in the projects list
-		projects=$(for dir in "${PROJECTS_BASE_DIRS[@]}"; do
-			find "$dir" -maxdepth 1 -type d -iname "*$project_name*"
-		done)
-
-		# If no project matching the name is found, inform the user
-		if [ -z "$projects" ]; then
-			echo "No project found matching '$project_name'"
-			return
-		fi
-
-		# If multiple projects found, let the user choose one using fzf
-		if echo "$projects" | grep -q "$project_name"; then
-			selected_project=$(echo "$projects" | fzf --prompt="Select Project > " --height=~50% --layout=reverse --border)
-
-			# Select a project or exit if none selected
-			[[ -z $selected_project ]] && return
-
-			projects="$selected_project"
-		fi
-	fi
-
-	# Change directory to the selected project
-	run_cd "$projects" || return
-
-	# Start Neovim and load the last session using persistence.nvim
-	nvim -c "lua require('persistence').load()"
-}
-alias project="run_project"
-
-function run_wk() {
-	if [ -z "$1" ]; then
-		run_cd "$HOME/works"
-	else
-		target="$HOME/works/$1"
-
-		if [ ! -d "$target" ]; then
-			print_red "Couldn't find directory: $target 😞"
-		else
-			run_cd "$target"
-		fi
-	fi
-}
-alias wk="run_wk"
+alias wk="project"
 
 # Function to navigate up directories
 run_up() {

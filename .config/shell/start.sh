@@ -11,8 +11,8 @@
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 
-. "$HOME/.config/shell/env.sh"
 . "$HOME/.config/shell/secrets.sh"
+. "$HOME/.config/shell/env.sh"
 . "$HOME/.config/shell/aliases.sh"
 
 # if running bash
