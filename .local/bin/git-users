@@ -4,7 +4,7 @@
 # Provides functionalities to manage Git users' configuration.
 # Allows users to add, delete, list, activate, and view the currently active Git user.
 # Author: Stéphan Zych
-
+#
 # To make the script executable as the "git-users" command, follow these steps:
 # 1. Save the cleaned-up script to a file, for example, `git-users`.
 # 2. Make the file executable with the following command:

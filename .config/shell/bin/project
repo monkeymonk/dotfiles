@@ -1,101 +1,144 @@
 #!/bin/bash
 
+# Script to manage projects and tmuxp sessions with fzf and nvim
+# Author: Stéphan Zych
+# @see https://github.com/junegunn/fzf
+# @see https://github.com/tmux-python/tmuxp
+#
+# Usage:
+# - project [-e] [-p] [project_name]
+# - project [-h|--help]
+#
+# TODO:
+# - integrate with tmux binding
+
 # Ensure PROJECTS_BASE_DIRS is set
 if [ -z "$PROJECTS_BASE_DIRS" ]; then
-    echo "Error: PROJECTS_BASE_DIRS is not set."
-    exit 1
+	echo "Error: PROJECTS_BASE_DIRS is not set."
+	exit 1
 fi
 
 # Convert PROJECTS_BASE_DIRS string to an array
-IFS=':' read -r -a PROJECTS_BASE_DIRS_ARRAY <<< "$PROJECTS_BASE_DIRS"
+IFS=':' read -r -a PROJECTS_BASE_DIRS_ARRAY <<<"$PROJECTS_BASE_DIRS"
+
+# Function to display help message
+help() {
+	cat <<EOF
+Usage: ${0##*/} [-e] [-p] [project_name]
+       ${0##*/} [-h|--help]
+
+Commands:
+  -e          Run nvim with persistence
+  -p          Run a tmuxp session
+  -h, --help  Display this help message
+
+EOF
+}
 
 # Function to run nvim with persistence
 run_nvim() {
-    nvim -c "lua require('persistence').load()"
+	nvim -c "lua require('persistence').load()"
 }
 
 # Function to list projects using fzf
 list_projects() {
-    for dir in "${PROJECTS_BASE_DIRS_ARRAY[@]}"; do
-        find "$dir" -maxdepth 1 -type d
-    done | fzf --prompt="Projects > " --height=~50% --layout=reverse --border --exit-0
+	for dir in "${PROJECTS_BASE_DIRS_ARRAY[@]}"; do
+		find "$dir" -maxdepth 1 -type d
+	done | fzf --prompt="Projects > " --height=~50% --layout=reverse --border --exit-0
 }
 
 # Function to change directory and run nvim
 run_project() {
-    local project_name="$1"
-    local project_dir
+	local project_name="$1"
+	local project_dir
 
-    if [ -z "$project_name" ]; then
-        project_dir=$(list_projects)
+	if [ -z "$project_name" ]; then
+		project_dir=$(list_projects)
 
-        [[ -z $project_dir ]] && echo "No project selected" && return
-    else
-        project_dir=$(for dir in "${PROJECTS_BASE_DIRS_ARRAY[@]}"; do
-            find "$dir" -maxdepth 1 -type d -iname "*$project_name*"
-        done)
+		[[ -z $project_dir ]] && echo "No project selected" && return
+	else
+		project_dir=$(for dir in "${PROJECTS_BASE_DIRS_ARRAY[@]}"; do
+			find "$dir" -maxdepth 1 -type d -iname "*$project_name*"
+		done)
 
-        if [ -z "$project_dir" ]; then
-            echo "No project found matching '$project_name'"
-            return
-        fi
+		if [ -z "$project_dir" ]; then
+			echo "No project found matching '$project_name'"
+			return
+		fi
 
-        if echo "$project_dir" | grep -q "$project_name"; then
-            project_dir=$(echo "$project_dir" | fzf --prompt="Select Project > " --height=~50% --layout=reverse --border)
+		if echo "$project_dir" | grep -q "$project_name"; then
+			project_dir=$(echo "$project_dir" | fzf --prompt="Select Project > " --height=~50% --layout=reverse --border)
 
-            [[ -z $project_dir ]] && return
-        fi
-    fi
+			[[ -z $project_dir ]] && return
+		fi
+	fi
 
-    cd "$project_dir" || return
-    run_nvim
+	cd "$project_dir" || return
+	run_nvim
 }
 
 # Function to list tmuxp projects
 list_tmuxp_projects() {
-    find ~/.tmuxp -name "*.yaml" | sed 's#.*/##' | sed 's/.yaml$//' | fzf --prompt="Tmuxp Projects > " --height=~50% --layout=reverse --border --exit-0
+	find ~/.tmuxp -name "*.yaml" | sed 's#.*/##' | sed 's/.yaml$//' | fzf --prompt="Tmuxp Projects > " --height=~50% --layout=reverse --border --exit-0
 }
 
 # Function to run tmuxp
 run_tmuxp() {
-    local project_name="$1"
-    local tmuxp_file
+	local project_name="$1"
+	local tmuxp_file
 
-    if [ -z "$project_name" ]; then
-        tmuxp_file=$(list_tmuxp_projects)
+	if [ -z "$project_name" ]; then
+		tmuxp_file=$(list_tmuxp_projects)
 
-        [[ -z $tmuxp_file ]] && echo "No tmuxp project selected" && return
-    else
-        tmuxp_file="$HOME/.tmuxp/$project_name.yaml"
+		[[ -z $tmuxp_file ]] && echo "No tmuxp project selected" && return
+	else
+		tmuxp_file="$HOME/.tmuxp/$project_name.yaml"
 
-        if [ ! -f "$tmuxp_file" ]; then
-            echo "No tmuxp project found matching '$project_name'"
-            return
-        fi
-    fi
+		if [ ! -f "$tmuxp_file" ]; then
+			echo "No tmuxp project found matching '$project_name'"
+			return
+		fi
+	fi
 
-    tmuxp load "$tmuxp_file"
+	tmuxp load "$tmuxp_file"
 }
 
 # Main script logic
-while getopts ":ep" opt; do
-    case $opt in
-        e)
-            exec_nvim=true
-            ;;
-        p)
-            exec_tmuxp=true
-            ;;
-        *)
-            echo "Invalid option: -$OPTARG" >&2
-            exit 1
-            ;;
-    esac
+while getopts ":eph-:" opt; do
+	case $opt in
+	e)
+		exec_nvim=true
+		;;
+	p)
+		exec_tmuxp=true
+		;;
+	h)
+		help
+		exit 0
+		;;
+	-)
+		case "${OPTARG}" in
+		help)
+			help
+			exit 0
+			;;
+		*)
+			echo "Invalid option: --${OPTARG}" >&2
+			help
+			exit 1
+			;;
+		esac
+		;;
+	*)
+		echo "Invalid option: -$OPTARG" >&2
+		exit 1
+		;;
+	esac
 done
-shift $((OPTIND -1))
+shift $((OPTIND - 1))
 
 if [ "$exec_tmuxp" == true ]; then
-    run_tmuxp "$@"
+	run_tmuxp "$@"
 else
-    run_project "$@"
+	run_project "$@"
 fi
