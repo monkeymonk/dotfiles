@@ -63,6 +63,11 @@ if [ -d "$HOME/.local/bin" ]; then
 	PATH="$HOME/.local/bin:$PATH"
 fi
 
+# Add custon shell bin
+if [ -d "$HOME/.config/shell/bin" ]; then
+	PATH="$HOME/.config/shell/bin:$PATH"
+fi
+
 # see ~/.aws/mfa.sh
 if [ -f "$HOME/.aws/.mfa_session" ]; then
 	source "$HOME/.aws/.mfa_session"

@@ -39,7 +39,7 @@ ZSH_THEME="robbyrussell"
 # DISABLE_LS_COLORS="true"
 
 # Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+export DISABLE_AUTO_TITLE="true"
 
 # Uncomment the following line to enable command auto-correction.
 # ENABLE_CORRECTION="true"
@@ -65,14 +65,6 @@ ZSH_THEME="robbyrussell"
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
-
-#    _______   ____ ___
-#   ╱       ╲╲╱    ╱   ╲
-#  ╱        ╱╱         ╱    Monkey Monk
-# ╱         ╱╱       _╱     http://monkeymonk.be
-# ╲__╱__╱__╱╲╲___╱___╱
-#
-. "$HOME/.config/shell/start.sh"
 
 # Which plugins would you like to load?
 # Standard plugins can be found in $ZSH/plugins/
@@ -126,9 +118,13 @@ source $ZSH/oh-my-zsh.sh
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
 # users are encouraged to define aliases within the ZSH_CUSTOM folder.
 # For a full list of active aliases, run `alias`.
-#
-# Example aliases
-alias zshconfig="nvim ~/.zshrc"
-alias ohmyzsh="nvim ~/.oh-my-zsh"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+#    _______   ____ ___
+#   ╱       ╲╲╱    ╱   ╲
+#  ╱        ╱╱         ╱    Monkey Monk
+# ╱         ╱╱       _╱     http://monkeymonk.be
+# ╲__╱__╱__╱╲╲___╱___╱
+#
+. "$HOME/.config/shell/start.sh"
