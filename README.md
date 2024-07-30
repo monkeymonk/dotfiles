@@ -114,6 +114,7 @@ secretfiles push
 - Cleanup and refactor [Lazyvim](https://www.lazyvim.org/) config
 - Cleanup and refactor [Tmux](https://github.com/tmux/tmux) config
 - Cleanup and refactor .config/shell
+- Move custom bins to .config/shell/bin
 
 
 ---
