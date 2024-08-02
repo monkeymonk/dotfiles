@@ -5,6 +5,18 @@ return {
     "habamax/vim-godot",
     init = function()
       vim.g.godot_executable = "/home/monkeymonk/GodotEngine/Godot_v4.2.2-stable_linux.x86_64"
+
+      require("lspconfig").gdscript.setup({
+        on_attach = function(client)
+          local _notify = client.notify
+          client.notify = function(method, params)
+            if method == "textDocument/didClose" then
+              return
+            end
+            _notify(method, params)
+          end
+        end,
+      })
     end,
   },
   -- Run and debug your Godot game in neovim
