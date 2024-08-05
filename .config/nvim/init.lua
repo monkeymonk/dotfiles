@@ -50,6 +50,7 @@ require("lazy").setup({
         colorscheme = "catppuccin",
       },
     },
+    { import = "lazyvim.plugins.extras.dap.core" },
     -- import any extras modules here
     { import = "lazyvim.plugins.extras.ui.alpha" },
     { import = "lazyvim.plugins.extras.editor.leap" },

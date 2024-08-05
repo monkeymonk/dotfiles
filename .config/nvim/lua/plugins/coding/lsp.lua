@@ -7,8 +7,10 @@ return {
         "blade-formatter",
         "css-lsp",
         "efm",
+        "intelephense",
         "ltex-ls",
         "luacheck",
+        "php-debug-adapter",
         "selene",
         "shellcheck",
         "shfmt",
@@ -67,6 +69,16 @@ return {
           },
         },
         html = {},
+        intelephense = {
+          settings = {
+            intelephense = {
+              format = {
+                brackets = "k&r",
+              },
+              stubs = { "psr-4" },
+            },
+          },
+        },
         ltex = {},
         lua_ls = {
           -- enabled = false,

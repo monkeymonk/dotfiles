@@ -3,6 +3,9 @@ return {
   -- https://github.com/danymat/neogen
   {
     "danymat/neogen",
+    config = function(_, opts)
+      require("neogen").setup(opts)
+    end,
     dependencies = "nvim-treesitter/nvim-treesitter",
     keys = {
       {
