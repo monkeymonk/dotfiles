@@ -27,11 +27,19 @@ fi
 
 # Add cargo bin
 if [ -d "$HOME/.cargo/bin" ]; then
+	if [ -f "$HOME/.cargo/env" ]; then
+		. "$HOME/.cargo/env"
+	fi
+
 	PATH="$HOME/.cargo/bin:$PATH"
 fi
 
 # Add haskell
 if [ -d "$HOME/.ghcup/bin" ]; then
+	if [ -f "$HOME/.ghcup/env" ]; then
+		. "$HOME/.ghcup/env"
+	fi
+
 	PATH="$HOME/.ghcup/bin:$PATH"
 fi
 
