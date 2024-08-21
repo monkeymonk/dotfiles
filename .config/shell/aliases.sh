@@ -87,8 +87,10 @@ alias mv="mv -i"
 alias rm="rm -i"
 
 # Additional Usability Aliases
-alias df="df -h" # human-readable sizes
-alias du="du -ch"
+alias df="df -h"   # human-readable sizes
+alias du="f"       # disk usage
+alias fu="du -ch"  # folder usage
+alias tfu="du -sh" # total folder usage
 alias free="free -m"
 alias usage="du -ch | grep total"
 alias most="du -hsx * | sort -rh | head -10"
