@@ -103,6 +103,20 @@ alias ping="ping -c 5"
 alias fastping="ping -c 100 -s.2"
 alias header="curl -I"
 
+run_benchurl() {
+	# @see https://stackoverflow.com/questions/18215389/how-do-i-measure-request-and-response-times-at-once-using-curl
+	curl -so /dev/null -w "
+    time_namelookup:  %{time_namelookup}\n\
+       time_connect:  %{time_connect}\n\
+    time_appconnect:  %{time_appconnect}\n\
+   time_pretransfer:  %{time_pretransfer}\n\
+      time_redirect:  %{time_redirect}\n\
+ time_starttransfer:  %{time_starttransfer}\n\
+                     ----------\n\
+         time_total:  %{time_total}\n" "$@"
+}
+alias benchurl="run_benchurl"
+
 # Silver Searcher Alias
 alias ag="ag -f --hidden"
 
