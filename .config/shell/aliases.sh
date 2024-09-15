@@ -33,6 +33,7 @@ alias llgr="ls -l | grep"
 alias llagr="ls -la | grep"
 alias path='echo -e ${PATH//:/\\n}'
 alias cx="chmod +x"
+alias count="echo $(ls -1 | wc -l)"
 
 # Navigation Aliases
 function run_cd() {
@@ -72,8 +73,10 @@ alias .4="up 5"
 alias .5="up 6"
 
 # Root Access Aliases
+alias please="sudo -"
 alias root="sudo -i"
 alias su="sudo -i"
+alias sudo="sudo -i"
 
 # Colorize Outputs
 alias grep="grep --color=auto"
@@ -87,6 +90,7 @@ alias mv="mv -i"
 alias rm="rm -i"
 
 # Additional Usability Aliases
+alias curl="curl --compressed"
 alias df="df -h"   # human-readable sizes
 alias du="f"       # disk usage
 alias fu="du -ch"  # folder usage
@@ -127,7 +131,9 @@ alias psmem="ps auxf | sort -nr -k 4"
 alias pscpu="ps auxf | sort -nr -k 3"
 
 # Exit Aliases
+alias bye="exit"
 alias :q="exit"
+alias q="exit"
 alias quit="exit"
 
 # Use htop if available
@@ -222,6 +228,8 @@ run_update() {
 }
 alias update="run_update"
 
+alias wth="curl -s 'wttr.in/?format=3'"
+
 # Set Preferred Editor for Sessions
 if [[ -n $SSH_CONNECTION ]]; then
 	export EDITOR=vim
@@ -239,14 +247,15 @@ alias dotfiles="/usr/bin/git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
 alias secretfiles="/usr/bin/git --git-dir=$HOME/.secretfiles --work-tree=$HOME"
 
 # Open Dotfiles Configuration
-alias dotconfig="cd ~ && nvim"
-alias binconfig="cd ~/.local/bin && nvim"
-alias shellconfig="cd ~/.config/shell && nvim"
-alias vimconfig="cd ~/.config/nvim && nvim"
+alias bashrc="${EDITOR} ~/.bashrc"
+alias dotconfig="cd ~ && ${EDITOR}"
+alias binconfig="cd ~/.local/bin && ${EDITOR}"
+alias shellconfig="cd ~/.config/shell && ${EDITOR}"
+alias vimconfig="cd ~/.config/nvim && ${EDITOR}"
 
 # Additional Zsh Specific Aliases
 if command -v zsh &>/dev/null; then
-	alias zshconfig="nvim ~/.zshrc"
-	alias ohmyzsh="nvim ~/.oh-my-zsh"
+	alias zshrc="${EDITOR} ~/.zshrc"
+	alias ohmyzsh="${EDITOR} ~/.oh-my-zsh"
 	alias reload=". ~/.zshrc && echo 'ZSH config reloaded from ~/.zshrc'"
 fi
