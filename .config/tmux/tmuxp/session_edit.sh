@@ -9,5 +9,5 @@ SELECTED=$(echo "$SESSIONS" | fzf)
 # If a session was selected, proceed to edit it
 if [ -n "$SELECTED" ]; then
 	# Open the selected session file in the editor (replace with your preferred editor)
-	nvim ~/.tmuxp/"$SELECTED".yaml
+	$EDITOR ~/.tmuxp/"$SELECTED".yaml
 fi
