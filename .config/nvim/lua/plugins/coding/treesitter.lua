@@ -22,8 +22,8 @@ return {
         "jsdoc",
         "json",
         "lua",
-        "markdown",
-        "markdown_inline",
+        -- "markdown",
+        -- "markdown_inline",
         "norg",
         "php",
         "python",
@@ -74,13 +74,13 @@ return {
     config = function(_, opts)
       require("nvim-treesitter.configs").setup(opts)
 
-      -- MDX
-      vim.filetype.add({
-        extension = {
-          mdx = "mdx",
-        },
-      })
-      vim.treesitter.language.register("markdown", "mdx")
+      -- -- MDX
+      -- vim.filetype.add({
+      --   extension = {
+      --     mdx = "mdx",
+      --   },
+      -- })
+      -- vim.treesitter.language.register("markdown", "mdx")
     end,
   },
 
@@ -100,8 +100,8 @@ return {
         "typescript",
         "regex",
         "bash",
-        "markdown",
-        "markdown_inline",
+        -- "markdown",
+        -- "markdown_inline",
         "kdl",
         "sql",
         "org",
