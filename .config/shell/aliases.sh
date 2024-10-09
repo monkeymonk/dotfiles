@@ -34,6 +34,7 @@ alias llagr="ls -la | grep"
 alias path='echo -e ${PATH//:/\\n}'
 alias cx="chmod +x"
 alias count="echo $(ls -1 | wc -l)"
+alias recent="ls -lt | head -2 | tail -1 | awk '{ print $NF }' | xargs open"
 
 # Navigation Aliases
 function run_cd() {
@@ -151,6 +152,11 @@ fi
 # Serve Shortcut for HTTP Server
 alias serve="open http://0.0.0.0:8000 && python -m http.server"
 
+# Python alises
+alias mkvenv="python3 -m venv venv"
+alias activate="source venv/bin/activate"
+alias pipupgrade="pip list --outdated | cut -d ' ' -f 1 | xargs pip install --upgrade"
+
 # Screen Locking and User Actions
 alias afk="xdg-screensaver lock"
 alias logout="sudo pkill -u $USER"
@@ -160,6 +166,8 @@ alias reboot="sudo reboot"
 alias vim="nvim"
 alias vi="nvim"
 alias v="nvim"
+alias vl="nvim +'lua require(\"persistence\").load()'"
+alias kick="nvim --cmd 'set runtimepath^=~/.config/nvim-kickstart' -u ~/.config/nvim-kickstart/init.lua"
 
 # Update All Software
 run_update() {
