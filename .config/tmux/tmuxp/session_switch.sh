@@ -1,7 +1,14 @@
 #!/bin/bash
 
+CURRENT_SESSION=$(tmux display-message -p '#S')
 SESSIONS=$(tmuxp ls)
-SELECTED=$(echo "$SESSIONS" | fzf)
+SELECTED=$(echo "$SESSIONS" | awk -v cur="$CURRENT_SESSION" '{print $1}' | while read -r session; do
+	if [ "$session" == "$cur" ] || tmux has-session -t "$session" 2>/dev/null; then
+		echo "$session*"
+	else
+		echo "$session"
+	fi
+done | fzf | awk -F'*' '{print $1}')
 
 if [ -n "$SELECTED" ]; then
 	# Check if the selected session is already loaded
