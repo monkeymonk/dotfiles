@@ -12,7 +12,7 @@ return {
         "cpp",
         "css",
         "diff",
-        "fish",
+        -- "fish",
         "gitignore",
         "go",
         "graphql",

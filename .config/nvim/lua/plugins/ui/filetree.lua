@@ -40,7 +40,7 @@ return {
     },
   },
 
-  -- Neovim file explorer: edit your filesystem like a buffer
+  --[[ -- Neovim file explorer: edit your filesystem like a buffer
   -- https://github.com/stevearc/oil.nvim
   {
     "stevearc/oil.nvim",
@@ -67,5 +67,5 @@ return {
         show_hidden = true,
       },
     },
-  },
+  }, ]]
 }
