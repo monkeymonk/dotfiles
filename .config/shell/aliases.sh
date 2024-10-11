@@ -167,7 +167,22 @@ alias vim="nvim"
 alias vi="nvim"
 alias v="nvim"
 alias vl="nvim +'lua require(\"persistence\").load()'"
-alias kick="nvim --cmd 'set runtimepath^=~/.config/nvim-kickstart' -u ~/.config/nvim-kickstart/init.lua"
+
+run_nvims() {
+	items=("default" "kickstart" "LazyVim" "NvChad")
+	config=$(printf "%s\n" "${items[@]}" | fzf --prompt=" Nvim Config  " --height=~50% --layout=reverse --border --exit-0)
+	if [[ -z $config ]]; then
+		echo "Nothing selected"
+		return 0
+	elif [[ $config == "default" ]]; then
+		config=""
+	fi
+	NVIM_APPNAME=$config nvim $@
+}
+alias nvims="run_nvims"
+alias nchad="NVIM_APPNAME=NvChad nvim"
+alias nkick="NVIM_APPNAME=kickstart nvim"
+alias nlazy="NVIM_APPNAME=LazyVim nvim"
 
 # Update All Software
 run_update() {
