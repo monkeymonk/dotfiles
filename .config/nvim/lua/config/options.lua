@@ -44,6 +44,10 @@ opt.formatoptions:append({ "r" })
 opt.commentstring = ""
 opt.expandtab = true
 
+-- search
+opt.hlsearch = true -- Highlight search matches.
+opt.incsearch = true -- Incremental search.
+
 -- =============================================================================
 -- Navigation & Buffer
 -- =============================================================================
@@ -56,6 +60,12 @@ opt.clipboard = "unnamedplus"
 
 -- Allow auto completion
 opt.completeopt = "menuone,popup,noselect"
+
+-- undo
+opt.swapfile = false
+opt.backup = false
+opt.undofile = true
+opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
 
 -- =============================================================================
 -- Neovide Settings (GUI-specific)
