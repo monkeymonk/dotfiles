@@ -35,7 +35,7 @@ return {
         { type = "padding", val = 2 },
       }
 
-      local tips = require("tips")
+      --[[ local tips = require("tips")
 
       -- Show a Vim tip
       local function vTipNotify()
@@ -45,23 +45,24 @@ return {
         })
       end
 
-      cmd("VTipNotify", vTipNotify, { nargs = 0 })
+      cmd("VTipNotify", vTipNotify, { nargs = 0 }) ]]
 
       -- Function to update the header and footer
       local function reloadDashboard()
         local ascii = require("utils.ascii.utils")
         dashboard.section.header.val = ascii.get_any_random()
         -- dashboard.section.header.val = ascii.get("pig")
+        alpha.redraw()
 
-        vim.schedule(function()
-          dashboard.section.footer.val = tips.FetchTip()
+        --[[ vim.schedule(function()
+          -- dashboard.section.footer.val = tips.FetchTip()
           alpha.redraw()
-        end)
+        end) ]]
       end
 
       cmd("ReloadDashboard", reloadDashboard, { nargs = 0 })
 
-      local function reloadDashboardPeriodically()
+      --[[ local function reloadDashboardPeriodically()
         reloadDashboard() -- Reload the dashboard initially
         local timer = vim.loop.new_timer()
         timer:start(
@@ -73,7 +74,9 @@ return {
         )
       end
 
-      reloadDashboardPeriodically()
+      reloadDashboardPeriodically() ]]
+
+      reloadDashboard()
 
       -- Load the dashboard with the appropriate configurations
       alpha.setup(dashboard.opts)
@@ -84,14 +87,14 @@ return {
       which_key({ "<leader>;", "<cmd> Alpha <CR>", desc = "Dashboard", icon = "", mode = { "n", "v" } })
       -- bind("nv", "<leader>;", "<cmd> Alpha <CR>", desc("Dashboard"))
       bind("nv", "<leader>qd", "<cmd> Alpha <CR>", desc("Dashboard"))
-      bind("nv", "<leader>ht", "<cmd> VTipNotify <CR>", desc("Show a Vim/Neovim tip"))
+      -- bind("nv", "<leader>ht", "<cmd> VTipNotify <CR>", desc("Show a Vim/Neovim tip"))
       bind("nv", "<leader>q;", "<cmd> ReloadDashboard <CR>", desc("Reload dashboard"))
     end,
     event = "VimEnter",
     dependencies = {
       "nvim-tree/nvim-web-devicons",
       { "MaximilianLloyd/ascii.nvim", dependencies = "MunifTanjim/nui.nvim" },
-      { dir = "~/.config/nvim/monkeymonk/tips" },
+      -- { dir = "~/.config/nvim/monkeymonk/tips" },
     },
   },
 }

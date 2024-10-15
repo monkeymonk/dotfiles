@@ -39,12 +39,21 @@ return {
     config = true,
   },
 
+  -- @TODO:
   -- Refactoring tool
-  {
+  -- @see https://github.com/ThePrimeagen/refactoring.nvim
+  --[[ {
     "ThePrimeagen/refactoring.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-treesitter/nvim-treesitter",
+    },
+    config = function()
+      require("refactoring").setup()
+    end,
     keys = {
       {
-        "<leader>r",
+        "<leader>rr",
         function()
           require("refactoring").select_refactor()
         end,
@@ -54,26 +63,27 @@ return {
         expr = false,
       },
     },
-    opts = {},
-  },
+  }, ]]
 
+  -- A completion plugin for neovim coded in Lua.
+  -- @see https://github.com/hrsh7th/nvim-cmp
   {
     "hrsh7th/nvim-cmp",
     dependencies = {
-      "onsails/lspkind.nvim",
-      "hrsh7th/cmp-nvim-lsp",
-      "hrsh7th/cmp-buffer",
-      "hrsh7th/cmp-path",
-      "saadparwaiz1/cmp_luasnip",
-      "hrsh7th/cmp-nvim-lua",
       "L3MON4D3/LuaSnip",
-      "rafamadriz/friendly-snippets",
+      "hrsh7th/cmp-buffer",
       "hrsh7th/cmp-emoji",
+      "hrsh7th/cmp-nvim-lsp",
+      "hrsh7th/cmp-nvim-lua",
+      "hrsh7th/cmp-path",
+      "onsails/lspkind.nvim",
+      "rafamadriz/friendly-snippets",
+      "saadparwaiz1/cmp_luasnip",
     },
     event = "InsertEnter",
     opts = function(_, opts)
-      local cmp = require("cmp")
-      opts.sources = cmp.config.sources(vim.list_extend(opts.sources, { { name = "emoji" }, { name = "codeium" } }))
+      table.insert(opts.sources, { name = "emoji" })
+      table.insert(opts.sources, { name = "codeium" })
     end,
   },
 }

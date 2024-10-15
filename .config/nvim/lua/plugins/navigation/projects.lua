@@ -21,6 +21,7 @@ return {
         end,
         desc = "Restore Session",
       },
+      -- @NOTE: To do this from CLI: nvim +'lua require("persistence").load()'
       {
         "<leader>qL",
         function()
