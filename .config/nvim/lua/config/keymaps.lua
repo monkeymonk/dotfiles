@@ -34,6 +34,9 @@ bind("nv", "<S-Tab>", "<gv", desc("Unindent"))
 bind("n", "<Del>", '"_x', desc("Delete without clipboard"))
 bind("n", "x", '"_x', desc("Delete without clipboard"))
 
+-- Use `<leader>P` to paste without clipboard
+bind("n", "<leader>P", '"_dP', desc("Paste without clipboard"))
+
 -- Exit terminal mode using `Esc`
 bind("t", "<Esc>", "<C-\\><C-n>", desc("Exit terminal"))
 
@@ -53,7 +56,7 @@ bind("n", "<BS>", "<cmd> nohlsearch <CR>", desc("Clear search highlights"))
 bind("n", "<Esc>", "<cmd> nohlsearch <CR>", desc("Clear search highlights"))
 
 -- Select all
-bind("n", "<C-a>", "gg<S-v>G", desc("Select all"))
+-- bind("n", "<C-a>", "gg<S-v>G", desc("Select all"))
 
 -- Buffer next/prev
 bind("n", "<Tab>", "<cmd> bnext <CR>", desc("Next buffer"))
