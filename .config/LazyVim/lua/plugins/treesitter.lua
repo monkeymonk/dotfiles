@@ -40,6 +40,11 @@ return {
         "vue",
         "yaml",
       },
+      highlight = {
+        additional_vim_regex_highlighting = {
+          "markdown",
+        },
+      },
     },
   },
 }
