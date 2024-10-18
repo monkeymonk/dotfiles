@@ -9,7 +9,7 @@ local desc = keymap.desc
 --bind("ni", "<C-z>", "<Nop>")
 
 -- CapsLock as Esc
-bind("i", "<CapsLock>", "<Esc>", { noremap = true, silent = true })
+bind("nvi", "<CapsLock>", "<Esc>", { noremap = true, silent = true })
 
 -- Buffer next/prev
 bind("n", "<Tab>", "<cmd> bnext <CR>", desc("Next buffer"))

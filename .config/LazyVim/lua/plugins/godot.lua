@@ -4,9 +4,7 @@ return {
   -- https://github.com/habamax/vim-godot
   {
     "habamax/vim-godot",
-    init = function()
-      vim.g.godot_executable = os.getenv("HOME") .. "/GodotEngine/Godot_v4.3-stable_linux.x86_64"
-
+    config = function()
       require("lspconfig").gdscript.setup({
         on_attach = function(client)
           local _notify = client.notify
@@ -19,12 +17,17 @@ return {
         end,
       })
     end,
+    ft = { "gd", "gdscript" },
+    init = function()
+      vim.g.godot_executable = os.getenv("HOME") .. "/GodotEngine/Godot_v4.3-stable_linux.x86_64"
+    end,
   },
 
   -- Run and debug your Godot game in neovim
   -- https://github.com/Lommix/godot.nvim
   {
     "lommix/godot.nvim",
+    ft = { "gd", "gdscript" },
     keys = {
       -- {
       --   "<leader>ogg",
@@ -66,5 +69,59 @@ return {
     opts = {
       bin = os.getenv("HOME") .. "/GodotEngine/Godot_v4.3-stable_linux.x86_64",
     },
+  },
+
+  -- Quickstart configs for Nvim LSP
+  -- https://github.com/neovim/nvim-lspconfig
+  {
+    "neovim/nvim-lspconfig",
+    opts = {
+      servers = {
+        gdscript = {
+          cmd = { "ncat", "localhost", os.getenv("GDScript_Port") or "6005" },
+        },
+      },
+    },
+  },
+
+  -- Nvim Treesitter configurations and abstraction layer
+  -- https://github.com/nvim-treesitter/nvim-treesitter
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      ensure_installed = {
+        "gdscript",
+        "godot_resource",
+        "gdshader",
+      },
+    },
+  },
+
+  -- mason-nvim-dap bridges mason.nvim with the nvim-dap plugin - making it easier to use both plugins together.
+  -- https://github.com/jay-babu/mason-nvim-dap.nvim
+  {
+    "jay-babu/mason-nvim-dap.nvim",
+    config = function()
+      local dap = require("dap")
+
+      -- Godot stuff
+      -- @see https://docs.godotengine.org/en/stable/tutorials/editor/external_editor.html#lsp-dap-support
+      dap.adapters.godot = {
+        debugServer = 6006,
+        host = "127.0.0.1",
+        port = 6007,
+        type = "server",
+      }
+
+      dap.configurations.gdscript = {
+        {
+          launch_scene = true,
+          name = "Launch scene",
+          project = "${workspaceFolder}/src",
+          request = "launch",
+          type = "godot",
+        },
+      }
+    end,
   },
 }
