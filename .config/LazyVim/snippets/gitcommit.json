@@ -1,0 +1,44 @@
+{
+  "persona commit body": {
+    "prefix": "commitper",
+    "body": [
+      "${1:description}",
+      "",
+      "**Potential Risk**",
+      "",
+      "Worst Case Incident: SEV${2:level}",
+      "",
+      "${3:risk}",
+      "",
+      "**Testing Strategy**",
+      "",
+      "$0"
+    ]
+  },
+  "commit potential risk": {
+    "prefix": "risk",
+    "body": [
+      "**Potential Risk**",
+      "",
+      "Worst Case Incident: SEV${1:level}",
+      "",
+      "$0"
+    ]
+  },
+  "commit potential risk 4": {
+    "prefix": "risk4",
+    "body": ["**Potential Risk**", "", "Worst Case Incident: SEV4", "", "$0"]
+  },
+  "commit testing strategy": {
+    "prefix": "testper",
+    "body": ["**Testing Strategy**", "", "$0"]
+  },
+  "commit testing strategy for terraform changes": {
+    "prefix": "testtf",
+    "body": [
+      "**Testing Strategy**",
+      "",
+      "$0Plan review. Manual testing post-apply."
+    ]
+  }
+}
