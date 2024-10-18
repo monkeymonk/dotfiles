@@ -15,14 +15,12 @@ return {
   -- https://github.com/vim-pandoc/vim-pandoc
   {
     "vim-pandoc/vim-pandoc",
-    dependencies = {
-      "vim-pandoc/vim-pandoc-syntax",
-      lazy = true,
-    },
-    -- init = function()
-    --   vim.g.pandoc_filetypes_handled = { "pandoc", "markdown" }
-    --   vim.g.pandoc_filetypes_pandoc_markdown = 0
-    -- end,
+    dependencies = "vim-pandoc/vim-pandoc-syntax",
+    ft = "markdown",
+    init = function()
+      vim.g.pandoc_filetypes_handled = { "pandoc", "markdown" }
+      vim.g.pandoc_filetypes_pandoc_markdown = 0
+    end,
     -- keys = {
     --   "<leader>nP",
     --   "<cmd>Pandoc revealjs -s --mathjax -i<CR>", -- "--include-in-header=style.css -V theme=white"
