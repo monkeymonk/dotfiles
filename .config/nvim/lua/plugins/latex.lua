@@ -1,7 +1,3 @@
-local keymap = require("utils.keymap")
-local bind = keymap.bind
-local desc = keymap.desc
-
 return {
   -- VimTeX: A modern Vim and neovim filetype plugin for LaTeX files.
   -- https://github.com/lervag/vimtex

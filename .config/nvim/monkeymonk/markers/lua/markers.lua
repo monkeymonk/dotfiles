@@ -18,6 +18,12 @@ function M.setup(opts)
   vim.api.nvim_set_keymap("n", "m", "<cmd> ToggleMark <cr>", { desc = "Toggle mark", noremap = true, silent = true })
   vim.api.nvim_set_keymap(
     "n",
+    "<leader>mm",
+    "<cmd> ToggleMark <cr>",
+    { desc = "Toggle mark", noremap = true, silent = true }
+  )
+  vim.api.nvim_set_keymap(
+    "n",
     "<leader>ml",
     "<cmd> Telescope marks <cr>",
     { desc = "List marks", noremap = true, silent = true }
