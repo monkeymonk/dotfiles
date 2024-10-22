@@ -27,11 +27,11 @@ local function is_result_present(result, source)
 end
 
 M.config = {
-  save_dir = vim.fn.expand("~/.config/nvim/"),
+  save_dir = vim.fn.expand("~/.config/nvim/monkeymonk/tips/"),
   tip_files = {
-    vim.fn.expand("~/.config/nvim/neotips.txt"),
-    vim.fn.expand("~/.config/nvim/vtips.txt"),
-    vim.fn.expand("~/.config/nvim/tips.txt"),
+    vim.fn.expand("~/.config/nvim/monkeymonk/tips/neotips.txt"),
+    vim.fn.expand("~/.config/nvim/monkeymonk/tips/vtips.txt"),
+    vim.fn.expand("~/.config/nvim/monkeymonk/tips/tips.txt"),
   },
   tip_sources = {
     "https://vtip.43z.one",
