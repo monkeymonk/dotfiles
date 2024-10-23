@@ -73,6 +73,12 @@ require("lazy").setup({
     { import = "plugins" },
     -- import custom plugins
     {
+      dir = vim.fn.stdpath("config") .. "/monkeymonk/ascii",
+      config = function()
+        require("ascii").setup()
+      end,
+    },
+    {
       dir = vim.fn.stdpath("config") .. "/monkeymonk/duplicate-lines",
       config = function()
         require("duplicate-lines").setup()
@@ -82,6 +88,12 @@ require("lazy").setup({
       dir = vim.fn.stdpath("config") .. "/monkeymonk/markers",
       config = function()
         require("markers").setup()
+      end,
+    },
+    {
+      dir = vim.fn.stdpath("config") .. "/monkeymonk/tips",
+      config = function()
+        require("tips").setup()
       end,
     },
   },

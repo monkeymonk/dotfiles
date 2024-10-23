@@ -43,11 +43,11 @@ function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
   vim.api.nvim_create_user_command("GetTip", function()
-    print(M.GetTip())
+    return M.GetTip()
   end, {})
 
   vim.api.nvim_create_user_command("FetchTip", function()
-    print(M.FetchTip())
+    return M.FetchTip()
   end, {})
 end
 
