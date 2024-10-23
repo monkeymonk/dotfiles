@@ -6,6 +6,7 @@
   "SchemaStore.nvim": { "branch": "main", "commit": "3e54f4bbebea598646b141aa8aeca8a01b6ba601" },
   "advanced-git-search.nvim": { "branch": "main", "commit": "1c5a10f5c838cfad2c17d7464311d6fb416cb319" },
   "agitator.nvim": { "branch": "main", "commit": "b948e16bba75dc4a114d3416c8e836a8e5e4d006" },
+  "alpha-nvim": { "branch": "main", "commit": "bf3c8bb8c02ed3d9644cc5bbc48e2bdc39349cd7" },
   "auto-pandoc.nvim": { "branch": "main", "commit": "22dd8fe6670c413a9942e678cf5a5d8b5b9db33e" },
   "blade-nav.nvim": { "branch": "main", "commit": "ea6b9f36998c9a406849714328c95a0e39c4227d" },
   "bufferline.nvim": { "branch": "main", "commit": "5c528bee3dd797d5bd6bae5f229411939b25b203" },
@@ -130,5 +131,6 @@
   "vim-wakatime": { "branch": "master", "commit": "f699e30ca1ba0c7f316847316fd0ba19d3ee51c1" },
   "vimtex": { "branch": "master", "commit": "4dd3be5cc4e8f6ee7401e303a8211efb4d91bcf6" },
   "which-key.nvim": { "branch": "main", "commit": "8badb359f7ab8711e2575ef75dfe6fbbd87e4821" },
+  "window-picker": { "branch": "main", "commit": "41cfaa428577c53552200a404ae9b3a0b5719706" },
   "yanky.nvim": { "branch": "main", "commit": "73215b77d22ebb179cef98e7e1235825431d10e4" }
 }
