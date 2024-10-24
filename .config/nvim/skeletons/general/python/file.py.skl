@@ -1,0 +1,28 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+File: ${file_name}.py
+Description: Brief description of what the script does.
+Author: Stéphan Zych <stephan@zych.be>
+Date: ${date}
+"""
+
+import sys
+
+def main():
+    """Main function."""
+    print("Hello, World!")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,32 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+/* File: ${file_name}.css */
+/* Description: CSS styles for the ${module_name} component */
+/* Date: ${date} */
+/* Author: Stéphan Zych */
+
+.${file_name} {
+  /* Add your styles here */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  color: #333;
+}
+
+.${file_name}__title {
+  font-weight: bold;
+}
+
+.${file_name}__subtitle {
+  font-style: italic;
+}
