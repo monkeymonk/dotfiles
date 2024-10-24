@@ -2,10 +2,16 @@
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 local command = require("utils.command")
 local alias = command.alias
--- local autocmd = command.autocmd
+local autocmd = command.autocmd
 
 alias("Q", "qa")
 alias("W", "w")
+
+-- Disable the concealing in some file formats
+-- The default conceallevel is 3 in LazyVim
+autocmd("FileType", function()
+  vim.wo.conceallevel = 0
+end, { pattern = { "json", "jsonc", "markdown" } })
 
 -- -- Autocommand to temporarily change 'blade' filetype to 'php' when opening for LSP server activation
 -- autocmd({ "BufRead", "BufNewFile" }, function()
