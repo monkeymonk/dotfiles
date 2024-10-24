@@ -1,0 +1,27 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+import React from 'react';
+
+interface ${module_name}Props {
+  // Define your props here
+}
+
+const ${module_name}: React.FC<${module_name}Props> = (props) => {
+  return (
+    <div>
+      <h1>${module_name} Component</h1>
+      <p>This is a basic React component in TypeScript.</p>
+    </div>
+  );
+};
+
+export default ${module_name};

@@ -1,0 +1,24 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+-- File: ${file_name}.lua
+-- Description: Neovim configuration for ${module_name}
+-- Author: Stéphan Zych <stephan@zych.be>
+-- Date: ${date}
+
+local M = {}
+
+function M.setup()
+  -- Configure your plugin or setup code here
+  vim.cmd("echo 'Hello, World!'")
+end
+
+return M
