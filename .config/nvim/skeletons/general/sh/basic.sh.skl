@@ -1,0 +1,53 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+#!/bin/bash
+
+# Description: Brief description of what the script does.
+# Usage: ./${file_name} [arguments]
+# Author: Stéphan Zych <stephan@zych.be>
+# Date: ${date}
+
+set -e          # Exit immediately if a command exits with a non-zero status.
+set -u          # Treat unset variables as an error.
+set -o pipefail # Consider errors in pipelines.
+
+# Function to display help message
+usage() {
+	echo "Usage: $0 [options]"
+	echo
+	echo "Options:"
+	echo "  -h, --help    Show this help message"
+	exit 1
+}
+
+# Main function
+main() {
+	# Your code goes here
+	echo "Hello, World!"
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-h | --help)
+		usage
+		;;
+	*)
+		echo "Unknown option: $1"
+		usage
+		;;
+	esac
+	shift
+done
+
+# Run main function
+main

@@ -1,0 +1,99 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+#!/bin/bash
+
+# Description: Brief description of what the script does.
+# Usage: ./${file_name} [arguments]
+# Author: Stéphan Zych <stephan@zych.be>
+# Date: ${date}
+
+# Exit immediately on errors, treat unset variables as errors, consider errors in pipelines
+set -euo pipefail
+
+# Constants
+SCRIPT_NAME=$(basename "$0")
+LOG_LEVEL="INFO"
+
+# Function to display usage
+usage() {
+	cat <<EOF
+Usage: $SCRIPT_NAME [options]
+
+Options:
+  -h, --help                Show this help message
+  -v, --verbose             Enable verbose logging
+  -p, --parameter <value>   Example parameter with a value
+EOF
+	exit 1
+}
+
+# Logging functions
+log() {
+	local level="$1"
+	local message="$2"
+	echo "[$level] $(date +'%Y-%m-%d %H:%M:%S') $SCRIPT_NAME: $message"
+}
+
+log_info() {
+	log "INFO" "$1"
+}
+
+log_error() {
+	log "ERROR" "$1" >&2
+}
+
+# Parameter variables
+PARAMETER_VALUE=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+	-h | --help)
+		usage
+		;;
+	-v | --verbose)
+		LOG_LEVEL="DEBUG"
+		;;
+	-p | --parameter)
+		shift
+		if [[ -z "$1" ]]; then
+			log_error "Missing value for --parameter"
+			usage
+		fi
+		PARAMETER_VALUE="$1"
+		;;
+	*)
+		log_error "Unknown option: $1"
+		usage
+		;;
+	esac
+	shift
+done
+
+# Main function
+main() {
+	if [[ "$LOG_LEVEL" == "DEBUG" ]]; then
+		log_info "Verbose logging enabled"
+	fi
+
+	if [[ -z "$PARAMETER_VALUE" ]]; then
+		log_error "Parameter value not set"
+		usage
+	fi
+
+	log_info "Parameter value: $PARAMETER_VALUE"
+	# Add your main script logic here
+	log_info "Script execution completed"
+}
+
+# Run the main function
+main

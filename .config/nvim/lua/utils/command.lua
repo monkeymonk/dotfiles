@@ -9,9 +9,8 @@ end
 
 -- Function to create a single autocmd.
 -- @param event The event for which the autocmd should be created
--- @param callback The callback for the given event
 -- @param opts The options table for the autocmd, see `:h nvim_create_autocmd`
-function M.autocmd(event, callback, opts)
+function M.autocmd(event, opts)
   opts = opts or {}
 
   if type(opts.group) == "string" then
@@ -21,7 +20,7 @@ function M.autocmd(event, callback, opts)
     end
   end
 
-  local options = vim.tbl_extend("force", { callback = callback }, opts or {})
+  local options = vim.tbl_extend("force", {}, opts or {})
   vim.api.nvim_create_autocmd(event, options)
 end
 
