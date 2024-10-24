@@ -1,0 +1,41 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+# ${module_name}
+
+## Description
+Brief description of what the module/script does.
+
+## Author
+Stéphan Zych <stephan@zych.be>
+
+## Date
+${date}
+
+## Usage
+Explain how to use the module/script.
+
+\`\`\`bash
+# Example command
+./${file_name}
+\`\`\`
+
+## Parameters
+- **param1**: Description of the first parameter.
+- **param2**: Description of the second parameter.
+
+## Example
+Provide a concrete example of how to use the module/script.
+
+\`\`\`bash
+# Example usage
+./${file_name} param1 param2
+\`\`\`

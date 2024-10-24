@@ -1,0 +1,29 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+/**
+ * ${module_name} Utility Function
+ * Description: Utility function for ${module_name}.
+ * Author: Stéphan Zych <stephan@zych.be>
+ * Date: ${date}
+ */
+
+/**
+ * Example utility function
+ * @param {number} a - The first number
+ * @param {number} b - The second number
+ * @returns {number} - The sum of a and b
+ */
+function ${file_name}(a, b) {
+    return a + b;
+}
+
+export default ${file_name};
