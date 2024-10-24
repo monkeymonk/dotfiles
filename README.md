@@ -110,9 +110,6 @@ secretfiles push
 # TODO
 
 - Update README.md with real examples and commands
-- Migrate from [kitty](https://sw.kovidgoyal.net/kitty/) to [wezterm](https://wezfurlong.org/wezterm/index.html)
-- Cleanup and refactor [Lazyvim](https://www.lazyvim.org/) config
-- Cleanup and refactor [Tmux](https://github.com/tmux/tmux) config
 - Cleanup and refactor .config/shell
 - Move custom bins to .config/shell/bin
 
