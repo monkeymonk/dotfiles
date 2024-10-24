@@ -35,6 +35,7 @@ return {
           end, 3000)
 
           -- Set key mappings in the alpha buffer
+          vim.api.nvim_buf_set_keymap(0, "n", "l", "<cmd>Lazy<CR>", { noremap = true, silent = true })
           vim.api.nvim_buf_set_keymap(0, "n", "r", "<cmd>ReloadDashboard<CR>", { noremap = true, silent = true })
           vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>qa<CR>", { noremap = true, silent = true })
         end,
@@ -52,6 +53,7 @@ return {
             timer = nil
           end
 
+          vim.api.nvim_buf_del_keymap(0, "n", "l")
           vim.api.nvim_buf_del_keymap(0, "n", "r")
           vim.api.nvim_buf_del_keymap(0, "n", "q")
         end,
