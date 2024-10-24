@@ -8,6 +8,9 @@ local desc = keymap.desc
 -- Disable `Ctrl+z` (for Kitty terminal)
 --bind("ni", "<C-z>", "<Nop>")
 
+-- Disable Ex mode mapping
+bind("n", "Q", "<Nop>", { silent = true })
+
 -- CapsLock as Esc
 bind("nvi", "<CapsLock>", "<Esc>", { noremap = true, silent = true })
 
