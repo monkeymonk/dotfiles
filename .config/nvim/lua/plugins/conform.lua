@@ -1,12 +1,13 @@
-local util = require("conform.util")
 return {
   -- Lightweight yet powerful formatter plugin for Neovim
   -- https://github.com/stevearc/conform.nvim
   {
     "stevearc/conform.nvim",
     opts = function()
+      local util = require("conform.util")
+
       ---@type conform.setupOpts
-      local opts = {
+      return {
         default_format_opts = {
           timeout_ms = 3000,
           async = false, -- not recommended to change
@@ -14,14 +15,20 @@ return {
           lsp_format = "fallback", -- not recommended to change
         },
         formatters_by_ft = {
-          lua = { "stylua" },
-          fish = { "fish_indent" },
-          sh = { "shfmt" },
-          php = { "pint" },
           blade = { "blade-formatter", "rustywind" },
-          python = { "black" },
-          javascript = { "prettierd" },
-          -- rust = { "rustfmt" },
+          css = { "stylelint", "prettier" },
+          fish = { "fish_indent" },
+          go = { "gofumpt", "golines" },
+          javascript = { "prettier", "eslint" },
+          json = { "prettier" },
+          lua = { "stylua" },
+          php = { "pint" },
+          python = { "isort", "black" },
+          rust = { "rustfmt" },
+          sh = { "shfmt" },
+          sql = { "sqlfluff" },
+          yaml = { "yamlfmt" },
+          zig = { "zigfmt" },
         },
         -- LazyVim will merge the options you set here with builtin formatters.
         -- You can also define any custom formatters here.
@@ -51,9 +58,25 @@ return {
             args = { "$FILENAME" },
             stdin = false,
           },
+          sqlfluff = {
+            command = "sqlfluff",
+            args = {
+              "fix",
+              "--dialect",
+              "postgres",
+              "--disable-progress-bar",
+              "-f",
+              "-n",
+              "-",
+            },
+            stdin = true,
+          },
+        },
+        format_on_save = {
+          timeout_ms = 1000,
+          lsp_fallback = true,
         },
       }
-      return opts
     end,
   },
 }
