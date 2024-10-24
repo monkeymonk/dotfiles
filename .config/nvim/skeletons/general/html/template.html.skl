@@ -1,0 +1,35 @@
+return function (buf)
+  local name = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fs.basename(name)
+  return { 
+    date = os.date('%Y-%m-%d'),
+    file_name = basename:gsub('%.hs$', ''),
+    module_name = basename:gsub('%.%w+$', ''):gsub('^%l', string.upper),
+    _cursor = { 4, 6 },
+  }
+end
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${module_name}</title>
+    <link rel="stylesheet" href="${file_name}.css">
+</head>
+<body>
+    <header>
+        <h1>${module_name}</h1>
+    </header>
+
+    <main>
+        <p>This is a basic HTML template.</p>
+    </main>
+
+    <footer>
+        <p>&copy; ${date}</p>
+    </footer>
+
+    <script src="${file_name}.js"></script>
+</body>
+</html>
