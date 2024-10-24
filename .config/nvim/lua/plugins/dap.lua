@@ -48,4 +48,11 @@ return {
       },
     },
   },
+
+  -- 🦆 A NeoVim plugin for managing several debuggers for Nvim-dap
+  -- https://github.com/ravenxrz/DAPInstall.nvim
+  {
+    "Pocco81/DAPInstall.nvim",
+    cmd = { "DIInstall", "DIUninstall", "DIList" },
+  },
 }
