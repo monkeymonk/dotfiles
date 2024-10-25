@@ -16,20 +16,43 @@ return {
 
   -- Automagical editing and creation of snippets.
   -- https://github.com/chrisgrieser/nvim-scissors
+  -- https://code.visualstudio.com/docs/editor/userdefinedsnippets
+  -- https://code.visualstudio.com/api/language-extensions/snippet-guide
+  -- https://github.com/L3MON4D3/LuaSnip/blob/master/DOC.md#vs-code
   {
     "chrisgrieser/nvim-scissors",
-    dependencies = { "nvim-telescope/telescope.nvim", "garymjr/nvim-snippets" },
+    dependencies = {
+      "nvim-telescope/telescope.nvim",
+      {
+        "garymjr/nvim-snippets",
+        opts = {
+          search_paths = { vim.fn.stdpath("config") .. "snippets" },
+        },
+      },
+      {
+        "neovim/nvim-lspconfig",
+        opts = {
+          settings = {
+            snippet = {
+              enable = true,
+              source = vim.fn.stdpath("config") .. "snippets",
+            },
+          },
+        },
+      },
+    },
     opts = {
+      jsonFormatter = "jq",
       snippetDir = vim.fn.stdpath("config") .. "snippets",
     },
     keys = {
       {
-        "<leader>os",
+        "<leader>ose",
         "<cmd> lua require('scissors').editSnippet() <CR>",
         desc = "Edit snippet",
       },
       {
-        "<leader>oS",
+        "<leader>oss",
         "<cmd> lua require('scissors').addNewSnippet() <CR>",
         desc = "Add snippet",
       },

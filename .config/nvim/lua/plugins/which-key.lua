@@ -14,9 +14,14 @@ return {
         { "<leader>l", hidden = true },
         { "<leader>L", hidden = true },
         -- groups
+        { "<leader>dG", group = "Godot" },
         { "<leader>m", group = "markers" },
         { "<leader>n", group = "notes" },
-        { "<leader> ", group = "godot" },
+        { "<leader>od", group = "database" },
+        { "<leader>ol", group = "Laravel" },
+        { "<leader>os", group = "snippets" },
+        { "<leader>xa", group = "Avante" },
+        { "<leader>xs", group = "NeoAI" },
         -- bindings
         {
           "<leader>qL",

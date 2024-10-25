@@ -1,7 +1,3 @@
-local keymap = require("utils.keymap")
-local bind = keymap.bind
-local desc = keymap.desc
-
 return {
   -- abolish.vim: Work with several variants of a word at once
   -- https://github.com/tpope/vim-abolish
@@ -65,20 +61,6 @@ return {
       end
 
       _G.FindNotes = findNotes
-
-      bind("nv", "<leader>ni", "<cmd> Neorg index <CR>", desc("Index"))
-      bind("nv", "<leader>nn", "<cmd> Neorg workspace notes <CR>", desc("Workspace Notes"))
-      bind("nv", "<leader>ns", "<cmd> Neorg workspace scratches <CR>", desc("Workspace Scratches"))
-      bind("nv", "<leader>nw", "<cmd> Neorg workspace work <CR>", desc("Workspace Work"))
-      bind("nv", "<leader>nt", "<cmd> Neorg tangle current-file <CR>", desc("Tangle current file"))
-      bind("nv", "<leader>nv", "<cmd> Neorg toggle-concealer <CR>", desc("Toggle concealer"))
-      bind("nv", "<leader>nS", "<cmd> Neorg generate-workspace-summary <CR>", desc("Generate workspace summary"))
-      bind("nv", "<leader>nk", "<cmd> Neorg keybind <CR>", desc("Keybind"))
-      bind("nv", "<leader>nm", "<cmd> Neorg inject-metadata <CR>", desc("Inject metadata"))
-      bind("nv", "<leader>nq", "<cmd> Neorg return <CR>", desc("Quit Neorg"))
-      bind("nv", "<leader>nl", "<cmd> lua FindNotes() <CR>", desc("Find notes"))
-      bind("nv", "<leader>ne", "<cmd> Neorg exec cursor <CR>", desc("Execute code under cursor"))
-      bind("nv", "<leader>nE", "<cmd> Neorg exec current-file <CR>", desc("Execute all blocks in the file"))
     end,
     dependencies = {
       "nvim-lua/plenary.nvim",
@@ -91,6 +73,31 @@ return {
       -- code block execution for neorg (similar to org-eval)
       -- https://github.com/laher/neorg-exec
       "laher/neorg-exec",
+    },
+    keys = {
+      { "<leader>ni", "<cmd> Neorg index <CR>", desc = "Index", mode = { "n", "v" } },
+      { "<leader>nn", "<cmd> Neorg workspace notes <CR>", desc = "Workspace Notes", mode = { "n", "v" } },
+      { "<leader>ns", "<cmd> Neorg workspace scratches <CR>", desc = "Workspace Scratches", mode = { "n", "v" } },
+      { "<leader>nw", "<cmd> Neorg workspace work <CR>", desc = "Workspace Work", mode = { "n", "v" } },
+      { "<leader>nt", "<cmd> Neorg tangle current-file <CR>", desc = "Tangle current file", mode = { "n", "v" } },
+      { "<leader>nv", "<cmd> Neorg toggle-concealer <CR>", desc = "Toggle concealer", mode = { "n", "v" } },
+      {
+        "<leader>nS",
+        "<cmd> Neorg generate-workspace-summary <CR>",
+        desc = "Generate workspace summary",
+        mode = { "n", "v" },
+      },
+      { "<leader>nk", "<cmd> Neorg keybind <CR>", desc = "Keybind", mode = { "n", "v" } },
+      { "<leader>nm", "<cmd> Neorg inject-metadata <CR>", desc = "Inject metadata", mode = { "n", "v" } },
+      { "<leader>nq", "<cmd> Neorg return <CR>", desc = "Quit Neorg", mode = { "n", "v" } },
+      { "<leader>nl", "<cmd> lua FindNotes() <CR>", desc = "Find notes", mode = { "n", "v" } },
+      { "<leader>ne", "<cmd> Neorg exec cursor <CR>", desc = "Execute code under cursor", mode = { "n", "v" } },
+      {
+        "<leader>nE",
+        "<cmd> Neorg exec current-file <CR>",
+        desc = "Execute all blocks in the file",
+        mode = { "n", "v" },
+      },
     },
     lazy = false,
     opts = {
@@ -112,7 +119,9 @@ return {
         },
         ["core.integrations.nvim-cmp"] = {},
         ["core.integrations.telescope"] = {},
+        ["core.integrations.treesitter"] = {},
         ["core.summary"] = {},
+        ["core.syntax"] = {},
         ["external.exec"] = {},
       },
     },

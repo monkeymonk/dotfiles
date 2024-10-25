@@ -45,14 +45,12 @@ return {
       "NeoAIInjectContext",
       "NeoAIInjectContextCode",
     },
-    config = function(_, opts)
-      require("neoai").setup(opts)
-
-      bind("nv", "<leader>xc", "<cmd> NeoAIContext <CR>", desc("NeoAIContext"))
-      bind("nv", "<leader>xv", "<cmd> NeoAIToggle <CR>", desc("NeoAIToggle"))
-    end,
     dependencies = "MunifTanjim/nui.nvim",
     event = "VeryLazy",
+    keys = {
+      { "<leader>xc", "<cmd> NeoAIContext <CR>", desc = "NeoAIContext", mode = { "n", "v" } },
+      { "<leader>xv", "<cmd> NeoAIToggle <CR>", desc = "NeoAIToggle", mode = { "n", "v" } },
+    },
     opts = {
       models = {
         {
@@ -124,5 +122,71 @@ return {
       },
       ui = { width = 40 },
     },
+  },
+
+  -- Use your Neovim like using Cursor AI IDE!
+  -- https://github.com/yetone/avante.nvim
+  {
+    "yetone/avante.nvim",
+    build = "make",
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "stevearc/dressing.nvim",
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      --- The below dependencies are optional,
+      "nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
+      {
+        -- support for image pasting
+        "HakonHarnes/img-clip.nvim",
+        event = "VeryLazy",
+        opts = {
+          -- recommended settings
+          default = {
+            embed_image_as_base64 = false,
+            prompt_for_file_name = false,
+            drag_and_drop = {
+              insert_mode = true,
+            },
+            -- required for Windows users
+            use_absolute_path = true,
+          },
+        },
+      },
+      {
+        -- Make sure to set this up properly if you have lazy=true
+        "MeanderingProgrammer/render-markdown.nvim",
+        opts = {
+          file_types = { "markdown", "Avante" },
+        },
+        ft = { "markdown", "Avante" },
+      },
+    },
+    event = "VeryLazy",
+    lazy = false,
+    opts = {
+      auto_suggestions_provider = "openai",
+      behaviour = {
+        support_paste_from_clipboard = true,
+      },
+      mappings = {
+        ask = "<leader>xaa",
+        edit = "<leader>xae",
+        refresh = "<leader>xar",
+        focus = "<leader>xaf",
+        toggle = {
+          default = "<leader>xat",
+          debug = "<leader>xad",
+          hint = "<leader>xah",
+          suggestion = "<leader>xas",
+          repomap = "<leader>xaR",
+        },
+      },
+      openai = {
+        model = "gpt-4o-mini",
+      },
+      provider = "openai",
+    },
+    version = false,
   },
 }
