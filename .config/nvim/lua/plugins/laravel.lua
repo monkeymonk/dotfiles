@@ -78,31 +78,41 @@ return {
         },
       },
     },
+  },
 
-    -- @TODO: add blade parser
-    --[[ {
-      "nvim-treesitter/nvim-treesitter",
-      config = function()
-        local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-
-        parser_config.blade = {
-          filetype = "blade",
-          install_info = {
-            branch = "main",
-            files = { "src/parser.c" },
-            url = "https://github.com/EmranMR/tree-sitter-blade",
-          },
-        }
-
-        vim.filetype.add({
-          pattern = {
-            [".*%.blade%.php"] = "blade",
-          },
-        })
-      end,
-      opts = {
-        ensure_installed = { "blade", "php" },
+  -- @NOTE: This messup blade auto-format...
+  --[[ {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        blade = { "blade-formatter", "rustywind" },
       },
-    }, ]]
+    },
+  }, ]]
+
+  -- tree-sitter grammar for Laravel blade files
+  -- https://github.com/EmranMR/tree-sitter-blade
+  {
+    "EmranMR/tree-sitter-blade",
+    dependencies = "nvim-treesitter/nvim-treesitter",
+    config = function()
+      local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+      parser_config.blade = {
+        filetype = "blade",
+        install_info = {
+          branch = "main",
+          files = { "src/parser.c" },
+          generate_requires_npm = true,
+          requires_generate_from_grammar = true,
+          url = "https://github.com/EmranMR/tree-sitter-blade",
+        },
+      }
+
+      vim.filetype.add({
+        pattern = {
+          [".*%.blade%.php"] = "blade",
+        },
+      })
+    end,
   },
 }
