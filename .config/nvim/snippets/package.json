@@ -6,30 +6,19 @@
   "contributes": {
     "snippets": [
       {
-        "language": "python",
-        "path": "./python.json"
-      },
-      {
         "language": "lua",
-        "path": "./project-specific/nvim-lua.json"
-      },
-      {
-        "language": [
-          "javascript",
-          "typescript"
-        ],
-        "path": "./javascript.json"
-      },
-      {
-        "language": "all",
-        "path": "./allFiletypes.json"
+        "path": "./nvim-lua.json"
       },
       {
         "language": [
           "gitcommit",
           "NeogitCommitMessage"
         ],
-        "path": "snippets/gitcommit.json"
+        "path": "./gitcommit.json"
+      },
+      {
+        "language": "all",
+        "path": "./allFiletypes.json"
       }
     ]
   },

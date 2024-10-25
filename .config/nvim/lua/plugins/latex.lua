@@ -33,9 +33,9 @@ return {
         group = vim.api.nvim_create_augroup("vimtex_mapping_descriptions", { clear = true }),
         pattern = "tex",
         callback = function(event)
-          local opts = { buffer = event.buf, mode = "n", prefix = "<leader>" }
+          local opts = { buffer = event.buf, mode = "n", prefix = "<leader>n" }
           local mappings = {
-            l = {
+            L = {
               name = "+VimTex",
               a = "Show Context Menu",
               C = "Full Clean",

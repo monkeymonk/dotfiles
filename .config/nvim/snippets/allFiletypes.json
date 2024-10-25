@@ -1,0 +1,6 @@
+{
+  "file exists": {
+    "body": "local fileExists = vim.uv.fs_stat(\"${1:filepath}\") ~= nil",
+    "prefix": "file exists"
+  }
+}
