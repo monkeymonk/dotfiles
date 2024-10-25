@@ -10,6 +10,11 @@ return {
                 unkiwnAtRule = "ignore",
               },
             },
+            scss = {
+              lint = {
+                unkiwnAtRule = "ignore",
+              },
+            },
           },
         },
       },

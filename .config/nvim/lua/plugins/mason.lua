@@ -40,6 +40,33 @@ return {
         "typescript-language-server",
         "vue-language-server",
       },
+      handlers = {
+        function(config)
+          -- all sources with no handler get passed here
+
+          -- Keep original functionality
+          require("mason-nvim-dap").default_setup(config)
+        end,
+        php = function(config)
+          config.configurations = {
+            {
+              type = "php",
+              request = "launch",
+              name = "Listen for Xdebug",
+              port = 9003,
+              pathMappings = {
+                -- For some reason xdebug sometimes fails for me, depending on me
+                -- using herd or docker. To get it to work, change the order of the mappings.
+                -- The first mapping should be the one that you are actively using.
+                -- This only started recently, so I don't know what changed.
+                ["${workspaceFolder}"] = "${workspaceFolder}",
+                ["/var/www/html"] = "${workspaceFolder}",
+              },
+            },
+          }
+          require("mason-nvim-dap").default_setup(config) -- don't forget this!
+        end,
+      },
     },
   },
 }

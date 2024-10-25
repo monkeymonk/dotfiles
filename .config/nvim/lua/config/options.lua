@@ -34,9 +34,3 @@ if g.neovide then
   g.neovide_cursor_trail_length = 0 -- Disable cursor trail effect.
   g.neovide_scale_factor = 0.8 -- Set the scaling factor for the Neovide window.
 end
-
-vim.filetype.add({
-  pattern = {
-    [".*%.blade%.php"] = "blade",
-  },
-})

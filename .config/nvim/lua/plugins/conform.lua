@@ -16,7 +16,6 @@ return {
           lsp_format = "fallback", -- not recommended to change
         },
         formatters_by_ft = {
-          blade = { "blade-formatter", "rustywind" },
           css = { "stylelint", "prettier" },
           fish = { "fish_indent" },
           go = { "gofumpt", "golines" },
