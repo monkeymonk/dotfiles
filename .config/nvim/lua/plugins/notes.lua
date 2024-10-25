@@ -1,7 +1,7 @@
 return {
   -- abolish.vim: Work with several variants of a word at once
   -- https://github.com/tpope/vim-abolish
-  { "tpope/vim-abolish" },
+  { "tpope/vim-abolish", event = "VeryLazy" },
 
   -- Correct common typos and misspellings as you type in Vim
   -- https://github.com/panozzaj/vim-autocorrect
@@ -12,11 +12,11 @@ return {
 
   -- An asynchronous grammar checker for Neovim using LanguageTool
   -- https://github.com/vigoux/LanguageTool.nvim
-  { "vigoux/LanguageTool.nvim" },
+  { "vigoux/LanguageTool.nvim", event = "VeryLazy" },
 
   -- Use any external translate command/API in nvim.
   -- https://github.com/uga-rosa/translate.nvim
-  { "uga-rosa/translate.nvim" },
+  { "uga-rosa/translate.nvim", event = "VeryLazy" },
 
   -- Modernity meets insane extensibility. The future of organizing your life in Neovim.
   -- https://github.com/nvim-neorg/neorg

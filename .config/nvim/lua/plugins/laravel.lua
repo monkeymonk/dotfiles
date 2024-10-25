@@ -1,7 +1,10 @@
 return {
   -- Vim syntax highlighting for Blade templates.
   -- https://github.com/jwalton512/vim-blade
-  { "jwalton512/vim-blade" },
+  {
+    "jwalton512/vim-blade",
+    ft = { "blade", "php" },
+  },
 
   -- Navigating Blade views within Laravel projects
   -- https://github.com/RicardoRamirezR/blade-nav.nvim
@@ -26,12 +29,12 @@ return {
       "MunifTanjim/nui.nvim",
       "kevinhwang91/promise-async",
     },
+    ft = { "blade", "php" },
     keys = {
       { "<leader>ola", ":Laravel artisan<cr>" },
       { "<leader>olr", ":Laravel routes<cr>" },
       { "<leader>olm", ":Laravel related<cr>" },
     },
-    event = "VeryLazy",
   },
 
   -- Quickstart configs for Nvim LSP
@@ -75,5 +78,31 @@ return {
         },
       },
     },
+
+    -- @TODO: add blade parser
+    --[[ {
+      "nvim-treesitter/nvim-treesitter",
+      config = function()
+        local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+
+        parser_config.blade = {
+          filetype = "blade",
+          install_info = {
+            branch = "main",
+            files = { "src/parser.c" },
+            url = "https://github.com/EmranMR/tree-sitter-blade",
+          },
+        }
+
+        vim.filetype.add({
+          pattern = {
+            [".*%.blade%.php"] = "blade",
+          },
+        })
+      end,
+      opts = {
+        ensure_installed = { "blade", "php" },
+      },
+    }, ]]
   },
 }

@@ -3,6 +3,7 @@ return {
   -- https://github.com/stevearc/conform.nvim
   {
     "stevearc/conform.nvim",
+    event = "BufWritePre",
     opts = function()
       local util = require("conform.util")
 
@@ -71,10 +72,6 @@ return {
             },
             stdin = true,
           },
-        },
-        format_on_save = {
-          timeout_ms = 1000,
-          lsp_fallback = true,
         },
       }
     end,

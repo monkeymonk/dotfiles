@@ -7,6 +7,7 @@ return {
       require("spooky").setup(opts)
     end,
     dependencies = "nvim-telescope/telescope.nvim",
+    event = "VeryLazy",
     opts = {
       ui = {
         select = "telescope",

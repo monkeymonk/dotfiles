@@ -65,7 +65,7 @@ return {
         end,
       })
     end,
-    ft = "tex",
+    ft = { "markdown", "tex" },
   },
 
   -- A Vim Plugin for Lively Previewing LaTeX PDF Output

@@ -47,5 +47,6 @@ return {
     config = function(_, opts)
       require("slides").setup(opts)
     end,
+    ft = "markdown",
   },
 }

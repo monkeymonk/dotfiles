@@ -17,6 +17,7 @@ return {
         end,
       })
     end,
+    event = "VeryLazy",
     ft = { "gd", "gdscript" },
     init = function()
       vim.g.godot_executable = os.getenv("HOME") .. "/GodotEngine/Godot_v4.3-stable_linux.x86_64"

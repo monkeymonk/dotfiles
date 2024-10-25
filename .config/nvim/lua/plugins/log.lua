@@ -6,5 +6,6 @@ return {
     config = function(_, opts)
       require("log-highlight").setup(opts)
     end,
+    event = "VeryLazy",
   },
 }

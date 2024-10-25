@@ -163,7 +163,6 @@ return {
       },
     },
     event = "VeryLazy",
-    lazy = false,
     opts = {
       auto_suggestions_provider = "openai",
       behaviour = {
