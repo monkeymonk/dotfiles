@@ -1,7 +1,3 @@
-local keymap = require("utils.keymap")
-local bind = keymap.bind
-local desc = keymap.desc
-
 return {
   -- Snippet Engine for Neovim written in Lua.
   -- https://github.com/L3MON4D3/LuaSnip
@@ -41,10 +37,7 @@ return {
         },
       },
     },
-    opts = {
-      jsonFormatter = "jq",
-      snippetDir = vim.fn.stdpath("config") .. "snippets",
-    },
+    event = "VeryLazy",
     keys = {
       {
         "<leader>ose",
@@ -57,6 +50,10 @@ return {
         desc = "Add snippet",
       },
     },
+    opts = {
+      jsonFormatter = "jq",
+      snippetDir = vim.fn.stdpath("config") .. "snippets",
+    },
   },
 
   -- Improved Yank and Put functionalities for Neovim
@@ -67,24 +64,46 @@ return {
     config = function(_, opts)
       require("yanky").setup(opts)
       require("telescope").load_extension("yank_history")
-
-      bind("nv", "p", "<Plug>(YankyPutAfter)", desc("Paste after"))
-      bind("nv", "P", "<Plug>(YankyPutBefore)", desc("Paste before"))
-      bind("nv", "gp", "<Plug>(YankyGPutAfter)", desc("Yanky put after"))
-      bind("nv", "gP", "<Plug>(YankyGPutBefore)", desc("Yanky put before"))
-      bind("nv", "<C-n>", "<Plug>(YankyCycleForward)", desc("Yanky cycle forward"))
-      bind("nv", "<C-p>", "<Plug>(YankyCycleBackward)", desc("Yanky cycle backward"))
-      bind(
-        "nv",
-        "gH",
-        "<cmd> lua require('telescope').extensions.yank_history.yank_history() <CR>",
-        desc("Yanky history")
-      )
     end,
     keys = {
       {
         "<leader>oh",
         "<cmd> Telescope yank_history <CR>",
+        desc = "Yanky history",
+      },
+      {
+        "p",
+        "<Plug>(YankyPutAfter)",
+        desc = "Paste after",
+      },
+      {
+        "P",
+        "<Plug>(YankyPutBefore)",
+        desc = "Paste before",
+      },
+      {
+        "gp",
+        "<Plug>(YankyGPutAfter)",
+        desc = "Yanky put after",
+      },
+      {
+        "gP",
+        "<Plug>(YankyGPutBefore)",
+        desc = "Yanky put before",
+      },
+      {
+        "<C-n>",
+        "<Plug>(YankyCycleForward)",
+        desc = "Yanky cycle forward",
+      },
+      {
+        "<C-p>",
+        "<Plug>(YankyCycleBackward)",
+        desc = "Yanky cycle backward",
+      },
+      {
+        "gH",
+        "<cmd> lua require('telescope').extensions.yank_history.yank_history() <CR>",
         desc = "Yanky history",
       },
     },

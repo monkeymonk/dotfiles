@@ -17,6 +17,7 @@ return {
     "jiaoshijie/undotree",
     dependencies = "nvim-lua/plenary.nvim",
     config = true,
+    event = "VeryLazy",
     keys = {
       { "<leader>bu", "<cmd>lua require('undotree').toggle()<cr>", desc = "Undotree toggle", mode = "n" },
     },

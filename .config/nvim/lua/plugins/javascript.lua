@@ -1,7 +1,3 @@
-local keymap = require("utils.keymap")
-local bind = keymap.bind
-local desc = keymap.desc
-
 return {
   -- All the npm/yarn/pnpm commands I don't want to type
   -- https://github.com/vuki656/package-info.nvim
@@ -25,23 +21,24 @@ return {
       })
 
       telescope.load_extension("package_info")
-
-      bind("n", "<leader>rS", "<cmd> lua require('package-info').show() <CR>", desc("Show dependencies latest version"))
-      bind("n", "<leader>rs", "<cmd> lua require('package-info').toggle() <CR>", desc("Toggle dependency versions"))
-      bind("n", "<leader>ra", "<cmd> lua require('package-info').install() <CR>", desc("Install a new dependency"))
-      bind(
-        "n",
-        "<leader>ru",
-        "<cmd> lua require('package-info').change_version() <CR>",
-        desc("Install a different dependency version")
-      )
     end,
     dependencies = "MunifTanjim/nui.nvim",
+    event = "VeryLazy",
     ft = "json",
+    keys = {
+      { "<leader>rS", "<cmd> lua require('package-info').show() <CR>", desc = "Show dependencies latest version" },
+      { "<leader>rs", "<cmd> lua require('package-info').toggle() <CR>", desc = "Toggle dependency versions" },
+      { "<leader>ra", "<cmd> lua require('package-info').install() <CR>", desc = "Install a new dependency" },
+      {
+        "<leader>ru",
+        "<cmd> lua require('package-info').change_version() <CR>",
+        desc = "Install a different dependency version",
+      },
+    },
     opts = {
       colors = {
-        up_to_date = "#0DB9D7",
         outdated = "#d19a66",
+        up_to_date = "#0DB9D7",
       },
       hide_unstable_versions = true,
       package_manager = "npm",

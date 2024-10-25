@@ -9,6 +9,7 @@ return {
       "nvim-telescope/telescope.nvim",
     },
     config = true,
+    event = "VeryLazy",
     keys = {
       {
         "<leader>gg",
@@ -68,6 +69,7 @@ return {
     config = function()
       require("telescope").load_extension("advanced_git_search")
     end,
+    event = "VeryLazy",
     keys = {
       {
         "<leader>gB",
@@ -100,6 +102,7 @@ return {
   -- https://github.com/emmanueltouzery/agitator.nvim
   {
     "emmanueltouzery/agitator.nvim",
+    event = "VeryLazy",
     keys = {
       {
         "<leader>gt",
@@ -113,5 +116,10 @@ return {
 
   -- A plugin to visualise and resolve merge conflicts in neovim
   -- https://github.com/akinsho/git-conflict.nvim
-  { "akinsho/git-conflict.nvim", version = "*", config = true },
+  {
+    "akinsho/git-conflict.nvim",
+    config = true,
+    event = "VeryLazy",
+    version = "*",
+  },
 }
