@@ -5,7 +5,7 @@ return {
     "iamcco/markdown-preview.nvim",
     build = "cd app && npm install",
     enabled = true,
-    ft = "markdown",
+    ft = { "markdown", "pandoc" },
     init = function()
       vim.g.mkdp_filetypes = { "markdown" }
     end,
@@ -16,7 +16,7 @@ return {
   {
     "vim-pandoc/vim-pandoc",
     dependencies = "vim-pandoc/vim-pandoc-syntax",
-    ft = "markdown",
+    ft = { "markdown", "pandoc" },
     init = function()
       vim.g.pandoc_filetypes_handled = { "pandoc", "markdown" }
       vim.g.pandoc_filetypes_pandoc_markdown = 0
@@ -34,7 +34,7 @@ return {
   {
     "jghauser/auto-pandoc.nvim",
     dependencies = "nvim-lua/plenary.nvim",
-    ft = "markdown",
+    ft = { "markdown", "pandoc" },
   },
 
   -- TODO: check https://mfontanini.github.io/presenterm/
@@ -47,6 +47,6 @@ return {
     config = function(_, opts)
       require("slides").setup(opts)
     end,
-    ft = "markdown",
+    ft = { "markdown", "pandoc" },
   },
 }
