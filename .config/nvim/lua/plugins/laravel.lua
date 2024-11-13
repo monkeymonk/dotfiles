@@ -54,7 +54,7 @@ return {
                 associations = { "*.php", "*.blade.php" }, -- Associating .blade.php files as well
                 maxSize = 5000000,
               },
-              stubs = { "psr-4" },
+              stubs = { "psr-2" },
             },
           },
         },

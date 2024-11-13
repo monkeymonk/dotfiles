@@ -1,5 +1,5 @@
 local wezterm = require("wezterm")
-local h = require("utils/helpers")
+-- local h = require("utils/helpers")
 local c = require("utils/color_scheme")
 local config = wezterm.config_builder()
 
@@ -9,14 +9,18 @@ config.font = wezterm.font("FiraCode Nerd Font")
 config.enable_tab_bar = false
 config.use_fancy_tab_bar = false
 config.window_background_opacity = 0.8
-
 config.set_environment_variables = {
 	-- BAT_THEME = "Catppuccin-mocha",
 	LC_ALL = "en_US.UTF-8",
 }
 
+-- Enable image support
+config.enable_kitty_graphics = true
+-- config.term = "xterm-kitty"
+
 config.adjust_window_size_when_changing_font_size = false
-config.debug_key_events = false
+config.debug_key_events = true
+-- config.hide_mouse_cursor_when_typing = false
 -- config.window_decorations = "RESIZE"
 config.window_padding = {
 	bottom = 0,
@@ -37,6 +41,11 @@ config.keys = {
 		key = "P",
 		mods = "SHIFT|CTRL",
 		action = wezterm.action.ActivateCommandPalette,
+	},
+	{
+		key = "T",
+		mods = "CTRL",
+		action = wezterm.action.DisableDefaultAssignment,
 	},
 }
 
