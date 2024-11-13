@@ -7,6 +7,7 @@ return {
       require("phpfmt").setup(opts)
     end,
     opts = {
+      auto_format = false,
       standard = "PSR2",
     },
   },
