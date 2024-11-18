@@ -1,0 +1,4 @@
+# ignore NeoVim distribs
+./LazyVim/*
+./NvChad/*
+./kickstart/*
