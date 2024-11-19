@@ -27,7 +27,7 @@ require("lazy").setup({
     -- add LazyVim Extras
     -- @see https://www.lazyvim.org/extras
     { import = "lazyvim.plugins.extras.ai.codeium" },
-    { import = "lazyvim.plugins.extras.coding.blink" },
+    -- { import = "lazyvim.plugins.extras.coding.blink" },
     { import = "lazyvim.plugins.extras.coding.luasnip" },
     { import = "lazyvim.plugins.extras.coding.mini-comment" },
     { import = "lazyvim.plugins.extras.coding.mini-surround" },
@@ -75,6 +75,7 @@ require("lazy").setup({
 
     -- import/override with your plugins
     { import = "plugins" },
+
     -- import custom plugins
     {
       dir = vim.fn.stdpath("config") .. "/monkeymonk/ascii",
