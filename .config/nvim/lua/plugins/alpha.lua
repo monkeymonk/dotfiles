@@ -29,10 +29,10 @@ return {
         callback = function()
           -- Start the timer to call ReloadDashboard every x seconds
           vim.defer_fn(function()
-            timer:start(0, 6000, function()
+            timer:start(0, 7000, function()
               ReloadDashboard()
             end)
-          end, 3000)
+          end, 4000)
 
           -- Set key mappings in the alpha buffer
           vim.api.nvim_buf_set_keymap(0, "n", "l", "<cmd>Lazy<CR>", { noremap = true, silent = true })

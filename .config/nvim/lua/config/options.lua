@@ -28,6 +28,7 @@ opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
 local g = vim.g
 
 -- Neovide is a graphical Vim front-end. These settings only apply if Neovide is in use.
+-- @see https://neovide.dev/
 if g.neovide then
   g.neovide_confirm_quit = true -- Enable confirmation dialog when quitting Neovide.
   g.neovide_cursor_animation_length = 0 -- Disable cursor animation.

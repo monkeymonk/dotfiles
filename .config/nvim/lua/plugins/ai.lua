@@ -163,11 +163,13 @@ return {
       },
     },
     event = "VeryLazy",
+    lazy = false,
     opts = {
       auto_suggestions_provider = "openai",
       behaviour = {
         support_paste_from_clipboard = true,
       },
+      debug = true,
       mappings = {
         ask = "<leader>xaa",
         edit = "<leader>xae",
