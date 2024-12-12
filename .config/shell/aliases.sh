@@ -100,6 +100,7 @@ alias free="free -m"
 alias usage="du -ch | grep total"
 alias most="du -hsx * | sort -rh | head -10"
 alias ip="ip --color=auto"
+alias myip="curl ipv4.icanhazip.com"
 alias diff="diff --color=auto"
 # alias ssh="TERM=xterm-kitty ssh"
 
