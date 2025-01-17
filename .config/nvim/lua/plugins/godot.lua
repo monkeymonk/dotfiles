@@ -1,4 +1,18 @@
 -- @TODO: dynamise Godot path/version
+
+-- Function to detect if a project.godot file exists in the current directory
+local function is_godot_project()
+  local project_file = vim.fn.getcwd() .. "/project.godot"
+  return vim.fn.filereadable(project_file) == 1
+end
+
+if not is_godot_project() then
+  return {}
+end
+
+local GDPATH = os.getenv("HOME")
+  .. "/GodotEngine/Godot_v4.3-stable_mono_linux_x86_64/Godot_v4.3-stable_mono_linux.x86_64"
+
 return {
   -- Use vim and godot engine to make games
   -- https://github.com/habamax/vim-godot
@@ -20,12 +34,13 @@ return {
     event = "VeryLazy",
     ft = { "gd", "gdscript" },
     init = function()
-      vim.g.godot_executable = os.getenv("HOME") .. "/GodotEngine/Godot_v4.3-stable_linux.x86_64"
+      vim.g.godot_executable = GDPATH
     end,
   },
 
   -- Run and debug your Godot game in neovim
   -- https://github.com/Lommix/godot.nvim
+  -- nvim --listen ~/.cache/nvim/godot.pipe .
   {
     "lommix/godot.nvim",
     ft = { "gd", "gdscript" },
@@ -37,39 +52,58 @@ return {
       --   mode = "n",
       -- },
       {
-        "<leader>dGc",
+        "<leader>Ggc",
         "<cmd>lua require('godot').debugger.continue()<CR>",
-        desc = "Continue Godot Debugger",
+        desc = "Godot: Continue Debugger",
         mode = "n",
       },
       {
-        "<leader>dGd",
+        "<leader>Ggd",
         "<cmd>lua require('godot').debugger.debug()<CR>",
-        desc = "Run Godot Debugger",
+        desc = "Godot: Run Debugger",
         mode = "n",
       },
       {
-        "<leader>dGD",
+        "<leader>GgD",
         "<cmd>lua require('godot').debugger.debug_at_cursor()<CR>",
-        desc = "Run Godot Debugger at Cursor",
+        desc = "Godot: Run Debugger at Cursor",
         mode = "n",
       },
       {
-        "<leader>dGq",
+        "<leader>Ggq",
         "<cmd>lua require('godot').debugger.quit()<CR>",
-        desc = "Quit Godot Debugger",
+        desc = "Godot: Quit Debugger",
         mode = "n",
       },
       {
-        "<leader>dGs",
+        "<leader>Ggn",
         "<cmd>lua require('godot').debugger.step()<CR>",
-        desc = "Step Godot Debugger",
+        desc = "Godot: Step Debugger",
         mode = "n",
       },
     },
     opts = {
-      bin = os.getenv("HOME") .. "/GodotEngine/Godot_v4.3-stable_linux.x86_64",
+      bin = GDPATH,
     },
+    init = function()
+      local pipepath = vim.fn.stdpath("cache") .. "/godot.pipe"
+
+      -- Check if the pipepath is already in the server list
+      local function is_server_running(pipe)
+        local servers = vim.fn.serverlist()
+        for _, server in ipairs(servers) do
+          if server == pipe then
+            return true
+          end
+        end
+        return false
+      end
+
+      -- If the server is running, "serverstart" automatically sets up Neovim to listen on the given pipe
+      if not vim.loop.fs_stat(pipepath) and not is_server_running(pipepath) then
+        vim.fn.serverstart(pipepath)
+      end
+    end,
   },
 
   -- Quickstart configs for Nvim LSP
@@ -89,12 +123,15 @@ return {
   -- https://github.com/nvim-treesitter/nvim-treesitter
   {
     "nvim-treesitter/nvim-treesitter",
+    ft = { "gd", "gdscript", "gdshader" },
     opts = {
       ensure_installed = {
         "gdscript",
         "godot_resource",
         "gdshader",
       },
+      highlight = { enable = true },
+      indent = { enable = false },
     },
   },
 
@@ -108,9 +145,9 @@ return {
       -- Godot stuff
       -- @see https://docs.godotengine.org/en/stable/tutorials/editor/external_editor.html#lsp-dap-support
       dap.adapters.godot = {
-        debugServer = 6006,
+        -- debugServer = 6006,
         host = "127.0.0.1",
-        port = 6007,
+        port = 6006,
         type = "server",
       }
 
@@ -118,11 +155,56 @@ return {
         {
           launch_scene = true,
           name = "Launch scene",
-          project = "${workspaceFolder}/src",
+          project = "${workspaceFolder}",
           request = "launch",
           type = "godot",
         },
       }
     end,
+    keys = {
+      {
+        "<leader>Gds",
+        "<cmd>lua require('dap').continue()<CR>",
+        desc = "Debug: Start/Continue",
+        mode = "n",
+      },
+      {
+        "<leader>Gdq",
+        "<cmd>lua require('dap').terminate(); require('dapui').close()<CR>",
+        desc = "Debug: Quit",
+        mode = "n",
+      },
+      {
+        "<leader>Gdn",
+        "<cmd>lua require('dap').step_into()<CR>",
+        desc = "Debug: Step Into",
+        mode = "n",
+      },
+      {
+        "<leader>Gdp",
+        "<cmd>lua require('dap').step_over()<CR>",
+        desc = "Debug: Step Over",
+        mode = "n",
+      },
+      {
+        "<leader>Gdx",
+        "<cmd>lua require('dap').step_out()<CR>",
+        desc = "Debug: Step Out",
+        mode = "n",
+      },
+      {
+        "<leader>Gdb",
+        "<cmd>lua require('dap').toggle_breakpoint()<CR>",
+        desc = "Debug: Toggle Breakpoint",
+        mode = "n",
+      },
+      -- Allow to create conditional breakpoints with given condition (ex. "my_variable = 42") let the prompt empty for no condition.
+      {
+        "<leader>GdB",
+        "<cmd>lua require('dap').set_breakpoint(vim.fn.input('Breakpoint condition: '))<CR>",
+        desc = "Debug: Set Breakpoint",
+        mode = "n",
+      },
+    },
   },
 }
