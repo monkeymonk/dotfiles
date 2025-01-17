@@ -14,7 +14,7 @@ return {
         { "<leader>l", hidden = true },
         { "<leader>L", hidden = true },
         -- groups
-        { "<leader>dG", group = "Godot" },
+        { "<leader>G", group = "Godot" },
         { "<leader>m", group = "markers" },
         { "<leader>n", group = "notes" },
         { "<leader>od", group = "database" },
