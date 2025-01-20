@@ -8,14 +8,14 @@ return {
 
   -- Navigating Blade views within Laravel projects
   -- https://github.com/RicardoRamirezR/blade-nav.nvim
-  {
-    "ricardoramirezr/blade-nav.nvim",
-    dependencies = "hrsh7th/nvim-cmp",
-    ft = { "blade", "php" },
-    opts = {
-      close_tag_on_complete = true, -- default: true
-    },
-  },
+  -- {
+  --   "ricardoramirezr/blade-nav.nvim",
+  --   dependencies = "hrsh7th/nvim-cmp",
+  --   ft = { "blade", "php" },
+  --   opts = {
+  --     close_tag_on_complete = true, -- default: true
+  --   },
+  -- },
 
   -- Best Laravel development experience with Neovim
   -- https://adalessa.github.io/laravel-nvim-docs/
