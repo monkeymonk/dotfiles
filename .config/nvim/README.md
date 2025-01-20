@@ -1,7 +1,7 @@
 ```    _______   ____ ___
    ╱       ╲╲╱    ╱   ╲
-  ╱        ╱╱         ╱    Monkey Monk
- ╱         ╱╱       _╱     http://monkeymonk.be
+  ╱        ╱╱         ╱    Stéphan Zych
+ ╱         ╱╱       _╱     https://stephan.zych.be
  ╲__╱__╱__╱╲╲___╱___╱
 ```
 

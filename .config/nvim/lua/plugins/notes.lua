@@ -74,6 +74,7 @@ return {
       -- https://github.com/laher/neorg-exec
       "laher/neorg-exec",
     },
+    enabled = false,
     keys = {
       { "<leader>ni", "<cmd> Neorg index <CR>", desc = "Index", mode = { "n", "v" } },
       { "<leader>nn", "<cmd> Neorg workspace notes <CR>", desc = "Workspace Notes", mode = { "n", "v" } },

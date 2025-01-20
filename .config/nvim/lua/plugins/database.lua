@@ -4,7 +4,7 @@ return {
   -- https://github.com/kristijanhusak/vim-dadbod-completion
   {
     "kristijanhusak/vim-dadbod-completion",
-    config = function()
+    setup = function()
       require("cmp").setup.filetype({ "sql", "mysql", "plsql" }, {
         sources = {
           { name = "vim-dadbod-completion" },
