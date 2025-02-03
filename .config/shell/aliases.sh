@@ -92,8 +92,8 @@ alias rm="rm -i"
 
 # Additional Usability Aliases
 alias curl="curl --compressed"
-alias df="df -h"   # human-readable sizes
-alias du="f"       # disk usage
+alias df="df -h" # human-readable sizes
+#alias du="f"       # disk usage
 alias fu="du -ch"  # folder usage
 alias tfu="du -sh" # total folder usage
 alias free="free -m"
