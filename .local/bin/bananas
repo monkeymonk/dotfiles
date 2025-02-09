@@ -8,7 +8,7 @@ install() {
   # -----------------------------
   # Docker (assumes Docker is installed)
   # -----------------------------
-  # (Docker installation instructions are provided as comments below.)
+  # (Docker installation instructions are provided as comments.)
   # sudo apt-get update
   # sudo apt-get install ca-certificates curl
   # sudo install -m 0755 -d /etc/apt/keyrings
@@ -58,8 +58,8 @@ install() {
   chmod +x webui.sh
 
   echo "Starting AUTOMATIC1111 web UI..."
-  ./webui.sh --api --listen >webui.log 2>&1 &
-  cd -
+  nohup ./webui.sh --api --listen >webui.log 2>&1 &
+  cd - >/dev/null
 
   # -----------------------------
   # ComfyUI
@@ -79,9 +79,10 @@ install() {
   pip install torch torchvision torchaudio
   pip install -r requirements.txt
   echo "Starting ComfyUI..."
-  python3 ComfyUI/main.py >comfyui.log 2>&1 &
+  # Note: The main script is inside the ComfyUI subfolder
+  nohup python3 main.py >comfyui.log 2>&1 &
   deactivate
-  cd -
+  cd - >/dev/null
 }
 
 update() {
@@ -123,6 +124,8 @@ start() {
     echo "Docker container 'open-webui' is already running."
   fi
 
+  open http://127.0.0.1:8080 # Open Web UI (mapped host port)
+
   # -----------------------------
   # 2. Start AUTOMATIC1111 (if not running)
   # -----------------------------
@@ -134,10 +137,12 @@ start() {
       echo "Directory '$AUTOMATIC1111_DIR' not found."
       exit 1
     }
-    ./webui.sh --api --listen >webui.log 2>&1 &
+    nohup ./webui.sh --api --listen >webui.log 2>&1 &
     sleep 3
-    cd -
+    cd - >/dev/null
   fi
+
+  open http://127.0.0.1:7860 # AUTOMATIC1111
 
   # -----------------------------
   # 3. Start ComfyUI (if not running)
@@ -152,34 +157,37 @@ start() {
     }
     if [ -f "venv/bin/activate" ]; then
       source venv/bin/activate
-      python3 ComfyUI/main.py >comfyui.log 2>&1 &
+      # Run the main script from the ComfyUI subfolder
+      nohup python3 main.py >comfyui.log 2>&1 &
       sleep 3
       deactivate
     else
       echo "Virtual environment not found in $COMFYUI_DIR. Please run '$0 install' first."
       exit 1
     fi
-    cd -
+    cd - >/dev/null
   fi
+
+  open http://127.0.0.1:8188 # ComfyUI
 
   # -----------------------------
   # 4. Open the UIs in your browser
   # -----------------------------
-  echo "Opening web interfaces..."
-  if command -v open >/dev/null; then
-    open http://localhost:3000 # Open Web UI
-    open http://127.0.0.1:7860 # AUTOMATIC1111
-    open http://127.0.0.1:8188 # ComfyUI
-  elif command -v xdg-open >/dev/null; then
-    xdg-open http://localhost:3000
-    xdg-open http://127.0.0.1:7860
-    xdg-open http://127.0.0.1:8188
-  else
-    echo "Please open your browser and navigate to:"
-    echo "  - http://localhost:3000 (Open Web UI)"
-    echo "  - http://127.0.0.1:7860 (AUTOMATIC1111)"
-    echo "  - http://127.0.0.1:8188 (ComfyUI)"
-  fi
+  # echo "Opening web interfaces..."
+  # if command -v open >/dev/null; then
+  #   open http://127.0.0.1:8080 # Open Web UI (mapped host port)
+  #   open http://127.0.0.1:7860 # AUTOMATIC1111
+  #   open http://127.0.0.1:8188 # ComfyUI
+  # elif command -v xdg-open >/dev/null; then
+  #   xdg-open http://127.0.0.1:8080
+  #   xdg-open http://127.0.0.1:7860
+  #   xdg-open http://127.0.0.1:8188
+  # else
+  #   echo "Please open your browser and navigate to:"
+  #   echo "  - http://127.0.0.1:8080 (Open Web UI)"
+  #   echo "  - http://127.0.0.1:7860 (AUTOMATIC1111)"
+  #   echo "  - http://127.0.0.1:8188 (ComfyUI)"
+  # fi
 }
 
 stop() {
