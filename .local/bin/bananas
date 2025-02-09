@@ -4,6 +4,10 @@
 AUTOMATIC1111_DIR="$HOME/automatic1111"
 COMFYUI_DIR="$HOME/ComfyUI"
 
+# PID files to record process IDs
+AUTOMATIC1111_PID_FILE="$AUTOMATIC1111_DIR/automatic1111.pid"
+COMFYUI_PID_FILE="$COMFYUI_DIR/comfyui.pid"
+
 install() {
   # -----------------------------
   # Docker (assumes Docker is installed)
@@ -59,6 +63,7 @@ install() {
 
   echo "Starting AUTOMATIC1111 web UI..."
   nohup ./webui.sh --api --listen >webui.log 2>&1 &
+  echo "$!" >"$AUTOMATIC1111_PID_FILE"
   cd - >/dev/null
 
   # -----------------------------
@@ -79,8 +84,8 @@ install() {
   pip install torch torchvision torchaudio
   pip install -r requirements.txt
   echo "Starting ComfyUI..."
-  # Note: The main script is inside the ComfyUI subfolder
   nohup python3 main.py >comfyui.log 2>&1 &
+  echo "$!" >"$COMFYUI_PID_FILE"
   deactivate
   cd - >/dev/null
 }
@@ -93,7 +98,7 @@ update() {
     echo "Updating ComfyUI repository..."
     cd "$COMFYUI_DIR" || exit 1
     git pull
-    cd -
+    cd - >/dev/null
   else
     echo "ComfyUI is not installed."
   fi
@@ -129,8 +134,21 @@ start() {
   # -----------------------------
   # 2. Start AUTOMATIC1111 (if not running)
   # -----------------------------
-  if lsof -i:7860 >/dev/null 2>&1; then
-    echo "AUTOMATIC1111 web UI is already running."
+  if [ -f "$AUTOMATIC1111_PID_FILE" ]; then
+    AUTOMATIC_PID=$(cat "$AUTOMATIC1111_PID_FILE")
+    if ps -p "$AUTOMATIC_PID" >/dev/null 2>&1; then
+      echo "AUTOMATIC1111 web UI is already running."
+    else
+      echo "Stale PID file for AUTOMATIC1111 found. Starting again..."
+      rm "$AUTOMATIC1111_PID_FILE"
+      cd "$AUTOMATIC1111_DIR" || {
+        echo "Directory '$AUTOMATIC1111_DIR' not found."
+        exit 1
+      }
+      nohup ./webui.sh --api --listen >webui.log 2>&1 &
+      echo "$!" >"$AUTOMATIC1111_PID_FILE"
+      cd - >/dev/null
+    fi
   else
     echo "Starting AUTOMATIC1111 web UI..."
     cd "$AUTOMATIC1111_DIR" || {
@@ -138,6 +156,7 @@ start() {
       exit 1
     }
     nohup ./webui.sh --api --listen >webui.log 2>&1 &
+    echo "$!" >"$AUTOMATIC1111_PID_FILE"
     sleep 3
     cd - >/dev/null
   fi
@@ -147,8 +166,24 @@ start() {
   # -----------------------------
   # 3. Start ComfyUI (if not running)
   # -----------------------------
-  if lsof -i:8188 >/dev/null 2>&1; then
-    echo "ComfyUI is already running."
+  if [ -f "$COMFYUI_PID_FILE" ]; then
+    COMFY_PID=$(cat "$COMFYUI_PID_FILE")
+    if ps -p "$COMFY_PID" >/dev/null 2>&1; then
+      echo "ComfyUI is already running."
+    else
+      echo "Stale PID file for ComfyUI found. Starting again..."
+      rm "$COMFYUI_PID_FILE"
+      cd "$COMFYUI_DIR" || {
+        echo "Directory '$COMFYUI_DIR' not found."
+        exit 1
+      }
+      source venv/bin/activate
+      nohup python3 main.py >comfyui.log 2>&1 &
+      echo "$!" >"$COMFYUI_PID_FILE"
+      sleep 3
+      deactivate
+      cd - >/dev/null
+    fi
   else
     echo "Starting ComfyUI..."
     cd "$COMFYUI_DIR" || {
@@ -157,8 +192,8 @@ start() {
     }
     if [ -f "venv/bin/activate" ]; then
       source venv/bin/activate
-      # Run the main script from the ComfyUI subfolder
       nohup python3 main.py >comfyui.log 2>&1 &
+      echo "$!" >"$COMFYUI_PID_FILE"
       sleep 3
       deactivate
     else
@@ -169,25 +204,6 @@ start() {
   fi
 
   open http://127.0.0.1:8188 # ComfyUI
-
-  # -----------------------------
-  # 4. Open the UIs in your browser
-  # -----------------------------
-  # echo "Opening web interfaces..."
-  # if command -v open >/dev/null; then
-  #   open http://127.0.0.1:8080 # Open Web UI (mapped host port)
-  #   open http://127.0.0.1:7860 # AUTOMATIC1111
-  #   open http://127.0.0.1:8188 # ComfyUI
-  # elif command -v xdg-open >/dev/null; then
-  #   xdg-open http://127.0.0.1:8080
-  #   xdg-open http://127.0.0.1:7860
-  #   xdg-open http://127.0.0.1:8188
-  # else
-  #   echo "Please open your browser and navigate to:"
-  #   echo "  - http://127.0.0.1:8080 (Open Web UI)"
-  #   echo "  - http://127.0.0.1:7860 (AUTOMATIC1111)"
-  #   echo "  - http://127.0.0.1:8188 (ComfyUI)"
-  # fi
 }
 
 stop() {
@@ -195,24 +211,43 @@ stop() {
   # 1. Stop AUTOMATIC1111 web UI
   # -----------------------------
   echo "Stopping AUTOMATIC1111 web UI..."
-  AUTOMATIC_PID=$(lsof -ti :7860)
-  if [ -n "$AUTOMATIC_PID" ]; then
-    kill "$AUTOMATIC_PID"
-    echo "AUTOMATIC1111 web UI stopped."
+  if [ -f "$AUTOMATIC1111_PID_FILE" ]; then
+    AUTOMATIC_PID=$(cat "$AUTOMATIC1111_PID_FILE")
+    if [ -n "$AUTOMATIC_PID" ]; then
+      echo "Attempting to kill process with PID $AUTOMATIC_PID..."
+      kill -TERM "$AUTOMATIC_PID" 2>/dev/null
+      sleep 2
+      if ps -p "$AUTOMATIC_PID" >/dev/null 2>&1; then
+        echo "Process still alive; sending SIGKILL..."
+        kill -KILL "$AUTOMATIC_PID" 2>/dev/null
+      fi
+    fi
+    rm "$AUTOMATIC1111_PID_FILE"
   else
-    echo "AUTOMATIC1111 web UI is not running."
+    echo "PID file for AUTOMATIC1111 not found; attempting to kill any process on port 7860..."
+    fuser -k 7860/tcp && echo "AUTOMATIC1111 web UI stopped." || echo "AUTOMATIC1111 web UI is not running."
   fi
 
   # -----------------------------
   # 2. Stop ComfyUI
   # -----------------------------
   echo "Stopping ComfyUI..."
-  COMFYUI_PID=$(lsof -ti :8188)
-  if [ -n "$COMFYUI_PID" ]; then
-    kill "$COMFYUI_PID"
+  if [ -f "$COMFYUI_PID_FILE" ]; then
+    COMFY_PID=$(cat "$COMFYUI_PID_FILE")
+    if [ -n "$COMFY_PID" ]; then
+      echo "Attempting to kill process with PID $COMFY_PID..."
+      kill -TERM "$COMFY_PID" 2>/dev/null
+      sleep 2
+      if ps -p "$COMFY_PID" >/dev/null 2>&1; then
+        echo "Process still alive; sending SIGKILL..."
+        kill -KILL "$COMFY_PID" 2>/dev/null
+      fi
+    fi
+    rm "$COMFYUI_PID_FILE"
     echo "ComfyUI stopped."
   else
-    echo "ComfyUI is not running."
+    echo "PID file for ComfyUI not found; attempting pkill..."
+    pkill -9 -f "python3 main.py" && echo "ComfyUI stopped." || echo "ComfyUI is not running."
   fi
 
   # -----------------------------
