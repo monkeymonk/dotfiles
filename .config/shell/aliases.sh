@@ -219,6 +219,11 @@ run_update() {
     python -m pip list --outdated --format=legacy | awk '{ print $1 }' | xargs -n1 pip install -U
   fi
 
+  # Check if Pyenv is installed
+  if command -v pyenv &>/dev/null; then
+    pyenv update
+  fi
+
   # Check if Snap is installed
   if command -v snap &>/dev/null; then
     sudo snap refresh
