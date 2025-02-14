@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Script to help using `fabric`
+# Author: Stéphan Zych
+# @see https://github.com/danielmiessler/fabric
+#
+# Usage:
+# - patterns [-i|--info] [--raw] pattern_name
+# - patterns [-h|--help]
+#
+
+PATTERNS_DIR="$HOME/.config/fabric/patterns"
+
+# Function to display help message
+show_help() {
+  cat <<EOF
+Usage: ${0##*/} [OPTIONS] [PATTERN]
+Avaliable options:
+  -i, --info       Display information about a specific pattern
+  -h, --help       Show this help message
+  --raw            Output documentation in raw format instead of formatted
+
+Examples:
+${0##*/}          List all available patterns
+${0##*/} --info my_pattern Display documentation for 'my_pattern'
+EOF
+}
+
+# Function to list available patterns
+list_patterns() {
+  ls "$PATTERNS_DIR" 2>/dev/null || echo "No patterns found."
+}
+
+# Function to display information about a pattern
+show_info() {
+  local pattern=$1
+
+  if [[ -z "$pattern" ]]; then
+    echo "Error: Pattern name is required with --info option." >&2
+    show_help
+    exit 1
+  fi
+
+  # Determine the documentation file based on naming convention
+  if [[ -f "$PATTERNS_DIR/$pattern/README.md" ]]; then
+    doc_file="$PATTERNS_DIR/$pattern/README.md"
+  elif [[ -f "$PATTERNS_DIR/$pattern/system.md" ]]; then
+    doc_file="$PATTERNS_DIR/$pattern/system.md"
+  else
+    echo "Error: Documentation for '$pattern' not found." >&2
+    exit 1
+  fi
+
+  # Check if 'glow' is available for formatted output
+  if command -v glow &>/dev/null; then
+    glow "$doc_file" || cat "$doc_file"
+  else
+    cat "$doc_file"
+  fi
+}
+
+# Main script logic
+main() {
+  local opt_raw=false
+
+  # Parse command-line options and arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+    -i | --info)
+      case "${OPTARG}" in
+      --raw)
+        opt_raw=true
+        shift
+        ;;
+      *)
+        shift
+        show_info "$1" && exit 0
+        ;;
+      esac
+      ;;
+    -h | --help)
+      show_help && exit 0
+      ;;
+    *)
+      # If no options, list patterns
+      list_patterns && exit 0
+      ;;
+    esac
+  done
+
+  # Default action: list patterns
+  list_patterns
+}
+
+# Entry point
+main "$@"
