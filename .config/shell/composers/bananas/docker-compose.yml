@@ -23,10 +23,10 @@ services:
     runtime: nvidia
     tty: true
     volumes:
-      - ${AUTOMATIC_DATA_DIR:-${HOME}/.bananas/automatic1111}/extensions:/app/extensions
-      - ${AUTOMATIC_DATA_DIR:-${HOME}/.bananas/automatic1111}/models:/app/models
-      - ${AUTOMATIC_DATA_DIR:-${HOME}/.bananas/automatic1111}/outputs:/app/outputs
-      - ${AUTOMATIC_DATA_DIR:-${HOME}/.bananas/automatic1111}/repositories:/app/repositories
+      - automatic1111/extensions:/app/extensions
+      - automatic1111/models:/app/models
+      - automatic1111/outputs:/app/outputs
+      - automatic1111/repositories:/app/repositories
 
   # ComfyUI service configuration
   comfyui:
@@ -53,10 +53,10 @@ services:
       - "${COMFYUI_PORT:-8188}:8188"
     runtime: nvidia
     volumes:
-      - ${COMFYUI_DATA_DIR:-${HOME}/.bananas/comfyui}/custom_nodes:/app/custom_nodes
-      - ${COMFYUI_DATA_DIR:-${HOME}/.bananas/comfyui}/models:/app/models
-      - ${COMFYUI_DATA_DIR:-${HOME}/.bananas/comfyui}/output:/app/output
-      - ${COMFYUI_DATA_DIR:-${HOME}/.bananas/comfyui}/workflows:/app/workflows
+      - comfyui/custom_nodes:/app/custom_nodes
+      - comfyui/models:/app/models
+      - comfyui/output:/app/output
+      - comfyui/workflows:/app/workflows
 
   # Ollama service configuration
   ollama:
@@ -80,7 +80,7 @@ services:
     runtime: nvidia
     tty: true
     volumes:
-      - ${OLLAMA_DATA_DIR:-${HOME}/.bananas/ollama}:/root/.ollama
+      - ollama:/root/.ollama
 
   # OpenWebUI service configuration
   open-webui:
@@ -99,9 +99,15 @@ services:
       - "${WEBUI_PORT:-3000}:8080"
     restart: unless-stopped
     volumes:
-      - ${WEBUI_DATA_DIR:-${HOME}/.bananas/open-webui}:/app/backend/data
+      - open-webui:/app/backend/data
 
 # Define a custom network for inter-service communication
 networks:
   bananas-network:
     driver: bridge
+
+volumes:
+  automatic1111:
+  comfyui:
+  ollama:
+  open-webui:
