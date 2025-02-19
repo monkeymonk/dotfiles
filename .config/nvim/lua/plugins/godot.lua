@@ -43,7 +43,6 @@ return {
   -- nvim --listen ~/.cache/nvim/godot.pipe .
   {
     "lommix/godot.nvim",
-    ft = { "gd", "gdscript" },
     keys = {
       -- {
       --   "<leader>ogg",
@@ -85,25 +84,6 @@ return {
     opts = {
       bin = GDPATH,
     },
-    init = function()
-      local pipepath = vim.fn.stdpath("cache") .. "/godot.pipe"
-
-      -- Check if the pipepath is already in the server list
-      local function is_server_running(pipe)
-        local servers = vim.fn.serverlist()
-        for _, server in ipairs(servers) do
-          if server == pipe then
-            return true
-          end
-        end
-        return false
-      end
-
-      -- If the server is running, "serverstart" automatically sets up Neovim to listen on the given pipe
-      if not vim.loop.fs_stat(pipepath) and not is_server_running(pipepath) then
-        vim.fn.serverstart(pipepath)
-      end
-    end,
   },
 
   -- Quickstart configs for Nvim LSP
