@@ -63,7 +63,7 @@ fi
 
 # Get the current directory and look for a virtual environment in it
 if [ -f "$HOME/venv/bin/activate" ]; then
-  source "$HOME/venv/bin/activate"
+  . "$HOME/venv/bin/activate"
 fi
 
 # Add nvm if installed
@@ -84,7 +84,7 @@ fi
 
 # see ~/.aws/mfa.sh
 if [ -f "$HOME/.aws/.mfa_session" ]; then
-  source "$HOME/.aws/.mfa_session"
+  . "$HOME/.aws/.mfa_session"
 fi
 
 export PATH
