@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Create shared directories for volumes
+mkdir -p automatic1111/extensions automatic1111/models automatic1111/outputs automatic1111/repositories
+mkdir -p comfyui/custom_nodes comfyui/models comfyui/output comfyui/workflows
+mkdir -p ollama open-webui
+
+# Set correct permissions to avoid permission issues inside containers
+sudo chown -R $USER:$USER automatic1111 comfyui ollama open-webui
+sudo chmod -R 755 automatic1111 comfyui ollama open-webui
+
 # Start containers in detached mode
 docker compose up -d
 
