@@ -15,18 +15,31 @@ services:
                 - compute
                 - gpu
                 - utility
+      restart_policy:
+        condition: on-failure
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+      - NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}
     networks:
       - bananas-network
     ports:
       - "${AUTOMATIC_PORT:-7860}:7860"
     restart: unless-stopped
-    runtime: nvidia
+    runtime: ${AUTOMATIC_GPU_DRIVER:-nvidia}
     tty: true
     volumes:
-      - automatic1111/extensions:/app/extensions
-      - automatic1111/models:/app/models
-      - automatic1111/outputs:/app/outputs
-      - automatic1111/repositories:/app/repositories
+      - type: bind
+        source: ./automatic1111/extensions
+        target: /app/extensions
+      - type: bind
+        source: ./automatic1111/models
+        target: /app/models
+      - type: bind
+        source: ./automatic1111/outputs
+        target: /app/outputs
+      - type: bind
+        source: ./automatic1111/repositories
+        target: /app/repositories
 
   # ComfyUI service configuration
   comfyui:
@@ -44,6 +57,8 @@ services:
                 - compute
                 - gpu
                 - utility
+      restart_policy:
+        condition: on-failure
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
@@ -51,12 +66,20 @@ services:
       - bananas-network
     ports:
       - "${COMFYUI_PORT:-8188}:8188"
-    runtime: nvidia
+    runtime: ${AUTOMATIC_GPU_DRIVER:+nvidia}
     volumes:
-      - comfyui/custom_nodes:/app/custom_nodes
-      - comfyui/models:/app/models
-      - comfyui/output:/app/output
-      - comfyui/workflows:/app/workflows
+      - type: bind
+        source: ./comfyui/custom_nodes
+        target: /app/custom_nodes
+      - type: bind
+        source: ./comfyui/models
+        target: /app/models
+      - type: bind
+        source: ./comfyui/output
+        target: /app/output
+      - type: bind
+        source: ./comfyui/workflows
+        target: /app/workflows
 
   # Ollama service configuration
   ollama:
@@ -77,16 +100,16 @@ services:
     ports:
       - "${OLLAMA_PORT:-11434}:11434"
     restart: unless-stopped
-    runtime: nvidia
+    runtime: ${AUTOMATIC_GPU_DRIVER:+nvidia}
     tty: true
     volumes:
-      - ollama:/root/.ollama
+      - type: bind
+        source: ./ollama
+        target: /root/.ollama
 
   # OpenWebUI service configuration
   open-webui:
     container_name: open-webui
-    depends_on:
-      - ollama
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUID_SECRET_KEY=''
@@ -99,12 +122,17 @@ services:
       - "${WEBUI_PORT:-3000}:8080"
     restart: unless-stopped
     volumes:
-      - open-webui:/app/backend/data
+      - type: bind
+        source: ./open-webui
+        target: /app/backend/data
 
 # Define a custom network for inter-service communication
 networks:
   bananas-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.name: "br-bananas"
 
 volumes:
   automatic1111:
