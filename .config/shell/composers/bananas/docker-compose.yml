@@ -28,18 +28,10 @@ services:
     runtime: ${AUTOMATIC_GPU_DRIVER:-nvidia}
     tty: true
     volumes:
-      - type: bind
-        source: ./automatic1111/extensions
-        target: /app/extensions
-      - type: bind
-        source: ./automatic1111/models
-        target: /app/models
-      - type: bind
-        source: ./automatic1111/outputs
-        target: /app/outputs
-      - type: bind
-        source: ./automatic1111/repositories
-        target: /app/repositories
+      - automatic1111/extensions:/app/extensions
+      - automatic1111/models:/app/models
+      - automatic1111/outputs:/app/outputs
+      - automatic1111/repositories:/app/repositories
 
   # ComfyUI service configuration
   comfyui:
@@ -68,18 +60,10 @@ services:
       - "${COMFYUI_PORT:-8188}:8188"
     runtime: ${AUTOMATIC_GPU_DRIVER:+nvidia}
     volumes:
-      - type: bind
-        source: ./comfyui/custom_nodes
-        target: /app/custom_nodes
-      - type: bind
-        source: ./comfyui/models
-        target: /app/models
-      - type: bind
-        source: ./comfyui/output
-        target: /app/output
-      - type: bind
-        source: ./comfyui/workflows
-        target: /app/workflows
+      - comfyui/custom_nodes:/app/custom_nodes
+      - comfyui/models:/app/models
+      - comfyui/output:/app/output
+      - comfyui/workflows:/app/workflows
 
   # Ollama service configuration
   ollama:
@@ -103,9 +87,7 @@ services:
     runtime: ${AUTOMATIC_GPU_DRIVER:+nvidia}
     tty: true
     volumes:
-      - type: bind
-        source: ./ollama
-        target: /root/.ollama
+      - ollama:/root/.ollama
 
   # OpenWebUI service configuration
   open-webui:
@@ -122,9 +104,7 @@ services:
       - "${WEBUI_PORT:-3000}:8080"
     restart: unless-stopped
     volumes:
-      - type: bind
-        source: ./open-webui
-        target: /app/backend/data
+      - open-webui:/app/backend/data
 
 # Define a custom network for inter-service communication
 networks:
