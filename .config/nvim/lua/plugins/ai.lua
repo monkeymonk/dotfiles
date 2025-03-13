@@ -1,7 +1,3 @@
-local keymap = require("utils.keymap")
-local bind = keymap.bind
-local desc = keymap.desc
-
 return {
   -- ChatGPT Neovim Plugin: Effortless Natural Language Generation with OpenAI's ChatGPT API
   -- https://github.com/jackMort/ChatGPT.nvim

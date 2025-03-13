@@ -65,14 +65,14 @@ return {
         end,
       })
     end,
-    ft = { "markdown", "tex" },
+    ft = { "tex" },
   },
 
   -- A Vim Plugin for Lively Previewing LaTeX PDF Output
   -- https://github.com/xuhdev/vim-latex-live-preview
   {
     "xuhdev/vim-latex-live-preview",
-    ft = { "markdown", "tex" },
+    ft = { "tex" },
     keys = {
       { "<leader>np", "<cmd> LLPStartPreview <CR>", desc = "Start Preview", mode = { "n", "v" } },
     },

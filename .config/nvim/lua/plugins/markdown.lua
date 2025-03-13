@@ -7,7 +7,7 @@ return {
     enabled = true,
     ft = { "markdown", "pandoc" },
     init = function()
-      vim.g.mkdp_filetypes = { "markdown" }
+      vim.g.mkdp_filetypes = { "markdown", "pandoc" }
     end,
   },
 
