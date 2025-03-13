@@ -13,6 +13,7 @@ return {
       bind("n", "<C-Down>", "<cmd>TmuxNavigateDown<CR>", desc("window down"))
       bind("n", "<C-Up>", "<cmd>TmuxNavigateUp<CR>", desc("window up"))
     end,
+    enabled = false,
     event = "VeryLazy",
   },
 }
