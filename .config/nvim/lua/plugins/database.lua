@@ -61,10 +61,10 @@ return {
           ---@type integer
           local buffer = args.buf
           local opts = { buffer = buffer, noremap = true, silent = true }
-          vim.keymap.set("n", "<leader>W", "<Plug>(DBUI_SaveQuery)", opts)
-          vim.keymap.set("n", "<leader>E", "<Plug>(DBUI_EditBindParameters)", opts)
-          vim.keymap.set("n", "S", "<Plug>(DBUI_ExecuteQuery)", opts)
-          vim.keymap.set("v", "S", "<Plug>(DBUI_ExecuteQuery)", opts)
+          -- vim.keymap.set("n", "<leader>W", "<Plug>(DBUI_SaveQuery)", opts)
+          -- vim.keymap.set("n", "<leader>E", "<Plug>(DBUI_EditBindParameters)", opts)
+          vim.keymap.set("n", "e", "<Plug>(DBUI_ExecuteQuery)", opts)
+          -- vim.keymap.set("v", "S", "<Plug>(DBUI_ExecuteQuery)", opts)
         end,
       })
     end,
