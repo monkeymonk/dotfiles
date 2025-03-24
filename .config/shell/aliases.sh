@@ -260,6 +260,8 @@ alias update="run_update"
 
 alias wth="curl -s 'wttr.in/?format=3'"
 
+export HISTORY_IGNORE="(ls|cd|pwd|exit|sudo reboot|history|cd -|cd ..)"
+
 # Set Preferred Editor for Sessions
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR=vim
@@ -271,6 +273,9 @@ fi
 
 # Configure fzf to use fd by default (fd respects .gitignore defaults)
 export FZF_DEFAULT_COMMAND="fd --type f"
+
+# "nvim" as manpager
+export MANPAGER="nvim +Man!"
 
 # Manage dotfiles
 alias dotfiles="/usr/bin/git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
