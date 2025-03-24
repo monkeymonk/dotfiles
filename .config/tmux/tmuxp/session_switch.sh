@@ -20,7 +20,7 @@ done <<<"$(echo "$SESSIONS" | awk '{print $1}')"
 COMBINED_SESSIONS=("${ACTIVE_SESSIONS[@]}" "${INACTIVE_SESSIONS[@]}")
 
 # Use fzf to select from the combined list
-SELECTED=$(printf "%s\n" "${COMBINED_SESSIONS[@]}" | fzf | awk -F' *' '{print $1}')
+SELECTED=$(printf "%s\n" "${COMBINED_SESSIONS[@]}" | fzf --color=dark --info=hidden | awk -F' *' '{print $1}')
 
 if [ -n "$SELECTED" ]; then
   # Check if the selected session is already loaded
