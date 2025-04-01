@@ -88,4 +88,15 @@ return {
       },
     },
   },
+  -- Establish good command workflow and quit bad habit
+  -- https://github.com/m4xshen/hardtime.nvim
+  {
+    "m4xshen/hardtime.nvim",
+    dependencies = { "MunifTanjim/nui.nvim" },
+    opts = {
+      disable_mouse = false,
+      enabled = false,
+      max_count = 999,
+    },
+  },
 }

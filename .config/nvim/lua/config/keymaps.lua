@@ -44,7 +44,7 @@ bind("n", "<leader>P", '"_dP', desc("Paste without clipboard"))
 bind("t", "<Esc>", "<C-\\><C-n>", desc("Exit terminal"))
 
 vim.keymap.set("n", "<leader>fg", function()
-  require("telescope.builtin").live_grep({
+  require("fzf-lua").live_grep({
     cwd = vim.fn.expand("%:p:h"), -- Utilise le dossier du buffer courant
   })
 end, { desc = "Live grep in current buffer directory" })

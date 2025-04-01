@@ -25,7 +25,7 @@ function M.setup(opts)
   vim.api.nvim_set_keymap(
     "n",
     "<leader>ml",
-    "<cmd> Telescope marks <cr>",
+    "<cmd> FzfLua marks <cr>",
     { desc = "List marks", noremap = true, silent = true }
   )
   vim.api.nvim_set_keymap(
