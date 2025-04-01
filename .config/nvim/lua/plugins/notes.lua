@@ -16,7 +16,7 @@ return {
 
   -- Use any external translate command/API in nvim.
   -- https://github.com/uga-rosa/translate.nvim
-  { "uga-rosa/translate.nvim", event = "VeryLazy" },
+  -- { "uga-rosa/translate.nvim", event = "VeryLazy" },
 
   -- Modernity meets insane extensibility. The future of organizing your life in Neovim.
   -- https://github.com/nvim-neorg/neorg
