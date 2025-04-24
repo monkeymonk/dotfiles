@@ -213,6 +213,11 @@ run_update() {
     composer global update
   fi
 
+  # Check if Rust is installed
+  if command -v rustup &>/dev/null; then
+    rustup update
+  fi
+
   # Check if Python is installed
   if command -v python &>/dev/null; then
     python -m pip install --user --upgrade pip
