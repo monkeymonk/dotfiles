@@ -72,6 +72,7 @@ export DISABLE_AUTO_TITLE="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
+  catimg
   colorize
   command-not-found
   common-aliases
@@ -81,25 +82,30 @@ plugins=(
   docker-compose
   fzf
   git
+  git-commit
   git-extras
-  gitignore
   httpie
-  node
   npm
   nvm
-  # pyenv
+  pip
+  pipenv
+  pyenv
   python
+  qrcode
   rsync
   rust
+  ssh
   starship
+  systemadmin
   sudo
   tmux
   ubuntu
+  wakeonlan
   web-search
+  zoxide
   # zsh-autocomplete
   zsh-autosuggestions
   zsh-syntax-highlighting
-  z
 )
 
 source $ZSH/oh-my-zsh.sh
