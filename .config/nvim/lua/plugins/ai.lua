@@ -159,6 +159,26 @@ return {
       },
     },
     event = "VeryLazy",
+    keys = {
+      {
+        "<leader>a+",
+        function()
+          local tree_ext = require("avante.extensions.nvim_tree")
+          tree_ext.add_file()
+        end,
+        desc = "Select file in NvimTree",
+        ft = "NvimTree",
+      },
+      {
+        "<leader>a-",
+        function()
+          local tree_ext = require("avante.extensions.nvim_tree")
+          tree_ext.remove_file()
+        end,
+        desc = "Deselect file in NvimTree",
+        ft = "NvimTree",
+      },
+    },
     lazy = false,
     opts = {
       auto_suggestions_provider = "openai",
@@ -166,7 +186,7 @@ return {
         support_paste_from_clipboard = true,
       },
       debug = true,
-      mappings = {
+      --[[ mappings = {
         ask = "<leader>xaa",
         edit = "<leader>xae",
         refresh = "<leader>xar",
@@ -178,7 +198,7 @@ return {
           suggestion = "<leader>xas",
           repomap = "<leader>xaR",
         },
-      },
+      }, ]]
       openai = {
         model = "gpt-4o-mini",
       },
@@ -208,5 +228,12 @@ return {
         },
       },
     },
+  },
+
+  -- Free, ultrafast Copilot alternative for Vim and Neovim
+  -- https://github.com/Exafunction/windsurf.vim
+  {
+    "Exafunction/windsurf.vim",
+    event = "BufEnter",
   },
 }

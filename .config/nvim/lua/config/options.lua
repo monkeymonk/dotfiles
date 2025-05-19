@@ -27,6 +27,8 @@ opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
 
 local g = vim.g
 
+g.lazyvim_prettier_needs_config = false
+
 -- Neovide is a graphical Vim front-end. These settings only apply if Neovide is in use.
 -- @see https://neovide.dev/
 if g.neovide then
