@@ -59,9 +59,10 @@ if [ -d "$HOME/.deno/bin" ]; then
 fi
 
 # Add pyenv if installed
-if [ -d "$HOME/.pyenv" ]; then
+if [ -d "$HOME/.pyenv" ] && [ -z "$PYENV_ROOT" ]; then
   export PYENV_ROOT="$HOME/.pyenv"
   PATH="$PYENV_ROOT/bin:$PATH"
+
   eval "$(pyenv init --path)"
   eval "$(pyenv init -)"
 fi
@@ -77,7 +78,7 @@ if [ -d "$HOME/.nvm" ]; then
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
 fi
 
-# Add custon shell bin
+# Add custom shell bin
 if [ -d "$HOME/.config/shell/bin" ]; then
   PATH="$HOME/.config/shell/bin:$PATH"
 fi
