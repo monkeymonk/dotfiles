@@ -1,0 +1,163 @@
+#!/bin/bash
+
+# --- Ignore Defaults ---
+declare -a DEFAULT_IGNORE_DIRS=(
+  ".git" "node_modules" "dist" "build" "vendor"
+  "__pycache__" ".venv" ".vscode" ".idea"
+  "target" "cmake-build-*"
+)
+
+declare -a DEFAULT_IGNORE_FILES_EXTENSIONS=(
+  ".env" ".sql" ".db" ".sqlite" ".log" ".json" ".yml" ".yaml" ".DS_Store"
+  ".exe" ".dll" ".o" ".so" ".a" ".pyc" ".class" ".secret"
+)
+
+declare -a DEFAULT_IGNORE_FILES_NAMES=(
+  "Makefile" "package-lock.json" "yarn.lock" "pnpm-lock.yaml"
+  "composer.lock" "Cargo.lock" "go.mod" "go.sum" "pom.xml" "build.gradle"
+  "webpack.config.js" "vite.config.*" "tailwind.config.*" "next.config.*"
+  "package.json" "tsconfig.json" "jest.config.*" "babel.config.*"
+  ".npmrc" "secrets.sh"
+)
+
+# --- Runtime args ---
+ADDITIONAL_IGNORE_DIRS=()
+ADDITIONAL_IGNORE_FILES=()
+INCLUDE_FILES=()
+DRY_RUN=false
+
+# --- Help Function ---
+show_help() {
+  echo "Usage: $0 [-i <dir_to_ignore>] [-x <file_to_ignore>] [-a <file_to_include>] [--dry-run] -h"
+  echo
+  echo "Builds a context string from specified files or directories."
+  echo
+  echo "Options:"
+  echo "  -i <dir_to_ignore>    Specify additional directories to ignore."
+  echo "  -x <file_to_ignore>   Specify additional files to ignore."
+  echo "  -a <file_to_include>  Specify files to include in the context."
+  echo "  -d, --dry-run         Only list the files that would be included."
+  echo "  -h                    This help message."
+  echo
+  echo "Example:"
+  echo "  $0 -i 'test_dir' -x '*.log' -a 'important_file.py' --dry-run"
+  exit 1
+}
+
+# --- Parse options ---
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+  -i)
+    ADDITIONAL_IGNORE_DIRS+=("$2")
+    shift
+    ;;
+  -x)
+    ADDITIONAL_IGNORE_FILES+=("$2")
+    shift
+    ;;
+  -a)
+    INCLUDE_FILES+=("$2")
+    shift
+    ;;
+  -d | --dry-run) DRY_RUN=true ;;
+  -h) show_help ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    echo "Unknown option: $1"
+    show_help
+    ;;
+  *) break ;;
+  esac
+  shift
+done
+
+ALL_IGNORE_DIRS=("${DEFAULT_IGNORE_DIRS[@]}" "${ADDITIONAL_IGNORE_DIRS[@]}")
+ALL_IGNORE_FILES_EXTENSIONS=("${DEFAULT_IGNORE_FILES_EXTENSIONS[@]}")
+ALL_IGNORE_FILES_NAMES=("${DEFAULT_IGNORE_FILES_NAMES[@]}" "${ADDITIONAL_IGNORE_FILES[@]}")
+
+# --- Regex Helpers ---
+glob_to_regex() {
+  local pattern="$1"
+  pattern="${pattern//\*/.*}"
+  pattern="${pattern//./.}"
+  echo "$pattern"
+}
+
+AWK_IGNORE_EXT_REGEX=""
+for ext in "${ALL_IGNORE_FILES_EXTENSIONS[@]}"; do
+  AWK_IGNORE_EXT_REGEX+="($(glob_to_regex "$ext")\$)|"
+done
+AWK_IGNORE_EXT_REGEX="${AWK_IGNORE_EXT_REGEX%|}"
+
+AWK_IGNORE_NAME_REGEX=""
+for name in "${ALL_IGNORE_FILES_NAMES[@]}"; do
+  AWK_IGNORE_NAME_REGEX+="(^|/)$(glob_to_regex "$name")\$|"
+done
+AWK_IGNORE_NAME_REGEX="${AWK_IGNORE_NAME_REGEX%|}"
+
+AWK_INCLUDE_REGEX=""
+for name in "${INCLUDE_FILES[@]}"; do
+  AWK_INCLUDE_REGEX+="(^|/)$(glob_to_regex "$name")\$|"
+done
+AWK_INCLUDE_REGEX="${AWK_INCLUDE_REGEX%|}"
+
+# --- Build find command ---
+FIND_CMD=(find .)
+
+if [ ${#ALL_IGNORE_DIRS[@]} -gt 0 ]; then
+  FIND_CMD+=(\()
+  for dir in "${ALL_IGNORE_DIRS[@]}"; do
+    FIND_CMD+=(-path "./$dir" -o)
+  done
+  FIND_CMD[-1]=\) # Replace trailing -o with closing paren
+  FIND_CMD+=(-prune -o)
+fi
+
+FIND_CMD+=(-type f -print)
+
+# --- Execute find and filter with awk ---
+CANDIDATE_FILES=$("${FIND_CMD[@]}" | awk \
+  -v EXT_RE="$AWK_IGNORE_EXT_REGEX" \
+  -v NAME_RE="$AWK_IGNORE_NAME_REGEX" \
+  -v INC_RE="$AWK_INCLUDE_REGEX" '
+  {
+    fname = $0
+    should_ignore = 0
+    should_include = 0
+
+    if (EXT_RE != "" && fname ~ EXT_RE) should_ignore = 1
+    if (NAME_RE != "" && fname ~ NAME_RE) should_ignore = 1
+    if (INC_RE != "" && fname ~ INC_RE) should_include = 1
+
+    if (should_include || !should_ignore) print fname
+  }')
+
+# --- Text MIME type check ---
+is_text_file() {
+  local f="$1"
+  local mime
+  mime=$(file --mime-type -b "$f")
+  [[ "$mime" == text/* || "$mime" == application/json || "$mime" == application/xml || "$mime" == application/javascript ]]
+}
+
+# --- Output ---
+CONTEXT_STRING=""
+while IFS= read -r file; do
+  REL_PATH="${file#./}"
+  if [ -f "$file" ] && [ -r "$file" ] && is_text_file "$file"; then
+    if $DRY_RUN; then
+      echo "$REL_PATH"
+    else
+      CONTEXT_STRING+="\n--- FILE_START: $REL_PATH ---\n"
+      CONTEXT_STRING+="$(cat "$file")"
+      CONTEXT_STRING+="\n--- FILE_END: $REL_PATH ---\n"
+    fi
+  fi
+done <<<"$CANDIDATE_FILES"
+
+if ! $DRY_RUN; then
+  echo -e "$CONTEXT_STRING"
+fi
