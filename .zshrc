@@ -80,7 +80,6 @@ plugins=(
   cp
   docker
   docker-compose
-  fzf
   git
   git-commit
   git-extras
