@@ -44,8 +44,8 @@ return {
     dependencies = "MunifTanjim/nui.nvim",
     event = "VeryLazy",
     keys = {
-      { "<leader>xc", "<cmd> NeoAIContext <CR>", desc = "NeoAIContext", mode = { "n", "v" } },
-      { "<leader>xv", "<cmd> NeoAIToggle <CR>", desc = "NeoAIToggle", mode = { "n", "v" } },
+      { "<leader>aNd", "<cmd> NeoAIContext <CR>", desc = "NeoAIContext", mode = { "n", "v" } },
+      { "<leader>aNv", "<cmd> NeoAIToggle <CR>", desc = "NeoAIToggle", mode = { "n", "v" } },
     },
     opts = {
       models = {
@@ -66,7 +66,7 @@ return {
       shortcuts = {
         {
           name = "code_review",
-          key = "<leader>xsc",
+          key = "<leader>aNr",
           desc = "Review code for best practices",
           use_context = true,
           prompt = [[
@@ -78,7 +78,7 @@ return {
         },
         {
           name = "textify",
-          key = "<leader>xsr",
+          key = "<leader>and",
           desc = "Rewrite selection with AI",
           use_context = true,
           prompt = [[
@@ -91,7 +91,7 @@ return {
         },
         {
           name = "gitcommit",
-          key = "<leader>xsg",
+          key = "<leader>aNg",
           desc = "Generate git commit message",
           use_context = false,
           prompt = function()
@@ -106,7 +106,7 @@ return {
         },
         {
           name = "performance_optimization",
-          key = "<leader>xsp",
+          key = "<leader>aNp",
           desc = "Analyze code performance",
           use_context = true,
           prompt = [[
@@ -131,6 +131,7 @@ return {
       "nvim-lua/plenary.nvim",
       "MunifTanjim/nui.nvim",
       --- The below dependencies are optional,
+      "ibhagwan/fzf-lua",
       "nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
       {
         -- support for image pasting
@@ -181,7 +182,7 @@ return {
     },
     lazy = false,
     opts = {
-      auto_suggestions_provider = "openai",
+      -- auto_suggestions_provider = "openai",
       behaviour = {
         support_paste_from_clipboard = true,
       },
@@ -199,10 +200,13 @@ return {
           repomap = "<leader>xaR",
         },
       }, ]]
-      openai = {
-        model = "gpt-4o-mini",
-      },
       provider = "openai",
+      providers = {
+        openai = {
+          endpoint = "https://api.openai.com/v1",
+          model = "gpt-4o-mini",
+        },
+      },
     },
     version = false,
   },
