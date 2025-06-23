@@ -37,49 +37,6 @@ return {
     },
   },
 
-  -- Quickstart configs for Nvim LSP
-  -- https://github.com/neovim/nvim-lspconfig
-  {
-    "neovim/nvim-lspconfig",
-    opts = {
-      inlay_hints = { enabled = true },
-      -- @type lspconfig.options
-      servers = {
-        intelephense = {
-          filetypes = { "php", "blade", "php_only" },
-          settings = {
-            intelephense = {
-              filetypes = { "php", "blade", "php_only" },
-              files = {
-                associations = { "*.php", "*.blade.php" }, -- Associating .blade.php files as well
-                maxSize = 5000000,
-              },
-              stubs = { "psr-2" },
-            },
-          },
-        },
-        phpactor = {
-          filetypes = { "blade", "php" },
-          settings = {
-            phpactor = {
-              filetypes = { "blade", "php" },
-              files = {
-                associations = { "*.php", "*.blade.php" },
-                maxSize = 5000000,
-              },
-            },
-          },
-          --[[ phpstan = {
-            enabled = false,
-          },
-          psalm = {
-            enabled = false,
-          }, ]]
-        },
-      },
-    },
-  },
-
   -- @NOTE: This messup blade auto-format...
   --[[ {
     "stevearc/conform.nvim",
