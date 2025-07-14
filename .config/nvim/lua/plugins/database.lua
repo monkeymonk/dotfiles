@@ -4,15 +4,6 @@ return {
   -- https://github.com/kristijanhusak/vim-dadbod-completion
   {
     "kristijanhusak/vim-dadbod-completion",
-    setup = function()
-      require("cmp").setup.filetype({ "sql", "mysql", "plsql" }, {
-        sources = {
-          { name = "vim-dadbod-completion" },
-          { name = "buffer" },
-        },
-      })
-    end,
-    dependencies = "hrsh7th/nvim-cmp",
     event = "VeryLazy",
     ft = { "sql", "mysql", "plsql" },
   },
