@@ -59,27 +59,28 @@ return {
         --     },
         --   },
         -- },
-        phpactor = {
-          filetypes = { "php", "blade" },
-          root_dir = function(fname)
-            local util = require("lspconfig.util")
-            return util.root_pattern("composer.json", ".git")(fname)
-          end,
-          settings = {
-            phpactor = {
-              filetypes = { "php", "blade" },
-              language_server_phpstan = {
-                enabled = false,
-              },
-              language_server_psalm = {
-                enabled = false,
-              },
-              worse_reflection = {
-                stub_paths = stubs.get_stub_paths(), -- must return an array of paths
-              },
-            },
-          },
-        },
+        phpactor = false,
+        -- phpactor = {
+        --   filetypes = { "php", "blade" },
+        --   root_dir = function(fname)
+        --     local util = require("lspconfig.util")
+        --     return util.root_pattern("composer.json", ".git")(fname)
+        --   end,
+        --   settings = {
+        --     phpactor = {
+        --       filetypes = { "php", "blade" },
+        --       language_server_phpstan = {
+        --         enabled = false,
+        --       },
+        --       language_server_psalm = {
+        --         enabled = false,
+        --       },
+        --       worse_reflection = {
+        --         stub_paths = stubs.get_stub_paths(), -- must return an array of paths
+        --       },
+        --     },
+        --   },
+        -- },
       },
     },
   },

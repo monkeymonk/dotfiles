@@ -1,4 +1,7 @@
 return {
+  -- use nvim-cmp only when norg files
+  { "hrsh7th/nvim-cmp", ft = "norg", lazy = true },
+
   -- abolish.vim: Work with several variants of a word at once
   -- https://github.com/tpope/vim-abolish
   { "tpope/vim-abolish", event = "VeryLazy" },
