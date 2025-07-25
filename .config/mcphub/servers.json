@@ -12,15 +12,15 @@
       "command": "uvx"
     },
     "filesystem": {
+      "command": "npx",
+      "env": {
+        "ALLOWED_DIRECTORY": "."
+      },
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "${ALLOWED_DIRECTORY}"
-      ],
-      "command": "npx",
-      "env": {
-        "ALLOWED_DIRECTORY": "."
-      }
+      ]
     },
     "git": {
       "args": ["mcp-server-git"],
