@@ -1,0 +1,47 @@
+{
+  "mcpServers": {
+    "context7": {
+      "args": ["-y", "@upstash/context7-mcp"],
+      "command": "npx",
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": "5000"
+      }
+    },
+    "fetch": {
+      "args": ["mcp-server-fetch"],
+      "command": "uvx"
+    },
+    "filesystem": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${ALLOWED_DIRECTORY}"
+      ],
+      "command": "npx",
+      "env": {
+        "ALLOWED_DIRECTORY": "."
+      }
+    },
+    "git": {
+      "args": ["mcp-server-git"],
+      "command": "uvx"
+    },
+    "memory": {
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "command": "npx"
+    },
+    "sequentialthinking": {
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "command": "npx"
+    },
+    "task_master": {
+      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
+      "command": "npx",
+      "disabled": false,
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    }
+  },
+  "nativeMCPServers": []
+}
