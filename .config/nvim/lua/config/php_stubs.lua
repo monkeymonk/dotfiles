@@ -8,6 +8,15 @@ local required_stubs = {
   "php-stubs/acf-pro-stubs:^6.0",
 }
 
+local function run_cmd(cmd, cwd)
+  local Job = require("plenary.job")
+  return Job:new({
+    command = cmd[1],
+    args = vim.list_slice(cmd, 2),
+    cwd = cwd or stub_path,
+  }):sync()
+end
+
 local function ensure_php_stubs()
   if composer == "" then
     vim.notify("Composer not found in PATH!", vim.log.levels.ERROR)
@@ -54,15 +63,6 @@ local function get_installed_stub_paths()
     end
   end
   return paths
-end
-
-local function run_cmd(cmd, cwd)
-  local Job = require("plenary.job")
-  return Job:new({
-    command = cmd[1],
-    args = vim.list_slice(cmd, 2),
-    cwd = cwd or stub_path,
-  }):sync()
 end
 
 return {
