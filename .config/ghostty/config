@@ -53,11 +53,11 @@ cursor-style-blink = true
 
 # window
 title = " "
-window-decoration = auto
+window-decoration = none
 window-padding-balance = true
+window-padding-color = extend
 window-padding-x = 0
 window-padding-y = 0
-window-padding-color = extend
 
 keybind = ctrl+shift+t=unbind
 
