@@ -16,6 +16,24 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
   spec = {
+    {
+      "catppuccin/nvim",
+      name = "catppuccin",
+      priority = 1000,
+      specs = {
+        -- @fix: https://github.com/LazyVim/LazyVim/pull/6354#issuecomment-3202799735
+        {
+          "akinsho/bufferline.nvim",
+          init = function()
+            local bufline = require("catppuccin.groups.integrations.bufferline")
+            function bufline.get()
+              return bufline.get_theme()
+            end
+          end,
+        },
+      },
+    },
+
     -- add LazyVim and import its plugins
     {
       "LazyVim/LazyVim",
@@ -24,6 +42,7 @@ require("lazy").setup({
         colorscheme = "catppuccin",
       },
     },
+
     -- add LazyVim Extras
     -- @see https://www.lazyvim.org/extras
     { import = "lazyvim.plugins.extras.ui.alpha" },
@@ -138,8 +157,8 @@ require("lazy").setup({
         -- "netrwPlugin",
         "tarPlugin",
         "tohtml",
-        "tutor",
-        "vimballPlugin",
+        -- "tutor",
+        -- "vimballPlugin",
         "zipPlugin",
       },
     },

@@ -24,6 +24,7 @@ return {
       },
     },
     opts = {
+      languages = { php = { template = { annotation_convention = "phpdoc" } } },
       snippet_engine = "luasnip",
     },
   },
