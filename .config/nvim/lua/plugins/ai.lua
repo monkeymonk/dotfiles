@@ -160,7 +160,9 @@ return {
         },
         ft = { "markdown", "Avante" },
       },
+      "ravitemer/mcphub.nvim",
     },
+    -- enabled = false,
     event = "VeryLazy",
     keys = {
       {
@@ -214,6 +216,27 @@ return {
           repomap = "<leader>xaR",
         },
       }, ]]
+        embed = { -- Configuration for the Embedding Model used by the RAG service
+          provider = "openai", -- The Embedding provider ("openai")
+          endpoint = "https://api.openai.com/v1", -- The Embedding API endpoint
+          api_key = "OPENAI_API_KEY", -- The environment variable name for the Embedding API key
+          model = "text-embedding-3-large", -- The Embedding model name (e.g., "text-embedding-3-small", "text-embedding-3-large")
+          extra = { -- Extra configuration options for the Embedding model (optional)
+            dimensions = nil,
+          },
+        },
+        llm = { -- Configuration for the Language Model (LLM) used by the RAG service
+          provider = "openai", -- The LLM provider ("openai")
+          endpoint = "https://api.openai.com/v1", -- The LLM API endpoint
+          api_key = "OPENAI_API_KEY", -- The environment variable name for the LLM API key
+          model = "gpt-4o-mini", -- The LLM model name (e.g., "gpt-4o-mini", "gpt-3.5-turbo")
+          extra = { -- Extra configuration options for the LLM (optional)
+            temperature = 0.7, -- Controls the randomness of the output. Lower values make it more deterministic.
+            max_tokens = 512, -- The maximum number of tokens to generate in the completion.
+            -- system_prompt = "You are a helpful assistant.", -- A system prompt to guide the model's behavior.
+            -- timeout = 120, -- Request timeout in seconds.
+          },
+        },
         provider = "openai",
         providers = {
           openai = {
