@@ -153,7 +153,7 @@ fi
 # Serve Shortcut for HTTP Server
 alias serve="open http://0.0.0.0:8000 && python -m http.server"
 
-# Python alises
+# Python aliases
 alias mkvenv="python3 -m venv venv"
 alias activate=". venv/bin/activate"
 alias pipupgrade="pip list --outdated | cut -d ' ' -f 1 | xargs pip install --upgrade"
