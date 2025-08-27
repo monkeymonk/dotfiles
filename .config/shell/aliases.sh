@@ -147,6 +147,7 @@ fi
 # Use batcat instead of cat if available
 if command -v batcat &>/dev/null; then
   alias oldcat="/usr/bin/cat"
+  alias batcat="bat"
   alias cat="batcat"
 fi
 
