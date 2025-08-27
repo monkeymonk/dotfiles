@@ -48,6 +48,11 @@ if [ -d "$HOME/.ghcup/bin" ]; then
   PATH="$HOME/.ghcup/bin:$PATH"
 fi
 
+# Add go bin
+if [ -d "$(go env GOPATH)/bin" ]; then
+  PATH="$(go env GOPATH)/bin:$PATH"
+fi
+
 # Add composer bin
 if [ -d "$HOME/.config/composer/vendor/bin" ]; then
   PATH="$HOME/.config/composer/vendor/bin:$PATH"
