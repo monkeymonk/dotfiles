@@ -259,24 +259,28 @@ return {
 
   -- AI-powered coding, seamlessly in Neovim
   -- https://github.com/olimorris/codecompanion.nvim
-  -- {
-  --   "olimorris/codecompanion.nvim",
-  --   config = true,
-  --   dependencies = {
-  --     "nvim-lua/plenary.nvim",
-  --     "nvim-treesitter/nvim-treesitter",
-  --   },
-  --   opts = {
-  --     strategies = {
-  --       chat = {
-  --         adapter = "openai",
-  --       },
-  --       inline = {
-  --         adapter = "openai",
-  --       },
-  --     },
-  --   },
-  -- },
+  {
+    "olimorris/codecompanion.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-treesitter/nvim-treesitter",
+    },
+    opts = {
+      -- @see https://codecompanion.olimorris.dev/configuration/prompt-library.html
+      --prompt_library = {},
+      strategies = {
+        chat = {
+          adapter = "openai",
+        },
+        cmd = {
+          adapter = "openai",
+        },
+        inline = {
+          adapter = "openai",
+        },
+      },
+    },
+  },
 
   -- Free, ultrafast Copilot alternative for Vim and Neovim
   -- https://github.com/Exafunction/windsurf.vim

@@ -1,14 +1,19 @@
 {
   "mcpServers": {
     "context7": {
-      "args": ["-y", "@upstash/context7-mcp"],
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
       "command": "npx",
       "env": {
         "DEFAULT_MINIMUM_TOKENS": "5000"
       }
     },
     "fetch": {
-      "args": ["mcp-server-fetch"],
+      "args": [
+        "mcp-server-fetch"
+      ],
       "command": "uvx"
     },
     "filesystem": {
@@ -23,27 +28,45 @@
       }
     },
     "git": {
-      "args": ["mcp-server-git"],
+      "args": [
+        "mcp-server-git"
+      ],
       "command": "uvx"
     },
     "memory": {
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
       "command": "npx"
     },
     "sequentialthinking": {
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-      "autoApprove": ["sequentialthinking"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "autoApprove": [
+        "sequentialthinking"
+      ],
       "command": "npx"
     },
     "shopify-dev-mcp": {
+      "args": [
+        "-y",
+        "@shopify/dev-mcp@latest"
+      ],
       "command": "npx",
-      "args": ["-y", "@shopify/dev-mcp@latest"],
+      "disabled": true,
       "env": {
         "OPT_OUT_INSTRUMENTATION": "true"
       }
     },
     "task_master": {
-      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
+      "args": [
+        "-y",
+        "--package=task-master-ai",
+        "task-master-ai"
+      ],
       "autoApprove": [
         "initialize_project",
         "models",
@@ -81,7 +104,7 @@
         "research"
       ],
       "command": "npx",
-      "disabled": true,
+      "disabled": false,
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}"
       }
