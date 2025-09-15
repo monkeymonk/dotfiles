@@ -25,6 +25,10 @@ opt.backup = false
 opt.undofile = true
 opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
 
+-- enable local configs
+opt.exrc = true
+opt.secure = true
+
 local g = vim.g
 
 g.lazyvim_prettier_needs_config = false
