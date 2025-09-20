@@ -3,9 +3,6 @@ return {
   -- https://github.com/nvim-treesitter/nvim-treesitter
   {
     "nvim-treesitter/nvim-treesitter",
-    config = function(_, opts)
-      require("nvim-treesitter.configs").setup(opts)
-    end,
     opts = {
       ensure_installed = {
         "astro",

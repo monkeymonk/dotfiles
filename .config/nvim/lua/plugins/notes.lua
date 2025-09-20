@@ -26,7 +26,7 @@ return {
   -- https://github.com/nvim-neorg/neorg-telescope
   -- https://github.com/nvim-neorg/neorg/blob/main/doc/neorg.norg
   -- https://github.com/nvim-neorg/neorg/wiki/Tangling
-  {
+  --[[ {
     "nvim-neorg/neorg",
     config = function(_, opts)
       require("neorg").setup(opts)
@@ -129,7 +129,7 @@ return {
       },
     },
     version = "*",
-  },
+  }, ]]
 
   -- A VIM syntax highlighting plugin for the Fountain screenplay format
   -- https://github.com/kblin/vim-fountain
