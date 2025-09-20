@@ -283,8 +283,7 @@ return {
     "EmranMR/tree-sitter-blade",
     dependencies = "nvim-treesitter/nvim-treesitter",
     config = function()
-      local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-      parser_config.blade = {
+      require("nvim-treesitter.parsers").blade = {
         filetype = "blade",
         install_info = {
           branch = "main",
