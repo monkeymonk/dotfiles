@@ -77,6 +77,16 @@ if [ -f "$HOME/venv/bin/activate" ]; then
   . "$HOME/venv/bin/activate"
 fi
 
+# Add pnpm if installed
+if [ -d "$HOME/.local/share/pnpm" ]; then
+  export PNPM_HOME="/home/monkeymonk/.local/share/pnpm"
+
+  case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+  esac
+fi
+
 # Add nvm if installed
 if [ -d "$HOME/.nvm" ]; then
   export NVM_DIR="$HOME/.nvm"
