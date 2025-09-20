@@ -294,6 +294,9 @@ alias binconfig="cd ~/.local/bin && ${EDITOR}"
 alias shellconfig="cd ~/.config/shell && ${EDITOR}"
 alias vimconfig="cd ~/.config/nvim && ${EDITOR}"
 
+# Tmux
+alias fux='tmuxp load $(tmuxp ls | fzf --layout=reverse --info=inline --height=40%)'
+
 # Additional Zsh Specific Aliases
 if command -v zsh &>/dev/null; then
   alias zshrc="${EDITOR} ~/.zshrc"
