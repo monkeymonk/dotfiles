@@ -152,7 +152,7 @@ if command -v batcat &>/dev/null; then
 fi
 
 # Serve Shortcut for HTTP Server
-alias serve="open http://0.0.0.0:8000 && python -m http.server"
+alias serve="open http://0.0.0.0:8000 & python -m http.server"
 
 # Python aliases
 alias mkvenv="python3 -m venv venv"
