@@ -6,8 +6,8 @@ return {
     config = function(_, opts)
       require("package-info").setup(opts)
 
-      vim.cmd([[highlight PackageInfoUpToDateVersion guifg=]] .. opts.colors.up_to_date)
-      vim.cmd([[highlight PackageInfoOutdatedVersion guifg=]] .. opts.colors.outdated)
+      -- vim.cmd([[highlight PackageInfoUpToDateVersion guifg=]] .. opts.highlights.up_to_date)
+      -- vim.cmd([[highlight PackageInfoOutdatedVersion guifg=]] .. opts.highlights.outdated)
 
       local telescope = require("telescope")
 
@@ -36,9 +36,9 @@ return {
       },
     },
     opts = {
-      colors = {
-        outdated = "#d19a66",
-        up_to_date = "#0DB9D7",
+      highlights = {
+        outdated = { fg = "#d19a66" },
+        up_to_date = { fg = "#0DB9D7" },
       },
       hide_unstable_versions = true,
       package_manager = "npm",
