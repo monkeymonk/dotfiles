@@ -1,11 +1,10 @@
 -- Autocmds are automatically loaded on the VeryLazy event
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 local command = require("utils.command")
-local alias = command.alias
 local autocmd = command.autocmd
 
-alias("Q", "qa")
-alias("W", "w")
+-- Aliases
+vim.cmd(string.format("command! %s %s", "Q", "qa"))
 
 -- Disable the concealing in some file formats
 -- The default conceallevel is 3 in LazyVim
