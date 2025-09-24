@@ -5,7 +5,7 @@
 vim.keymap.set("n", "Q", "<Nop>", { silent = true })
 
 -- CapsLock as Esc
-vim.keymap.set("nvi", "<CapsLock>", "<Esc>", { noremap = true, silent = true })
+vim.keymap.set({ "n", "v", "i" }, "<CapsLock>", "<Esc>", { noremap = true, silent = true })
 
 -- Buffer next/prev
 vim.keymap.set("n", "<Tab>", "<cmd> bnext <CR>", { desc = "Next buffer" })
