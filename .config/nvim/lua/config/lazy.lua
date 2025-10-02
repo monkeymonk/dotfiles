@@ -25,10 +25,9 @@ require("lazy").setup({
         {
           "akinsho/bufferline.nvim",
           init = function()
-            local bufline = require("catppuccin.groups.integrations.bufferline")
-            function bufline.get()
-              return bufline.get_theme()
-            end
+            require("bufferline").setup({
+              highlights = require("catppuccin.special.bufferline").get_theme(),
+            })
           end,
         },
       },
