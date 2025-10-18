@@ -23,6 +23,8 @@ return {
         "scss",
         "sql",
         "svelte",
+        "tsx",
+        "typescript",
         "vue",
       },
       highlight = {
