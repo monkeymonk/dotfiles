@@ -96,3 +96,16 @@ if command -v nvm &>/dev/null; then
     load-nvmrc
   fi
 fi
+
+# Source all zsh-specific snippets only when running zsh
+if [ -n "$ZSH_VERSION" ]; then
+  autoload -Uz add-zsh-hook 2>/dev/null || true
+
+  # In zsh, enable null_glob so the glob can expand to nothing
+  setopt local_options null_glob 2>/dev/null
+
+  for f in "$HOME/.config/shell/zsh"/*.zsh; do
+    [ -e "$f" ] || continue # skip if no matches
+    . "$f"
+  done
+fi
