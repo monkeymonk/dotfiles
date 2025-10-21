@@ -48,9 +48,12 @@ if [ -d "$HOME/.ghcup/bin" ]; then
   PATH="$HOME/.ghcup/bin:$PATH"
 fi
 
-# Add go bin
-if [ -d "$(go env GOPATH)/bin" ]; then
-  PATH="$(go env GOPATH)/bin:$PATH"
+# Add Go bin
+if command -v go >/dev/null 2>&1; then
+  GOPATH=$(go env GOPATH 2>/dev/null)
+  if [ -n "$GOPATH" ] && [ -d "$GOPATH/bin" ]; then
+    PATH="$GOPATH/bin:$PATH"
+  fi
 fi
 
 # Add composer bin
@@ -72,18 +75,17 @@ if [ -d "$HOME/.pyenv" ] && [ -z "$PYENV_ROOT" ]; then
   eval "$(pyenv init -)"
 fi
 
-# Get the current directory and look for a virtual environment in it
+# Get the current directory and look for a virtual environment in it (optional)
 if [ -f "$HOME/venv/bin/activate" ]; then
   . "$HOME/venv/bin/activate"
 fi
 
 # Add pnpm if installed
 if [ -d "$HOME/.local/share/pnpm" ]; then
-  export PNPM_HOME="/home/monkeymonk/.local/share/pnpm"
-
+  export PNPM_HOME="$HOME/.local/share/pnpm"
   case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
+  *) PATH="$PNPM_HOME:$PATH" ;;
   esac
 fi
 
