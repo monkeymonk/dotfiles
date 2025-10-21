@@ -236,28 +236,28 @@ return {
     ft = { "blade", "php" },
   },
 
-  -- Navigating Blade views within Laravel projects
-  -- https://github.com/RicardoRamirezR/blade-nav.nvim
-  -- {
-  --   "ricardoramirezr/blade-nav.nvim",
-  --   dependencies = "hrsh7th/nvim-cmp",
-  --   ft = { "blade", "php" },
-  --   opts = {
-  --     close_tag_on_complete = true, -- default: true
-  --   },
-  -- },
+  {
+    -- Add the blade-nav.nvim plugin which provides Goto File capabilities
+    -- for Blade files.
+    "ricardoramirezr/blade-nav.nvim",
+    dependencies = {
+      "hrsh7th/nvim-cmp",
+    },
+    ft = { "blade", "php" },
+  },
 
   -- Best Laravel development experience with Neovim
   -- https://adalessa.github.io/laravel-nvim-docs/
   {
     "adalessa/laravel.nvim",
-    cmd = "Laravel",
+    cmd = { "Artisan", "Laravel", "Npm", "Sail", "Yarn" },
     config = true,
     dependencies = {
-      "tpope/vim-dotenv",
       "nvim-telescope/telescope.nvim",
+      "tpope/vim-dotenv",
       "MunifTanjim/nui.nvim",
       "kevinhwang91/promise-async",
+      "nvimtools/none-ls.nvim",
     },
     ft = { "blade", "php" },
     keys = {
@@ -265,17 +265,21 @@ return {
       { "<leader>olr", ":Laravel routes<cr>" },
       { "<leader>olm", ":Laravel related<cr>" },
     },
+    opts = {
+      lsp_server = "intelephense",
+      features = { null_ls = { enable = false } },
+    },
   },
 
   -- @NOTE: This messup blade auto-format...
-  --[[ {
+  {
     "stevearc/conform.nvim",
     opts = {
       formatters_by_ft = {
         blade = { "blade-formatter" },
       },
     },
-  }, ]]
+  },
 
   -- tree-sitter grammar for Laravel blade files
   -- https://github.com/EmranMR/tree-sitter-blade
@@ -299,6 +303,34 @@ return {
           [".*%.blade%.php"] = "blade",
         },
       })
+    end,
+  },
+
+  -- Add a Treesitter parser for Laravel Blade to provide Blade syntax highlighting.
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = function(_, opts)
+      vim.list_extend(opts.ensure_installed, {
+        "blade",
+        "php_only",
+      })
+    end,
+    config = function(_, opts)
+      vim.filetype.add({
+        pattern = {
+          [".*%.blade%.php"] = "blade",
+        },
+      })
+
+      require("nvim-treesitter").setup(opts)
+      require("nvim-treesitter.parsers").blade = {
+        filetype = "blade",
+        install_info = {
+          url = "https://github.com/EmranMR/tree-sitter-blade",
+          files = { "src/parser.c" },
+          branch = "main",
+        },
+      }
     end,
   },
 }

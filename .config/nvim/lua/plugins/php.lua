@@ -24,66 +24,82 @@ return {
 
   -- Quickstart configs for Nvim LSP
   -- https://github.com/neovim/nvim-lspconfig
-  {
-    "neovim/nvim-lspconfig",
-    opts = {
-      servers = {
-        -- intelephense = {
-        --   filetypes = { "php", "blade", "php_only" },
-        --   settings = {
-        --     intelephense = {
-        --       environment = {
-        --         includePaths = stubs.get_stub_paths(),
-        --       },
-        --       files = {
-        --         associations = { "*.php", "*.blade.php" }, -- Associating .blade.php files as well
-        --         maxSize = 5000000,
-        --       },
-        --       stubs = {
-        --         "wordpress",
-        --         "woocommerce",
-        --         "acf-pro",
-        --         "php",
-        --         "bcmath",
-        --         "Core",
-        --         "curl",
-        --         "date",
-        --         "json",
-        --         "mbstring",
-        --         "pcre",
-        --         "spl",
-        --         "standard",
-        --         "superglobals",
-        --         "xml",
-        --       },
-        --     },
-        --   },
-        -- },
-        phpactor = false,
-        -- phpactor = {
-        --   filetypes = { "php", "blade" },
-        --   root_dir = function(fname)
-        --     local util = require("lspconfig.util")
-        --     return util.root_pattern("composer.json", ".git")(fname)
-        --   end,
-        --   settings = {
-        --     phpactor = {
-        --       filetypes = { "php", "blade" },
-        --       language_server_phpstan = {
-        --         enabled = false,
-        --       },
-        --       language_server_psalm = {
-        --         enabled = false,
-        --       },
-        --       worse_reflection = {
-        --         stub_paths = stubs.get_stub_paths(), -- must return an array of paths
-        --       },
-        --     },
-        --   },
-        -- },
-      },
-    },
-  },
+  -- {
+  --   "neovim/nvim-lspconfig",
+  --   opts = {
+  --     servers = {
+  --       intelephense = {
+  --         filetypes = { "php", "blade", "php_only" },
+  --         root_markers = { ".git", "composer.json" },
+  --         settings = {
+  --           intelephense = {
+  --             environment = {
+  --               includePaths = stubs.get_stub_paths(),
+  --             },
+  --             files = {
+  --               associations = { "*.php", "*.blade.php" }, -- Associating .blade.php files as well
+  --               maxSize = 5000000,
+  --             },
+  --             stubs = {
+  --               "wordpress",
+  --               "woocommerce",
+  --               "acf-pro",
+  --               "php",
+  --               "bcmath",
+  --               "Core",
+  --               "curl",
+  --               "date",
+  --               "json",
+  --               "mbstring",
+  --               "pcre",
+  --               "spl",
+  --               "standard",
+  --               "superglobals",
+  --               "xml",
+  --             },
+  --           },
+  --         },
+  --       },
+  --       phpactor = {
+  --         filetypes = { "php", "blade" },
+  --         init_options = {
+  --           ["indexer.exclude_patterns"] = {
+  --             "/vendor/**/Tests",
+  --             "/vendor/**/tests/**/*",
+  --             "/vendor/composer/**/*",
+  --             "/generated/**/*",
+  --             "/pub/static/**/*",
+  --             "/var/**/*",
+  --             "/dev/**/*",
+  --           },
+  --           ["language_server.diagnostics_on_update"] = false,
+  --           ["language_server.diagnostics_on_open"] = false,
+  --           ["language_server.diagnostics_on_save"] = false,
+  --           ["language_server_phpstan.enabled"] = false,
+  --           ["language_server_psalm.enabled"] = false,
+  --         },
+  --         root_dir = function(fname)
+  --           local util = require("lspconfig.util")
+  --           return util.root_pattern(".git", "composer.json", ".phpactor.json", ".phpactor.yml")(fname)
+  --         end,
+  --         settings = {
+  --           phpactor = {
+  --             filetypes = { "php", "blade" },
+  --             language_server_phpstan = {
+  --               enabled = false,
+  --             },
+  --             language_server_psalm = {
+  --               enabled = false,
+  --             },
+  --             worse_reflection = {
+  --               stub_paths = stubs.get_stub_paths(), -- must return an array of paths
+  --             },
+  --           },
+  --         },
+  --       },
+  --     },
+  --   },
+  -- },
 
   -- {
   --   "stevearc/conform.nvim",
