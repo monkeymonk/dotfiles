@@ -1,11 +1,18 @@
 {
   "mcpServers": {
+    "browser_tools": {
+      "args": [
+        "@agentdeskai/browser-tools-mcp@latest"
+      ],
+      "command": "npx"
+    },
     "context7": {
       "args": [
         "-y",
         "@upstash/context7-mcp"
       ],
       "command": "npx",
+      "disabled": false,
       "env": {
         "DEFAULT_MINIMUM_TOKENS": "5000"
       }
@@ -37,6 +44,14 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-memory"
+      ],
+      "command": "npx"
+    },
+    "postgres": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${POSTGRESQL_URL}"
       ],
       "command": "npx"
     },
