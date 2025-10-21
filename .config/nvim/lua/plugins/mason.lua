@@ -43,7 +43,6 @@ return {
       handlers = {
         function(config)
           -- all sources with no handler get passed here
-
           -- Keep original functionality
           require("mason-nvim-dap").default_setup(config)
         end,
