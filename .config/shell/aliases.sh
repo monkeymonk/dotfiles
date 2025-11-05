@@ -271,9 +271,11 @@ export HISTORY_IGNORE="(ls|cd|pwd|exit|sudo reboot|history|cd -|cd ..)"
 # Set Preferred Editor for Sessions
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR=vim
+  export SUDO_EDITOR=vim
   export VISUAL=vim
 else
   export EDITOR=nvim
+  export SUDO_EDITOR=nvim # "sudoedit <filename>" or use "sudo -E nvim <filename>"
   export VISUAL=nvim
 fi
 
