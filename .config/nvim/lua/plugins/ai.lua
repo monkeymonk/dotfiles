@@ -1,29 +1,4 @@
 return {
-  -- ChatGPT Neovim Plugin: Effortless Natural Language Generation with OpenAI's ChatGPT API
-  -- https://github.com/jackMort/ChatGPT.nvim
-  -- {
-  --   "jackMort/ChatGPT.nvim",
-  --   event = "VeryLazy",
-  --   config = function()
-  --     require("chatgpt").setup()
-  --   end,
-  --   dependencies = {
-  --     "MunifTanjim/nui.nvim",
-  --     "nvim-lua/plenary.nvim",
-  --     "folke/trouble.nvim",
-  --     "nvim-telescope/telescope.nvim",
-  --   },
-  --   opts = {
-  --     -- api_key_cmd = "echo $OPENAI_API_KEY",
-  --     openai_edit_params = {
-  --       model = "gpt-4o-mini",
-  --     },
-  --     openai_params = {
-  --       model = "gpt-4o-mini",
-  --     },
-  --   },
-  -- },
-
   -- Neovim plugin for intracting with GPT models from OpenAI
   -- https://github.com/Bryley/neoai.nvim
   -- {
@@ -281,13 +256,6 @@ return {
       },
     },
   },
-
-  -- Free, ultrafast Copilot alternative for Vim and Neovim
-  -- https://github.com/Exafunction/windsurf.vim
-  -- {
-  --   "Exafunction/windsurf.vim",
-  --   event = "BufEnter",
-  -- },
 
   -- An MCP client for Neovim that seamlessly integrates MCP servers into your editing workflow with an intuitive interface for managing, testing, and using MCP servers with your favorite chat plugins.
   -- https://ravitemer.github.io/mcphub.nvim/

@@ -1,4 +1,11 @@
 return {
+  -- The full Markdown editing experience in neovim
+  -- https://github.com/YousefHadder/markdown-plus.nvim
+  {
+    "yousefhadder/markdown-plus.nvim",
+    ft = "markdown",
+  },
+
   -- markdown preview plugin for (neo)vim
   -- https://github.com/iamcco/markdown-preview.nvim
   {

@@ -7,11 +7,13 @@ return {
   -- https://github.com/Kaiser-Yang/blink-cmp-avante
   { "Kaiser-Yang/blink-cmp-avante", lazy = true }, -- registers source = "avante"
 
+  -- Performant, batteries-included completion plugin for Neovim
+  -- https://github.com/saghen/blink.cmp
   {
     "saghen/blink.cmp",
     opts = function(_, opts)
       opts.sources = vim.tbl_deep_extend("force", opts.sources or {}, {
-        default = { "avante", "lsp", "path", "snippets", "buffer", "dadbod" },
+        default = { "lsp", "avante", "path", "snippets", "buffer", "dadbod" },
 
         providers = {
           -- Avante: real Blink source (no compat layer needed)
@@ -23,10 +25,10 @@ return {
 
           -- Dadbod: nvim-cmp source, so we wrap it with blink.compat
           dadbod = {
-            name = "vim-dadbod-completion", -- exact cmp source name
-            module = "blink.compat.source",
             filetypes = { "sql", "mysql", "plsql" },
             min_keyword_length = 2,
+            module = "blink.compat.source",
+            name = "vim-dadbod-completion", -- exact cmp source name
             score_offset = 30,
           },
         },
