@@ -13,6 +13,7 @@ return {
         javascript = { "prettier" },
         json = { "prettier" },
         lua = { "stylua" },
+        markdown = { "prettier" },
         php = { "php_cs_fixer" },
         python = { "isort", "black" },
         rust = { "rustfmt" },
