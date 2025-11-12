@@ -1,0 +1,101 @@
+{
+  "Function Declaration": {
+    "prefix": "fn",
+    "body": ["function ${1:name}(${2:params}) {", "\t${0}", "}"],
+    "description": "Function declaration"
+  },
+  "Arrow Function": {
+    "prefix": "afn",
+    "body": ["const ${1:name} = (${2:params}) => {", "\t${0}", "};"],
+    "description": "Arrow function"
+  },
+  "Async Function": {
+    "prefix": "asf",
+    "body": ["async function ${1:name}(${2:params}) {", "\t${0}", "}"],
+    "description": "Async function"
+  },
+  "Try Catch": {
+    "prefix": "try",
+    "body": [
+      "try {",
+      "\t${1:// code}",
+      "} catch (error) {",
+      "\tconsole.error(${2:'Error:'}, error);",
+      "}"
+    ],
+    "description": "Try/catch block"
+  },
+  "For Of Loop": {
+    "prefix": "forof",
+    "body": ["for (const ${1:item} of ${2:array}) {", "\t${0}", "}"],
+    "description": "For-of loop"
+  },
+  "For In Loop": {
+    "prefix": "forin",
+    "body": ["for (const ${1:key} in ${2:object}) {", "\t${0}", "}"],
+    "description": "For-in loop"
+  },
+  "Console Log": {
+    "prefix": "clg",
+    "body": ["console.log(${1:variable});"],
+    "description": "Console log"
+  },
+  "Import Named": {
+    "prefix": "imp",
+    "body": ["import { ${1:Symbol} } from '${2:module}';"],
+    "description": "Import named symbols"
+  },
+  "Import Default": {
+    "prefix": "imd",
+    "body": ["import ${1:Default} from '${2:module}';"],
+    "description": "Import default export"
+  },
+  "Export Default": {
+    "prefix": "expd",
+    "body": ["export default ${1:Symbol};"],
+    "description": "Export default"
+  },
+  "Promise Then/Catch": {
+    "prefix": "then",
+    "body": [
+      "${1:promise}",
+      "\t.then((${2:result}) => { ${3:// success} })",
+      "\t.catch((${4:error}) => { console.error(${4:error}); });"
+    ],
+    "description": "Promise with then/catch"
+  },
+  "Fetch Async": {
+    "prefix": "fetch",
+    "body": [
+      "const ${1:getData} = async () => {",
+      "\ttry {",
+      "\t\tconst res = await fetch('${2:/api}');",
+      "\t\tconst data = await res.json();",
+      "\t\t${3:console.log(data);}",
+      "\t} catch (error) {",
+      "\t\tconsole.error('Fetch error:', error);",
+      "\t}",
+      "};"
+    ],
+    "description": "Fetch with async/await"
+  },
+  "Todo Comment": {
+    "prefix": "todo",
+    "body": ["// TODO: ${1:describe task}"],
+    "description": "TODO comment"
+  },
+  "Dom Query Selector": {
+    "prefix": "qs",
+    "body": ["const ${1:el} = document.querySelector('${2:selector}');"],
+    "description": "Query DOM element"
+  },
+  "Event Listener": {
+    "prefix": "on",
+    "body": [
+      "${1:element}.addEventListener('${2:event}', (${3:e}) => {",
+      "\t${0}",
+      "});"
+    ],
+    "description": "Event listener"
+  }
+}

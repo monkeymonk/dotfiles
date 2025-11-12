@@ -1,0 +1,99 @@
+{
+  "Code Block": {
+    "prefix": "c",
+    "body": ["```${1:command}", "${2}", "```$3"],
+    "description": "Basic code block"
+  },
+  "Code Block with Label": {
+    "prefix": "cl",
+    "body": [
+      "```${1:text|go|javascript|json|php|python}",
+      "[label ${2:file.txt}]",
+      "${3}",
+      "```$4"
+    ],
+    "description": "Code block with label"
+  },
+  "Code Block Output": {
+    "prefix": "ci",
+    "body": ["```${1:text}", "[output]", "${2}", "```$3"],
+    "description": "Code block for command output"
+  },
+  "Markdown Link": {
+    "prefix": "lnk",
+    "body": ["[${1:text}](${2:http://localhost:3000})"],
+    "description": "Markdown link"
+  },
+  "Markdown Image": {
+    "prefix": "img",
+    "body": ["![${1:alt}](${2:path/to/image.png})"],
+    "description": "Markdown image"
+  },
+
+  "Frontmatter": {
+    "prefix": "front",
+    "body": [
+      "---",
+      "title: ${1:Title}",
+      "description: ${2:Description}",
+      "date: ${3:2025-11-12}",
+      "tags: [${4:tag1, tag2}]",
+      "---",
+      "",
+      "${0}"
+    ],
+    "description": "YAML frontmatter for Markdown files"
+  },
+  "Task List": {
+    "prefix": "todo",
+    "body": [
+      "- [ ] ${1:First task}",
+      "- [ ] ${2:Second task}",
+      "- [x] ${3:Completed task}"
+    ],
+    "description": "Task list checklist"
+  },
+  "Table": {
+    "prefix": "tbl",
+    "body": [
+      "| ${1:Header 1} | ${2:Header 2} | ${3:Header 3} |",
+      "| ------------- | ------------- | ------------- |",
+      "| ${4:Data 1} | ${5:Data 2} | ${6:Data 3} |"
+    ],
+    "description": "Markdown table"
+  },
+  "Image with Caption": {
+    "prefix": "imgcap",
+    "body": [
+      "![${1:Alt text}](${2:path/to/image.png})",
+      "*${3:Caption describing the image}*"
+    ],
+    "description": "Image with caption"
+  },
+  "Link with Title": {
+    "prefix": "lnkt",
+    "body": ["[${1:text}](${2:https://example.com} \"${3:Title}\")"],
+    "description": "Link with title attribute"
+  },
+  "Inline Code": {
+    "prefix": "ic",
+    "body": ["`${1:code}`"],
+    "description": "Inline code"
+  },
+  "Blockquote": {
+    "prefix": "bq",
+    "body": ["> ${1:Quoted text}", "", "${0}"],
+    "description": "Blockquote"
+  },
+  "Details Block": {
+    "prefix": "details",
+    "body": [
+      "<details>",
+      "<summary>${1:Summary}</summary>",
+      "",
+      "${2:Content here}",
+      "</details>"
+    ],
+    "description": "Expandable details block"
+  }
+}

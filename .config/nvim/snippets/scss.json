@@ -1,0 +1,49 @@
+{
+  "SCSS Variable": {
+    "prefix": "var",
+    "body": ["$${1:name}: ${2:value};"],
+    "description": "Define a SCSS variable"
+  },
+  "SCSS Mixin": {
+    "prefix": "mixin",
+    "body": ["@mixin ${1:name}(${2:args}) {", "\t${0}", "}"],
+    "description": "Define a SCSS mixin"
+  },
+  "SCSS Include": {
+    "prefix": "inc",
+    "body": ["@include ${1:mixin-name}(${2:args});"],
+    "description": "Include a mixin"
+  },
+  "SCSS Nesting": {
+    "prefix": "nest",
+    "body": [
+      ".${1:parent} {",
+      "\t${2:property}: ${3:value};",
+      "\t.${4:child} {",
+      "\t\t${0}",
+      "\t}",
+      "}"
+    ],
+    "description": "Nested SCSS structure"
+  },
+  "SCSS Media Query": {
+    "prefix": "mq",
+    "body": ["@media (${1:min-width}: ${2:768px}) {", "\t${0}", "}"],
+    "description": "Media query"
+  },
+  "SCSS Function": {
+    "prefix": "fn",
+    "body": ["@function ${1:name}(${2:args}) {", "\t@return ${3:value};", "}"],
+    "description": "Define a SCSS function"
+  },
+  "SCSS Keyframes": {
+    "prefix": "key",
+    "body": [
+      "@keyframes ${1:animation-name} {",
+      "\t0% { ${2:/* from */} }",
+      "\t100% { ${3:/* to */} }",
+      "}"
+    ],
+    "description": "Keyframes animation"
+  }
+}

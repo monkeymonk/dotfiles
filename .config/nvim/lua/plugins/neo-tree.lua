@@ -16,7 +16,7 @@ return {
           -- if the buffer type is one of following, the window will be ignored
           buftype = { "jumplist", "quickfix", "terminal" },
           -- if the file type is one of following, the window will be ignored
-          filetype = { "neo-tree", "neo-tree-popup", "NvimTree", "notify" },
+          filetype = { "neo-tree", "neo-tree-popup", "NvimTree", "notify", "snacks_notif" },
         },
         include_current_win = false,
       },

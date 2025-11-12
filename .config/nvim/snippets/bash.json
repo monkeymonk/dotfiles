@@ -1,0 +1,176 @@
+{
+  "Shebang Header": {
+    "prefix": "sh",
+    "body": [
+      "#!/usr/bin/env bash",
+      "",
+      "set -euo pipefail",
+      "IFS=$'\\n\\t'",
+      "",
+      "# ${1:Description of script}",
+      "",
+      "${0}"
+    ],
+    "description": "Standard bash script header with safe defaults"
+  },
+  "Function": {
+    "prefix": "fn",
+    "body": ["${1:function_name}() {", "\t${0:# function body}", "}"],
+    "description": "Define a bash function"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": ["if [[ ${1:condition} ]]; then", "\t${0:# commands}", "fi"],
+    "description": "If statement"
+  },
+  "If Else Statement": {
+    "prefix": "ife",
+    "body": [
+      "if [[ ${1:condition} ]]; then",
+      "\t${2:# if commands}",
+      "else",
+      "\t${3:# else commands}",
+      "fi"
+    ],
+    "description": "If-else statement"
+  },
+  "For Loop": {
+    "prefix": "for",
+    "body": ["for ${1:item} in ${2:items}; do", "\t${0:# commands}", "done"],
+    "description": "For loop"
+  },
+  "While Loop": {
+    "prefix": "while",
+    "body": ["while [[ ${1:condition} ]]; do", "\t${0:# commands}", "done"],
+    "description": "While loop"
+  },
+  "Case Statement": {
+    "prefix": "case",
+    "body": [
+      "case ${1:variable} in",
+      "\t${2:pattern})",
+      "\t\t${3:# commands}",
+      "\t\t;;",
+      "\t*)",
+      "\t\techo \"${4:default case}\" ;;",
+      "esac"
+    ],
+    "description": "Case statement"
+  },
+  "Read Input": {
+    "prefix": "read",
+    "body": ["read -p \"${1:Prompt}: \" ${2:variable}"],
+    "description": "Read user input"
+  },
+  "Check File Exists": {
+    "prefix": "fex",
+    "body": [
+      "if [[ -f ${1:filename} ]]; then",
+      "\techo \"File exists\"",
+      "else",
+      "\techo \"File not found\"",
+      "fi"
+    ],
+    "description": "Check if file exists"
+  },
+  "Check Directory Exists": {
+    "prefix": "dex",
+    "body": [
+      "if [[ -d ${1:dirname} ]]; then",
+      "\techo \"Directory exists\"",
+      "else",
+      "\techo \"Directory not found\"",
+      "fi"
+    ],
+    "description": "Check if directory exists"
+  },
+  "Echo Colored Text": {
+    "prefix": "cecho",
+    "body": ["echo -e \"\\033[${1:1;32m}${2:Your message}\\033[0m\""],
+    "description": "Echo colored text"
+  },
+  "Log Info Function": {
+    "prefix": "logi",
+    "body": [
+      "log_info() {",
+      "\techo \"[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1\"",
+      "}"
+    ],
+    "description": "Log info messages"
+  },
+  "Log Error Function": {
+    "prefix": "loge",
+    "body": [
+      "log_error() {",
+      "\techo \"[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1\" >&2",
+      "}"
+    ],
+    "description": "Log error messages"
+  },
+  "Temp File": {
+    "prefix": "tmp",
+    "body": ["TMPFILE=$(mktemp)", "echo \"Using temp file: $TMPFILE\""],
+    "description": "Create and echo a temp file"
+  },
+  "Exit with Code": {
+    "prefix": "exit",
+    "body": ["exit ${1:0}"],
+    "description": "Exit with code"
+  },
+  "Trap Cleanup": {
+    "prefix": "trap",
+    "body": [
+      "cleanup() {",
+      "\t${1:# cleanup commands}",
+      "}",
+      "",
+      "trap cleanup EXIT"
+    ],
+    "description": "Define a cleanup trap for EXIT"
+  },
+  "Argument Parsing": {
+    "prefix": "args",
+    "body": [
+      "while [[ $# -gt 0 ]]; do",
+      "\tcase $1 in",
+      "\t\t-h|--help)",
+      "\t\t\techo \"${2:Usage message}\"",
+      "\t\t\texit 0",
+      "\t\t\t;;",
+      "\t\t*)",
+      "\t\t\techo \"Unknown option: $1\"",
+      "\t\t\texit 1",
+      "\t\t\t;;",
+      "\tesac",
+      "\tshift",
+      "done"
+    ],
+    "description": "Argument parser template"
+  },
+  "Check Command Exists": {
+    "prefix": "cmdx",
+    "body": [
+      "if ! command -v ${1:cmd} &> /dev/null; then",
+      "\techo \"${1:cmd} not found, please install it.\"",
+      "\texit 1",
+      "fi"
+    ],
+    "description": "Check if command exists"
+  },
+  "Here Document": {
+    "prefix": "heredoc",
+    "body": ["cat <<'${1:EOF}' > ${2:output_file}", "${3:content}", "${1:EOF}"],
+    "description": "Here document (cat > file)"
+  },
+  "Progress Bar Loop": {
+    "prefix": "progress",
+    "body": [
+      "for i in {1..${1:100}}; do",
+      "\techo -ne \"Processing: $i%\\\\r\"",
+      "\tsleep 0.05",
+      "done",
+      "echo"
+    ],
+    "description": "Simple progress bar loop"
+  }
+}

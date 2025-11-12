@@ -1,0 +1,329 @@
+{
+	"Extend Layout": {
+		"prefix": "z:extends",
+		"body": ["@extends('${1:name}')"],
+		"description": "Extend Layout"
+	},
+	"Yield Content": {
+		"prefix": "z:yield",
+		"body": ["@yield('${1:name}')"],
+		"description": "Yield Content"
+	},
+	"Content Section": {
+		"prefix": "z:section",
+		"body": ["@section('${1:name}')", "\t$2", "@endsection"],
+		"description": "Content Section"
+	},
+	"Content Section Show": {
+		"prefix": "z:section-show",
+		"body": ["@section('$1')", "\t$2", "@show"],
+		"description": "Content Section Show"
+	},
+	"Include View": {
+		"prefix": "z:include",
+		"body": ["@include('${1:name}')"],
+		"description": "Include View"
+	},
+	"If Block": {
+		"prefix": "z:if",
+		"body": ["@if ($1)", "\t$2", "@endif"],
+		"description": "If Block"
+	},
+	"If-Else Block": {
+		"prefix": "z:if-else",
+		"body": ["@if ($1)", "\t$2", "@else", "\t$3", "@endif"],
+		"description": "If-Else Block"
+	},
+	"Has Section": {
+		"prefix": "z:has-section",
+		"body": ["@hasSection ('${1:name}')", "\t$2", "@else", "\t$3", "@endif"],
+		"description": "@hasSection Condition"
+	},
+	"Unless Block": {
+		"prefix": "z:unless",
+		"body": ["@unless ($1)", "\t$2", "@endunless"],
+		"description": "Unless Block"
+	},
+	"For Block": {
+		"prefix": "z:for",
+		"body": ["@for ($i = ${1:0}; $i < ${2:count}; $i++)", "\t$3", "@endfor"],
+		"description": "For Block"
+	},
+	"Foreach Block": {
+		"prefix": "z:foreach",
+		"body": ["@foreach (${1:collection} as ${2:item})", "\t$3", "@endforeach"],
+		"description": "Foreach Block"
+	},
+	"Forelse Block": {
+		"prefix": "z:forelse",
+		"body": [
+			"@forelse (${1:collection} as ${2:item})",
+			"\t$3",
+			"@empty",
+			"\t$4",
+			"@endforelse"
+		],
+		"description": "Forelse Block"
+	},
+	"While Block": {
+		"prefix": "z:while",
+		"body": ["@while ($1)", "\t$2", "@endwhile"],
+		"description": "While Block"
+	},
+	"Each Loop": {
+		"prefix": "z:each",
+		"body": ["@each('${1:view.name}', ${2:collection}, '${3:variable}', '${4:view.empty}')"],
+		"description": "Each Loop"
+	},
+	"Blade Comment": {
+		"prefix": "z:comment",
+		"body": ["{{-- ${1:comment} --}}"],
+		"description": "Blade Comment"
+	},
+	"Blade Echo Data": {
+		"prefix": "z:echo",
+		"body": ["{{ ${1:data} }}"],
+		"description": "Blade Echo Data"
+	},
+	"Blade Echo HTML": {
+		"prefix": "z:echo-html",
+		"body": ["{!! ${1:html_data} !!}"],
+		"description": "Blade Echo Unescaped Data"
+	},
+	"Blade Echo Raw": {
+		"prefix": "z:echo-raw",
+		"body": ["@{{ ${1:variable} }}"],
+		"description": "Blade Echo Untouched Data"
+	},
+	"Blade Verbatim": {
+		"prefix": "z:verbatim",
+		"body": ["@verbatim", "\t{{ ${1:variable} }}", "@endverbatim"],
+		"description": "Blade Verbatim"
+	},
+	"Push Stack": {
+		"prefix": "z:push",
+		"body": ["@push('${1:name}')", "\t$2", "@endpush"],
+		"description": "Push Stack"
+	},
+	"Stack": {
+		"prefix": "z:stack",
+		"body": ["@stack('${1:name}')"],
+		"description": "Stack"
+	},
+	"Inject Service": {
+		"prefix": "z:inject",
+		"body": ["@inject('${1:name}', '${2:class}')"],
+		"description": "Inject Service"
+	},
+	"Can Block": {
+		"prefix": "z:can",
+		"body": ["@can('${1:update}', ${2:post})", "\t$3", "@endcan"],
+		"description": "@can"
+	},
+	"Can-Elsecan Block": {
+		"prefix": "z:can-elsecan",
+		"body": [
+			"@can('${1:update}', ${2:post})",
+			"\t$3",
+			"@elsecan('create', App\\\\Models\\\\${4:Post}::class)",
+			"\t$5",
+			"@endcan"
+		],
+		"description": "@can-elsecan"
+	},
+	"Canany Block": {
+		"prefix": "z:canany",
+		"body": [
+			"@canany(['${1:update}', '${2:view}', '${3:delete}'], ${4:post})",
+			"\t$5",
+			"@endcanany"
+		],
+		"description": "@canany"
+	},
+	"Cannot Block": {
+		"prefix": "z:cannot",
+		"body": ["@cannot('${1:update}', ${2:post})", "\t$3", "@endcannot"],
+		"description": "@cannot"
+	},
+	"Loop Variable": {
+		"prefix": "z:loop",
+		"body": ["$loop->${1:first}"],
+		"description": "$loop Variable"
+	},
+	"Loop First": {
+		"prefix": "z:loop-first",
+		"body": ["@if ($loop->first)", "\t${1:{{-- This is the first iteration --}}}", "@endif"],
+		"description": "Loop First"
+	},
+	"Loop Last": {
+		"prefix": "z:loop-last",
+		"body": ["@if ($loop->last)", "\t${1:{{-- This is the last iteration --}}}", "@endif"],
+		"description": "Loop Last"
+	},
+	"PHP Block": {
+		"prefix": "z:php",
+		"body": ["@php", "\t$1", "@endphp"],
+		"description": "PHP Block"
+	},
+	"Include If": {
+		"prefix": "z:includeIf",
+		"body": ["@includeIf('${1:view.name}'${2:, ['some' => 'data']})"],
+		"description": "Include If"
+	},
+	"Component": {
+		"prefix": "z:component",
+		"body": ["@component('${1:component}')", "\t$2", "@endcomponent"],
+		"description": "Component"
+	},
+	"Slot": {
+		"prefix": "z:slot",
+		"body": ["@slot('${1:name}')", "\t$2", "@endslot"],
+		"description": "Slot"
+	},
+	"Isset": {
+		"prefix": "z:isset",
+		"body": ["@isset(${1:record})", "\t$2", "@endisset"],
+		"description": "Isset"
+	},
+	"Empty": {
+		"prefix": "z:empty",
+		"body": ["@empty(${1:record})", "\t$2", "@endempty"],
+		"description": "Empty"
+	},
+	"Error": {
+		"prefix": "z:error",
+		"body": ["@error('${1:record}')", "\t$2", "@enderror"],
+		"description": "Error"
+	},
+	"All Errors": {
+		"prefix": "z:allError",
+		"body": [
+			"@if ($errors->any())",
+			"\t<div class=\"alert alert-danger\">",
+			"\t\t<ul>",
+			"\t\t\t@foreach ($errors->all() as $error)",
+			"\t\t\t\t<li>{{ $error }}</li>",
+			"\t\t\t@endforeach",
+			"\t\t</ul>",
+			"\t</div>",
+			"@endif"
+		],
+		"description": "List errors if available"
+	},
+	"Include When": {
+		"prefix": "z:includeWhen",
+		"body": ["@includeWhen(${1:$boolean}, '${2:view.name}', [${3:'some' => 'data'}])"],
+		"description": "Include When"
+	},
+	"CSRF Field": {
+		"prefix": "z:csrf",
+		"body": ["@csrf"],
+		"description": "CSRF Field"
+	},
+	"Form Method": {
+		"prefix": "z:method",
+		"body": ["@method(${1:method})"],
+		"description": "Form Method Field"
+	},
+	"Dump": {
+		"prefix": "z:dump",
+		"body": ["@dump(${1:variable})"],
+		"description": "Dump"
+	},
+	"Dump and Die": {
+		"prefix": "z:dd",
+		"body": ["@dd(${1:variable})"],
+		"description": "Dump and Die"
+	},
+	"Lang": {
+		"prefix": "z:lang",
+		"body": ["@lang('${1:messages.welcome}')"],
+		"description": "Lang"
+	},
+	"Include Unless": {
+		"prefix": "z:includeUnless",
+		"body": ["@includeUnless(${1:boolean}, '${2:view.name}', [${3:'some' => 'data'}])"],
+		"description": "Include Unless"
+	},
+	"Props": {
+		"prefix": "z:props",
+		"body": ["@props(['${1:propName}'])"],
+		"description": "Component Props"
+	},
+	"Env": {
+		"prefix": "z:env",
+		"body": ["@env('${1:staging}')", "\t$2", "@endenv"],
+		"description": "Env"
+	},
+	"Production": {
+		"prefix": "z:production",
+		"body": ["@production", "\t$1", "@endproduction"],
+		"description": "Production"
+	},
+	"Once": {
+		"prefix": "z:once",
+		"body": ["@once", "\t$1", "@endonce"],
+		"description": "Once"
+	},
+	"Aware": {
+		"prefix": "z:aware",
+		"body": ["@aware(['${1:propName}'])"],
+		"description": "Aware"
+	},
+	"JS": {
+		"prefix": "z:js",
+		"body": ["@js(${1:data})"],
+		"description": "JS"
+	},
+	"Class": {
+		"prefix": "z:class",
+		"body": ["@class(['${1:p-4}', ${2:'font-bold' => true}])"],
+		"description": "Class"
+	},
+	"Checked": {
+		"prefix": "z:checked",
+		"body": ["@checked(${1:true})"],
+		"description": "Checked"
+	},
+	"Selected": {
+		"prefix": "z:selected",
+		"body": ["@selected(${1:true})"],
+		"description": "Selected"
+	},
+	"Disabled": {
+		"prefix": "z:disabled",
+		"body": ["@disabled(${1:true})"],
+		"description": "Disabled"
+	},
+	"Style": {
+		"prefix": "z:style",
+		"body": ["@style(${1:style})"],
+		"description": "Style"
+	},
+	"Readonly": {
+		"prefix": "z:readonly",
+		"body": ["@readonly(${1:true})"],
+		"description": "Readonly"
+	},
+	"Required": {
+		"prefix": "z:required",
+		"body": ["@required(${1:true})"],
+		"description": "Required"
+	},
+	"Push Once": {
+		"prefix": "z:pushOnce",
+		"body": ["@pushOnce('${1:scripts}')", "\t$2", "@endPushOnce"],
+		"description": "Push Once"
+	},
+	"Prepend": {
+		"prefix": "z:prepend",
+		"body": ["@prepend('${1:scripts}')", "\t$2", "@endprepend"],
+		"description": "Prepend"
+	},
+	"Prepend Once": {
+		"prefix": "z:prependOnce",
+		"body": ["@prependOnce('${1:scripts}')", "\t$2", "@endPrependOnce"],
+		"description": "Prepend Once"
+	}
+}
+

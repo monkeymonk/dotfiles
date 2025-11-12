@@ -15,37 +15,50 @@
       ""
     ]
   },
-  "public method": {
-    "prefix": "pubf",
-    "description": "Create a public method",
-    "body": ["public function ${1}(${2}): ${3:void}", "{", "    ${0}", "}", ""]
-  },
-  "protected method": {
-    "prefix": "prof",
-    "description": "Create a protected method",
+  "Public Method": {
+    "prefix": "met",
     "body": [
-      "protected function ${1}(${2}): ${3:void}",
+      "public function ${1:methodName}(${2:params}): ${3:void}",
       "{",
-      "    ${0}",
-      "}",
-      ""
-    ]
+      "\t${0}",
+      "}"
+    ],
+    "description": "public method"
   },
-  "private method": {
-    "prefix": "prif",
-    "description": "Create a private method",
-    "body": ["private function ${1}(${2}): ${3:void}", "{", "    ${0}", "}", ""]
+  "Protected Method": {
+    "prefix": "pmet",
+    "body": [
+      "protected function ${1:methodName}(${2:params}): ${3:void}",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "protected method"
+  },
+  "Private Method": {
+    "prefix": "pimet",
+    "body": [
+      "private function ${1:methodName}(${2:params}): ${3:void}",
+      "{",
+      "\t${0}",
+      "}"
+    ],
+    "description": "private method"
   },
   "public static method": {
     "prefix": "pubsf",
-    "description": "Create a public static method",
     "body": [
-      "public static function ${1}(${2}): ${3:void}",
+      "public static function ${1:methodName}(${2:params}): ${3:void}",
       "{",
-      "    ${0}",
-      "}",
-      ""
-    ]
+      "\t${0}",
+      "}"
+    ],
+    "description": "Create a public static method"
+  },
+  "Insert this->": {
+    "prefix": "th",
+    "body": ["$this->${0}"],
+    "description": "insert $this->"
   },
   "pest test (it) method": {
     "prefix": "it",
@@ -61,5 +74,10 @@
       "",
       "});"
     ]
+  },
+  "Match Statement": {
+    "prefix": "match",
+    "body": ["match(${1:expression}) {", "\t${0}", "};"],
+    "description": "match statement"
   }
 }

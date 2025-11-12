@@ -1,0 +1,149 @@
+{
+  "Arrow Function": {
+    "prefix": "fn",
+    "body": ["const ${1:name} = (${2:params}): ${3:void} => {", "\t${0}", "};"],
+    "description": "Arrow function with explicit return type"
+  },
+  "Async Function": {
+    "prefix": "afn",
+    "body": [
+      "async function ${1:name}(${2:params}): Promise<${3:void}> {",
+      "\t${0}",
+      "}"
+    ],
+    "description": "Async function declaration"
+  },
+  "Class Declaration": {
+    "prefix": "cls",
+    "body": [
+      "export class ${1:ClassName} {",
+      "\tconstructor(${2:params}) {",
+      "\t\t${3:// constructor body}",
+      "\t}",
+      "",
+      "\t${0}",
+      "}"
+    ],
+    "description": "ES6 class with constructor"
+  },
+  "Interface": {
+    "prefix": "iface",
+    "body": [
+      "export interface ${1:InterfaceName} {",
+      "\t${2:property}: ${3:type};",
+      "}"
+    ],
+    "description": "TypeScript interface"
+  },
+  "Type Alias": {
+    "prefix": "type",
+    "body": ["export type ${1:TypeName} = {", "\t${2:key}: ${3:type};", "};"],
+    "description": "Type alias"
+  },
+  "Const Declaration": {
+    "prefix": "const",
+    "body": ["const ${1:name}: ${2:type} = ${3:value};"],
+    "description": "Const declaration with type"
+  },
+  "Import Named": {
+    "prefix": "imp",
+    "body": ["import { ${1:Something} } from '${2:module}';"],
+    "description": "Import named symbols"
+  },
+  "Import Default": {
+    "prefix": "imd",
+    "body": ["import ${1:DefaultExport} from '${2:module}';"],
+    "description": "Import default export"
+  },
+  "Export": {
+    "prefix": "exp",
+    "body": ["export { ${1:Symbol} };"],
+    "description": "Export symbol"
+  },
+  "Export Default": {
+    "prefix": "expd",
+    "body": ["export default ${1:Symbol};"],
+    "description": "Export default symbol"
+  },
+  "React FC": {
+    "prefix": "rfc",
+    "body": [
+      "import React from 'react';",
+      "",
+      "interface ${1:Props} {",
+      "\t${2:propName}?: ${3:string};",
+      "}",
+      "",
+      "export const ${4:ComponentName}: React.FC<${1:Props}> = ({ ${2:propName} }) => {",
+      "\treturn (",
+      "\t\t<div>",
+      "\t\t\t${0}",
+      "\t\t</div>",
+      "\t);",
+      "};"
+    ],
+    "description": "React functional component with props interface"
+  },
+  "React Hook useState": {
+    "prefix": "us",
+    "body": [
+      "const [${1:state}, set${2:State}] = React.useState<${3:type}>(${4:initial});"
+    ],
+    "description": "React useState hook"
+  },
+  "React Hook useEffect": {
+    "prefix": "ue",
+    "body": [
+      "React.useEffect(() => {",
+      "\t${1:// effect logic}",
+      "\treturn () => {",
+      "\t\t${2:// cleanup}",
+      "\t};",
+      "}, [${3:deps}]);"
+    ],
+    "description": "React useEffect hook"
+  },
+  "Try Catch": {
+    "prefix": "try",
+    "body": [
+      "try {",
+      "\t${1:// code}",
+      "} catch (error) {",
+      "\tconsole.error(${2:'Error:'}, error);",
+      "}"
+    ],
+    "description": "Try/catch block"
+  },
+  "For Of Loop": {
+    "prefix": "forof",
+    "body": ["for (const ${1:item} of ${2:array}) {", "\t${0}", "}"],
+    "description": "For-of loop"
+  },
+  "Map Function": {
+    "prefix": "map",
+    "body": ["${1:array}.map((${2:item}) => ${3:item});"],
+    "description": "Array map function"
+  },
+  "Console Log": {
+    "prefix": "clg",
+    "body": ["console.log(${1:variable});"],
+    "description": "Console log"
+  },
+  "Todo Comment": {
+    "prefix": "todo",
+    "body": ["// TODO: ${1:describe task}"],
+    "description": "TODO comment"
+  },
+  "Async Try Catch": {
+    "prefix": "atry",
+    "body": [
+      "try {",
+      "\tconst ${1:result} = await ${2:asyncCall}();",
+      "\t${3:// handle success}",
+      "} catch (error) {",
+      "\tconsole.error(${4:'Error:'}, error);",
+      "}"
+    ],
+    "description": "Async/await try-catch"
+  }
+}
