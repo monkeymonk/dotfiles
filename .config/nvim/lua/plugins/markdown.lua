@@ -20,13 +20,15 @@ return {
 
   -- pandoc integration and utilities for vim
   -- https://github.com/vim-pandoc/vim-pandoc
-  {
+  --[[ {
     "vim-pandoc/vim-pandoc",
     dependencies = "vim-pandoc/vim-pandoc-syntax",
-    ft = { "markdown", "pandoc" },
+    ft = { "pandoc" },
     init = function()
-      vim.g.pandoc_filetypes_handled = { "pandoc", "markdown" }
-      vim.g.pandoc_filetypes_pandoc_markdown = 0
+      -- prevent vim-pandoc from hijacking markdown filetypes
+      vim.g["pandoc#filetypes#handled"] = { "pandoc" }
+      vim.g["pandoc#filetypes#pandoc_markdown"] = 0
+      vim.g["pandoc#modules#disabled"] = { "filetype" }
     end,
     -- keys = {
     --   "<leader>nP",
@@ -34,15 +36,15 @@ return {
     --   desc = "Generate Presentation",
     --   mode = "n",
     -- },
-  },
+  }, ]]
 
   -- A neovim plugin leveraging pandoc to help you convert your markdown files. It takes pandoc options from yaml blocks.
   -- https://github.com/jghauser/auto-pandoc.nvim
-  {
+  --[[ {
     "jghauser/auto-pandoc.nvim",
     dependencies = "nvim-lua/plenary.nvim",
-    ft = { "markdown", "pandoc" },
-  },
+    ft = { "pandoc" },
+  }, ]]
 
   -- TODO: check https://mfontanini.github.io/presenterm/
 

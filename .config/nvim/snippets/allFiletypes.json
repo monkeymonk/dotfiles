@@ -1,1 +1,161 @@
-{}
+{
+  "TODO Comment": {
+    "prefix": "todo",
+    "body": ["// TODO: ${1:describe task}"],
+    "description": "Mark a TODO comment"
+  },
+  "FIXME Comment": {
+    "prefix": "fixme",
+    "body": ["// FIXME: ${1:describe issue}"],
+    "description": "Mark a FIXME comment"
+  },
+  "NOTE Comment": {
+    "prefix": "note",
+    "body": ["// NOTE: ${1:important detail}"],
+    "description": "Add a NOTE comment"
+  },
+  "SECTION Comment": {
+    "prefix": "sec",
+    "body": [
+      "// ===============================",
+      "// ${1:Section name}",
+      "// ===============================",
+      "${0}"
+    ],
+    "description": "Section separator comment"
+  },
+  "Timestamp Comment": {
+    "prefix": "time",
+    "body": [
+      "// ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE} ${1:message}"
+    ],
+    "description": "Insert timestamp comment"
+  },
+  "Console Log (Universal)": {
+    "prefix": "log",
+    "body": ["console.log(${1:variable});"],
+    "description": "Log a variable (JS/TS)"
+  },
+  "Print Debug": {
+    "prefix": "print",
+    "body": ["print(${1:variable})"],
+    "description": "Print a variable (Python/PHP)"
+  },
+  "Comment Banner Block": {
+    "prefix": "banner",
+    "body": [
+      "/********************************************/",
+      "/*  ${1:Banner Title}  */",
+      "/********************************************/"
+    ],
+    "description": "Visual banner separator"
+  },
+  "Multiline Comment": {
+    "prefix": "cm",
+    "body": ["/**", " * ${1:Description}", " *", " * @author ${2:You}", " */"],
+    "description": "Multiline doc comment"
+  },
+  "Function Docblock": {
+    "prefix": "doc",
+    "body": [
+      "/**",
+      " * ${1:Function summary}",
+      " *",
+      " * @param {${2:type}} ${3:param} - ${4:description}",
+      " * @returns {${5:type}} ${6:description}",
+      " */"
+    ],
+    "description": "Function documentation block"
+  },
+  "Separator Line": {
+    "prefix": "sep",
+    "body": ["//-------------------------------------------"],
+    "description": "Horizontal separator line"
+  },
+  "License Header": {
+    "prefix": "license",
+    "body": [
+      "/**",
+      " * @license",
+      " * Copyright (c) ${CURRENT_YEAR} ${1:Your Name or Company}",
+      " * All rights reserved.",
+      " */",
+      ""
+    ],
+    "description": "Insert license header"
+  },
+  "File Header Block": {
+    "prefix": "file",
+    "body": [
+      "/**",
+      " * File: ${TM_FILENAME}",
+      " * Author: ${1:Your Name}",
+      " * Created: ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}",
+      " * Description: ${2:File purpose}",
+      " */",
+      ""
+    ],
+    "description": "Standard file header"
+  },
+  "Snippet Placeholder": {
+    "prefix": "ph",
+    "body": ["${1:/* placeholder */}"],
+    "description": "Placeholder for temporary code"
+  },
+  "Block Comment TODO": {
+    "prefix": "btodo",
+    "body": ["/** TODO: ${1:describe task} */"],
+    "description": "Block-style TODO"
+  },
+  "Debugger Statement": {
+    "prefix": "dbg",
+    "body": ["debugger;"],
+    "description": "Debugger breakpoint (JS)"
+  },
+  "Divider (ASCII Line)": {
+    "prefix": "div",
+    "body": [
+      "/* ===================================== */",
+      "/* ${1:Section or Logic} */",
+      "/* ===================================== */"
+    ],
+    "description": "Divider comment block"
+  },
+  "Markdown Comment (HTML)": {
+    "prefix": "mcom",
+    "body": ["<!-- ${1:comment} -->"],
+    "description": "HTML-style comment for Markdown or HTML files"
+  },
+  "JSON Comment (Fake)": {
+    "prefix": "jcom",
+    "body": ["// ${1:comment}"],
+    "description": "JSON-compatible fake comment (for config files)"
+  },
+  "Console Table": {
+    "prefix": "tbl",
+    "body": ["console.table(${1:data});"],
+    "description": "Log data as table"
+  },
+  "Random UUID Placeholder": {
+    "prefix": "uuid",
+    "body": ["${RANDOM_UUID}"],
+    "description": "Insert random UUID"
+  },
+  "Print Separator": {
+    "prefix": "ps",
+    "body": [
+      "print('------------------------------------')",
+      "print(${1:message})"
+    ],
+    "description": "Print a visual separator (Python/PHP)"
+  },
+  "Comment TODO Box": {
+    "prefix": "todoBox",
+    "body": [
+      "/****************************/",
+      "/*   TODO: ${1:description}  */",
+      "/****************************/"
+    ],
+    "description": "Visual TODO box"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "React Functional Component": {
+    "prefix": "rfc",
+    "body": [
+      "import React from 'react';",
+      "",
+      "export default function ${1:ComponentName}(${2:props}) {",
+      "\treturn (",
+      "\t\t<div>",
+      "\t\t\t${0}",
+      "\t\t</div>",
+      "\t);",
+      "}"
+    ],
+    "description": "React functional component"
+  },
+  "React Arrow Component": {
+    "prefix": "rafc",
+    "body": [
+      "import React from 'react';",
+      "",
+      "const ${1:ComponentName} = (${2:props}) => {",
+      "\treturn (",
+      "\t\t<div>",
+      "\t\t\t${0}",
+      "\t\t</div>",
+      "\t);",
+      "};",
+      "",
+      "export default ${1:ComponentName};"
+    ],
+    "description": "React arrow function component"
+  },
+  "useState Hook": {
+    "prefix": "us",
+    "body": [
+      "const [${1:state}, set${2:State}] = React.useState(${3:initial});"
+    ],
+    "description": "useState hook"
+  },
+  "useEffect Hook": {
+    "prefix": "ue",
+    "body": [
+      "React.useEffect(() => {",
+      "\t${1:// effect logic}",
+      "\treturn () => {",
+      "\t\t${2:// cleanup}",
+      "\t};",
+      "}, [${3:deps}]);"
+    ],
+    "description": "useEffect hook"
+  },
+  "useRef Hook": {
+    "prefix": "ur",
+    "body": ["const ${1:ref} = React.useRef(${2:null});"],
+    "description": "useRef hook"
+  },
+  "useCallback Hook": {
+    "prefix": "ucb",
+    "body": [
+      "const ${1:callback} = React.useCallback(() => {",
+      "\t${2:// logic}",
+      "}, [${3:deps}]);"
+    ],
+    "description": "useCallback hook"
+  },
+  "useMemo Hook": {
+    "prefix": "um",
+    "body": [
+      "const ${1:value} = React.useMemo(() => ${2:computeSomething()}, [${3:deps}]);"
+    ],
+    "description": "useMemo hook"
+  },
+  "PropTypes Import": {
+    "prefix": "pt",
+    "body": ["import PropTypes from 'prop-types';"],
+    "description": "Import PropTypes"
+  },
+  "Default Props": {
+    "prefix": "dp",
+    "body": [
+      "${1:ComponentName}.defaultProps = {",
+      "\t${2:prop}: ${3:value},",
+      "};"
+    ],
+    "description": "Default props"
+  }
+}
