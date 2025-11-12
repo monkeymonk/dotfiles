@@ -12,9 +12,9 @@ return {
   {
     "saghen/blink.cmp",
     opts = function(_, opts)
+      opts.snippets = { preset = "luasnip" }
       opts.sources = vim.tbl_deep_extend("force", opts.sources or {}, {
         default = { "lsp", "avante", "path", "snippets", "buffer", "dadbod" },
-
         providers = {
           -- Avante: real Blink source (no compat layer needed)
           avante = {
