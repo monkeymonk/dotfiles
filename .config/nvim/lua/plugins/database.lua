@@ -64,7 +64,7 @@ return {
     end,
     keys = {
       {
-        "<leader>odt",
+        "<leader>Dt",
         "<cmd>DBUIToggle<cr>",
         noremap = true,
         silent = true,
@@ -90,7 +90,7 @@ return {
       -- Install tries to automatically detect the install method.
       -- if it fails, try calling it with one of these parameters:
       --    "curl", "wget", "bitsadmin", "go"
-      require("dbee").install()
+      require("d ee").install()
     end,
     config = function(_, opts)
       require("dbee").setup(opts)
@@ -100,7 +100,7 @@ return {
     event = "VeryLazy",
     keys = {
       {
-        "<leader>odb",
+        "<leader>Db",
         function()
           require("dbee").toggle()
         end,
