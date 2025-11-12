@@ -40,32 +40,27 @@ return {
       preset = "modern",
       spec = {
         -- hidden
-        { "<leader>-", hidden = true },
-        { "<leader>D", hidden = true },
-        { "<leader>|", hidden = true },
-        { "<leader>l", hidden = true },
-        { "<leader>L", hidden = true },
+        { "<leader>-", "<Nop>", hidden = true },
+        { "<leader>D", "<Nop>", hidden = true },
+        { "<leader>|", "<Nop>", hidden = true },
+        { "<leader>l", "<Nop>", hidden = true },
+        { "<leader>L", "<Nop>", hidden = true },
         -- groups
         {
           "<leader>G",
           group = "Godot",
-          hidden = not is_godot_project(),
+          cond = is_godot_project(),
         },
         { "<leader>a", group = "ai" },
-        {
-          "<leader>aN",
-          group = "NeoAI",
-          desc = "NeoAI commands",
-        },
         { "<leader>m", group = "markers" },
         { "<leader>n", group = "notes" },
-        { "<leader>od", group = "database" },
+        { "<leader>O", group = "database" },
         {
-          "<leader>ol",
+          "<leader>L",
           group = "Laravel",
-          hidden = not is_laravel_project(),
+          cond = is_laravel_project(),
         },
-        { "<leader>os", group = "snippets" },
+        { "<leader>cs", "<Nop>", group = "snippets" },
         {
           "<leader>qL",
           "<cmd> Lazy <CR>",

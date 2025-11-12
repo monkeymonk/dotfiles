@@ -40,12 +40,12 @@ return {
     event = "VeryLazy",
     keys = {
       {
-        "<leader>ose",
+        "<leader>cse",
         "<cmd> lua require('scissors').editSnippet() <CR>",
         desc = "Edit snippet",
       },
       {
-        "<leader>oss",
+        "<leader>css",
         "<cmd> lua require('scissors').addNewSnippet() <CR>",
         desc = "Add snippet",
       },
@@ -70,16 +70,6 @@ return {
         "<leader>oh",
         "<cmd> Telescope yank_history <CR>",
         desc = "Yanky history",
-      },
-      {
-        "p",
-        "<Plug>(YankyPutAfter)",
-        desc = "Paste after",
-      },
-      {
-        "P",
-        "<Plug>(YankyPutBefore)",
-        desc = "Paste before",
       },
       {
         "gp",
