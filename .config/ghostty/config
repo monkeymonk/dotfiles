@@ -47,6 +47,10 @@ font-family = JetBrains Mono
 font-size = 8
 background-opacity = 0.8
 
+# clipboard
+clipboard-write = allow
+clipboard-read = allow
+
 # cursor
 cursor-style = block
 cursor-style-blink = true
