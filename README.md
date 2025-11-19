@@ -1,14 +1,26 @@
 # <img src="dotfiles-logo.png" alt="Dotfiles" width="200" />
 
-> Dotfiles are managed using [git bare](https://www.atlassian.com/git/tutorials/dotfiles).
+> A structured collection of configuration files and environment settings managed using [git bare](https://www.atlassian.com/git/tutorials/dotfiles).
 
+---
+
+## Overview
+
+This repository contains a curated set of dotfiles and configuration directories intended for use with a _bare Git repository_ workflow.  
+The structure keeps the home directory clean, supports reproducible environments, and enables simple deployment across multiple machines.
+
+Two repositories are typically used:
+
+- **dotfiles** — Non-sensitive public configuration
+- **secretfiles** — Private configuration and secrets (encrypted)
+
+---
 
 ## Installation
 
 ```bash
 git clone --bare git@github.com:monkeymonk/dotfiles.git $HOME/.dotfiles
 alias dotfiles="/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
-mkdir -p .dotfiles-backup
 dotfiles config status.showUntrackedFiles no
 dotfiles checkout
 ```
@@ -19,15 +31,17 @@ If you have pre-existing dotfiles, back them up before checking out the new ones
 
 ```bash
 dotfiles checkout
+
 if [ $? = 0 ]; then
   echo "Checked out dotfiles.";
 else
   echo "Backing up pre-existing dot files.";
-  mkdir -p .dotfiles-backup  # Create the backup directory if it doesn't exist
-  dotfiles checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | xargs -I{} mv {} .dotfiles-backup/{}
+  mkdir -p $HOME/.dotfiles-backup  # Create the backup directory if it doesn't exist
+  dotfiles checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | xargs -I{} mv {} $HOME/.dotfiles-backup/{}
 fi;
 ```
 
+---
 
 ## Usage
 
@@ -43,14 +57,13 @@ dotfiles push --set-upstream origin main
 dotfiles push
 ```
 
-
 ---
-
 
 # Secretfiles
 
-> Secret files are managed using [git-secret](https://sobolevn.me/git-secret/) and [git bare](https://www.atlassian.com/git/tutorials/dotfiles).
+> A separate encrypted repository can be used to store secrets using [git-secret](https://sobolevn.me/git-secret/) and [git bare](https://www.atlassian.com/git/tutorials/dotfiles).
 
+---
 
 ## Installation
 
@@ -86,6 +99,7 @@ Now you can decrypt your files with:
 gpg --output .config/shell/secrets.sh --decrypt --try-all-secrets .config/shell/secrets.sh.secret
 ```
 
+---
 
 ## Usage
 
@@ -103,18 +117,6 @@ secretfiles push --set-upstream origin main
 secretfiles push
 ```
 
-
 ---
-
-
-# TODO
-
-- Update README.md with real examples and commands
-- Cleanup and refactor .config/shell
-- Move custom bins to .config/shell/bin
-
-
----
-
 
 dotfiles' logo by [Joel Glovier](https://github.com/jglovier/dotfiles-logo)
