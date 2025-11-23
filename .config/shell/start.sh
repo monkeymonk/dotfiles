@@ -78,7 +78,7 @@ fi
 if command -v tmux >/dev/null 2>&1; then
   # Start tmux if it's not already running
   if [ -z "$TMUX" ]; then
-    tmux
+    tmux new-session -A -s Default -c ~
   fi
 fi
 
