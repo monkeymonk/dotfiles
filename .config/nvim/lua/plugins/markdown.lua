@@ -3,6 +3,7 @@ return {
   -- https://github.com/YousefHadder/markdown-plus.nvim
   {
     "yousefhadder/markdown-plus.nvim",
+    config = true,
     ft = "markdown",
   },
 
