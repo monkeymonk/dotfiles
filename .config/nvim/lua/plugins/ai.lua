@@ -162,65 +162,76 @@ return {
     lazy = false,
     opts = function()
       local mcphub = require("mcphub")
+
+      -- Detect if Ollama is running
+      local function ollama_available()
+        return vim.fn.executable("ollama") == 1
+      end
+
       return {
-        auto_suggestions_provider = "openai",
+        -- 🔁 AUTO SUGGESTIONS (AUTOCOMPLETE)
+        auto_suggestions_provider = ollama_available() and "ollama" or "openai",
+
         behaviour = {
           auto_suggestions = true,
           support_paste_from_clipboard = true,
         },
-        -- Tell Avante to expose its completion sources for blink
-        compat = { "avante_commands", "avante_mentions", "avante_files" }, -- :contentReference[oaicite:0]{index=0}
-        -- Expose MCP tools so the LLM can call them
-        custom_tools = function()
-          return {
-            require("mcphub.extensions.avante").mcp_tool(),
-          }
-        end,
-        debug = false,
-        disabled_tools = { "read_file", "create_file", "delete_file", "bash" },
-        --[[ mappings = {
-        ask = "<leader>xaa",
-        edit = "<leader>xae",
-        refresh = "<leader>xar",
-        focus = "<leader>xaf",
-        toggle = {
-          default = "<leader>xat",
-          debug = "<leader>xad",
-          hint = "<leader>xah",
-          suggestion = "<leader>xas",
-          repomap = "<leader>xaR",
-        },
-      }, ]]
-        embed = { -- Configuration for the Embedding Model used by the RAG service
-          provider = "openai", -- The Embedding provider ("openai")
-          endpoint = "https://api.openai.com/v1", -- The Embedding API endpoint
-          api_key = "OPENAI_API_KEY", -- The environment variable name for the Embedding API key
-          model = "text-embedding-3-large", -- The Embedding model name (e.g., "text-embedding-3-small", "text-embedding-3-large")
-          extra = { -- Extra configuration options for the Embedding model (optional)
-            dimensions = nil,
-          },
-        },
-        llm = { -- Configuration for the Language Model (LLM) used by the RAG service
-          provider = "openai", -- The LLM provider ("openai")
-          endpoint = "https://api.openai.com/v1", -- The LLM API endpoint
-          api_key = "OPENAI_API_KEY", -- The environment variable name for the LLM API key
-          model = "gpt-4o-mini", -- The LLM model name (e.g., "gpt-4o-mini", "gpt-3.5-turbo")
-          extra = { -- Extra configuration options for the LLM (optional)
-            temperature = 0.7, -- Controls the randomness of the output. Lower values make it more deterministic.
-            max_tokens = 512, -- The maximum number of tokens to generate in the completion.
-            -- system_prompt = "You are a helpful assistant.", -- A system prompt to guide the model's behavior.
-            -- timeout = 120, -- Request timeout in seconds.
-          },
-        },
-        provider = "openai",
+
+        -- PROVIDERS
+        provider = "ollama",
+
         providers = {
+          -- 🔥 OLLAMA (LOCAL)
+          ollama = {
+            endpoint = "http://localhost:11434/v1",
+            model = "deepseek-coder-v2:lite",
+            timeout = 30,
+            extra = {
+              temperature = 0.1,
+              max_tokens = 64, -- IMPORTANT for autocomplete
+            },
+          },
+
+          -- ☁️ OPENAI (FALLBACK / TOOLS / RAG)
           openai = {
             endpoint = "https://api.openai.com/v1",
             model = "gpt-4o-mini",
           },
         },
-        suggestion = { debounce = 300, throttle = 300 },
-        -- Let the LLM “see” which MCP servers & tools are available
+
+        -- RAG / EMBEDDINGS (KEEP OPENAI)
+        embed = {
+          provider = "openai",
+          endpoint = "https://api.openai.com/v1",
+          api_key = "OPENAI_API_KEY",
+          model = "text-embedding-3-large",
+        },
+
+        llm = {
+          provider = "openai",
+          endpoint = "https://api.openai.com/v1",
+          api_key = "OPENAI_API_KEY",
+          model = "gpt-4o-mini",
+          extra = {
+            temperature = 0.7,
+            max_tokens = 512,
+          },
+        },
+
+        -- MCP / TOOLS
+        custom_tools = function()
+          return {
+            require("mcphub.extensions.avante").mcp_tool(),
+          }
+        end,
+
+        disabled_tools = { "read_file", "create_file", "delete_file", "bash" },
+
+        suggestion = {
+          debounce = 200,
+          throttle = 200,
+        },
+
         system_prompt = function()
           local hub = mcphub.get_hub_instance()
           return hub and hub:get_active_servers_prompt() or ""
@@ -241,17 +252,42 @@ return {
       "nvim-treesitter/nvim-treesitter",
     },
     opts = {
-      -- @see https://codecompanion.olimorris.dev/configuration/prompt-library.html
-      --prompt_library = {},
       strategies = {
         chat = {
-          adapter = "openai",
+          adapter = "ollama",
         },
         cmd = {
-          adapter = "openai",
+          adapter = "ollama",
         },
         inline = {
-          adapter = "openai",
+          adapter = "ollama",
+        },
+      },
+
+      adapters = {
+        -- 🔥 OLLAMA
+        ollama = {
+          schema = {
+            model = {
+              default = "deepseek-coder-v2:lite",
+            },
+          },
+          env = {
+            url = "http://localhost:11434/v1",
+            api_key = "ollama", -- dummy
+          },
+        },
+
+        -- ☁️ OPENAI (OPTIONAL FALLBACK)
+        openai = {
+          schema = {
+            model = {
+              default = "gpt-4o-mini",
+            },
+          },
+          env = {
+            api_key = "OPENAI_API_KEY",
+          },
         },
       },
     },
