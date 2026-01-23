@@ -2,13 +2,11 @@
 #
 #    _______   ____ ___
 #   ╱       ╲╲╱    ╱   ╲
-#  ╱        ╱╱         ╱    Monkey Monk
-# ╱         ╱╱       _╱     http://monkeymonk.be
+#  ╱        ╱╱         ╱    Stéphan Zych
+# ╱         ╱╱       _╱     https://stephan.zych.be
 # ╲__╱__╱__╱╲╲___╱___╱
 #
 
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
-
-. "$HOME/.config/shell/start.sh"
+[ -f "$HOME/.config/cli/start.sh" ] && . "$HOME/.config/cli/start.sh"

@@ -1,5 +1,6 @@
-# Only run in zsh
-[[ -n "$ZSH_VERSION" ]] || return 0
+# shells/zsh/clipboard.zsh
+
+[[ -n "${ZSH_VERSION-}" ]] || return 0
 
 # Cross-platform clipboard command
 clipboard() {
@@ -9,7 +10,7 @@ clipboard() {
     return
   fi
 
-  # X11 (Linux/BSD)
+  # X11
   if [[ -n "$DISPLAY" ]]; then
     if command -v xclip >/dev/null; then
       xclip -selection clipboard
@@ -43,7 +44,6 @@ clipboard() {
   printf '\e]52;c;%s\a' "$data"
 }
 
-# Get clipboard content
 clipboard_get() {
   if [[ -n "$WAYLAND_DISPLAY" ]] && command -v wl-paste >/dev/null; then
     wl-paste
@@ -60,14 +60,12 @@ clipboard_get() {
 
 # Hook into zsh-vi-mode after it's loaded
 function zvm_after_init() {
-  # Override the yank behavior to also copy to system clipboard
   function zvm_vi_yank() {
     zvm_yank
     echo -n "${CUTBUFFER}" | clipboard
     zvm_exit_visual_mode
   }
 
-  # Bind 'p' to paste from system clipboard in normal mode
   function zvm_vi_put_after() {
     local clip_content="$(clipboard_get)"
     [[ -n "$clip_content" ]] && CUTBUFFER="$clip_content"
@@ -80,7 +78,6 @@ function zvm_after_init() {
     zvm_vicmd "put-before"
   }
 
-  # Rebind the keys
   zvm_bindkey vicmd 'y' zvm_vi_yank
   zvm_bindkey vicmd 'p' zvm_vi_put_after
   zvm_bindkey vicmd 'P' zvm_vi_put_before
