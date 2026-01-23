@@ -1,7 +1,3 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
-
-
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -112,28 +108,17 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
-ZSH_PYENV_QUIET=true # shush the annoying "pyenv poorly configured" messages
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
 # users are encouraged to define aliases within the ZSH_CUSTOM folder.
 # For a full list of active aliases, run `alias`.
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
 #    _______   ____ ___
 #   ╱       ╲╲╱    ╱   ╲
-#  ╱        ╱╱         ╱    Monkey Monk
-# ╱         ╱╱       _╱     http://monkeymonk.be
+#  ╱        ╱╱         ╱    Stéphan Zych
+# ╱         ╱╱       _╱     https://stephan.zych.be
 # ╲__╱__╱__╱╲╲___╱___╱
 #
-. "$HOME/.config/shell/start.sh"
+
+[ -f "$HOME/.config/cli/start.sh" ] && . "$HOME/.config/cli/start.sh"
 
