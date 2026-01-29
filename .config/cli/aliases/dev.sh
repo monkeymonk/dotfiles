@@ -9,6 +9,7 @@ alias pipupgrade='pip list --outdated | cut -d " " -f 1 | xargs pip install --up
 alias vim='nvim'
 alias vi='nvim'
 alias v='nvim'
+alias vl="nvim +'lua require(\"persistence\").load()'"
 
 # Config shortcuts
 alias bashrc="${EDITOR} ~/.bashrc"
@@ -19,9 +20,6 @@ alias vimconfig="cd ~/.config/nvim && ${EDITOR}"
 
 # tmux
 alias fux='tmuxp load $(tmuxp ls | fzf --layout=reverse --info=inline --height=40%)'
-
-# wezterm (flatpak)
-alias wezterm='flatpak run org.wezfurlong.wezterm'
 
 alias benchurl='cli_benchurl'
 alias update='cli_update'
