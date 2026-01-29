@@ -103,4 +103,7 @@ cli_path_prepend "$HOME/.opencode/bin"
 # pyenv (PATH only; shell init happens in shells/<shell>/)
 cli_path_prepend "$HOME/.pyenv/bin"
 
+# Bun
+cli_path_prepend "$HOME/.bun/bin"
+
 export PATH

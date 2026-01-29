@@ -28,6 +28,7 @@ fi
 
 reload() {
   # If your ~/.bashrc sources the CLI bootstrap, this reloads everything.
+  local start_time=$(date +%s%N)
   if [ -f "$HOME/.bashrc" ]; then
     . "$HOME/.bashrc"
   fi
@@ -36,7 +37,9 @@ reload() {
     . "$CLI_HOME/start.sh"
   fi
 
-  echo "Bash config reloaded"
+  local end_time=$(date +%s%N)
+  local elapsed=$(( (end_time - start_time) / 1000000 ))
+  echo "Bash config reloaded in ${elapsed}ms"
 }
 
 cli_cd() {

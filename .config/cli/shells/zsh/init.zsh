@@ -10,6 +10,9 @@ esac
 
 autoload -Uz add-zsh-hook 2>/dev/null || true
 
+# Bun completions
+[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
 cli_cd() {
   builtin cd "$@" || return
   ls -Fa
@@ -95,9 +98,12 @@ alias ohmyzsh="${EDITOR} ~/.oh-my-zsh"
 
 reload() {
   # Reload zsh config and re-run the CLI bootstrap.
+  local start_time=$(date +%s%N)
   source "$HOME/.zshrc"
   source "$CLI_HOME/start.sh"
-  echo "ZSH config reloaded"
+  local end_time=$(date +%s%N)
+  local elapsed=$(( (end_time - start_time) / 1000000 ))
+  echo "ZSH config reloaded in ${elapsed}ms"
 }
 
 # compat: source any remaining legacy zsh snippets

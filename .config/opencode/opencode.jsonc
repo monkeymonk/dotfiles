@@ -1,0 +1,294 @@
+{
+  "plugin": [/*"oh-my-opencode", */ "opencode-openai-codex-auth"],
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "opencode",
+  "provider": {
+    "openai": {
+      "name": "OpenAI",
+      "options": {
+        "reasoningEffort": "medium",
+        "reasoningSummary": "auto",
+        "textVerbosity": "medium",
+        "include": ["reasoning.encrypted_content"],
+        "store": false,
+      },
+      "models": {
+        "gpt-5.2": {
+          "name": "GPT 5.2 (OAuth)",
+          "limit": {
+            "context": 272000,
+            "output": 128000,
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"],
+          },
+          "variants": {
+            "none": {
+              "reasoningEffort": "none",
+              "reasoningSummary": "auto",
+              "textVerbosity": "medium",
+            },
+            "low": {
+              "reasoningEffort": "low",
+              "reasoningSummary": "auto",
+              "textVerbosity": "medium",
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "reasoningSummary": "auto",
+              "textVerbosity": "medium",
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+          },
+        },
+        "gpt-5.2-codex": {
+          "name": "GPT 5.2 Codex (OAuth)",
+          "limit": {
+            "context": 272000,
+            "output": 128000,
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"],
+          },
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "reasoningSummary": "auto",
+              "textVerbosity": "medium",
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "reasoningSummary": "auto",
+              "textVerbosity": "medium",
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+          },
+        },
+        "gpt-5.1-codex-max": {
+          "name": "GPT 5.1 Codex Max (OAuth)",
+          "limit": {
+            "context": 272000,
+            "output": 128000,
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"],
+          },
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh",
+              "reasoningSummary": "detailed",
+              "textVerbosity": "medium",
+            },
+          },
+        },
+      },
+    },
+    "ollama": {
+      "name": "Ollama (local, OpenAI-compatible API)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1",
+      },
+      "models": {
+        "deepseek-coder-v2:lite": {
+          "name": "DeepSeek Coder v2 Lite",
+          "limit": {
+            "context": 32768,
+            "output": 8192,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "Very fast local coding model. Best for explanations, small edits, and quick iterations. Avoid large multi-file refactors.",
+        },
+
+        "qwen2.5-coder:14b": {
+          "name": "Qwen 2.5 Coder 14B",
+          "limit": {
+            "context": 65536,
+            "output": 16384,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "Balanced local coding model. Good default for feature work, medium refactors, and file-level edits.",
+        },
+
+        "qwen2.5-coder:32b": {
+          "name": "Qwen 2.5 Coder 32B",
+          "limit": {
+            "context": 65536,
+            "output": 32768,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "Heavy-duty local coding model. Best for large refactors, test generation, and multi-file changes. Slower but much more reliable.",
+        },
+
+        "starcoder2:15b": {
+          "name": "StarCoder2 15B",
+          "limit": {
+            "context": 32768,
+            "output": 8192,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "General-purpose code model. Less strong at reasoning, decent for straightforward code generation.",
+        },
+
+        "codestral:latest": {
+          "name": "Codestral",
+          "limit": {
+            "context": 32768,
+            "output": 8192,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "Fast code-focused model. Works well for syntax-heavy generation and simple transformations.",
+        },
+
+        "llama3.1:70b": {
+          "name": "LLaMA 3.1 70B",
+          "limit": {
+            "context": 131072,
+            "output": 16384,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "Strong reasoning and review model. Best for architecture discussions, infra reviews, and PR-style feedback. Not ideal for precise code edits.",
+        },
+
+        "llama3.2:latest": {
+          "name": "LLaMA 3.2",
+          "limit": {
+            "context": 65536,
+            "output": 8192,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "General reasoning model. Good fallback when 70B is too slow or unavailable.",
+        },
+
+        "lfm2.5-thinking:latest": {
+          "name": "LFM 2.5 Thinking",
+          "limit": {
+            "context": 65536,
+            "output": 8192,
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"],
+          },
+          "notes": "Reasoning-focused local model. Useful for analysis and planning, less reliable for concrete code edits.",
+        },
+      },
+    },
+  },
+  "model": "ollama/deepseek-coder-v2:lite",
+  "small_model": "ollama/deepseek-coder-v2:lite",
+  "autoupdate": true,
+  "command": {
+    "explain": {
+      "description": "Explain selected code or file clearly and concisely",
+      "model": "ollama/deepseek-coder-v2:lite",
+      "template": "Explain the following code or file clearly and concisely. Focus on intent, behavior, and important details.\n\n{{input}}",
+    },
+    "refactor": {
+      "description": "Refactor code for clarity and maintainability without changing behavior",
+      "model": "ollama/qwen2.5-coder:32b",
+      "template": "Refactor the following code to improve clarity, structure, and maintainability without changing its behavior. Explain the changes briefly.\n\n{{input}}",
+    },
+    "add-tests": {
+      "description": "Generate meaningful tests matching the project's stack",
+      "model": "ollama/qwen2.5-coder:32b",
+      "template": "Generate meaningful tests for the following code. Match the project's language, framework, and testing style. Focus on realistic and valuable coverage.\n\n{{input}}",
+    },
+    "review": {
+      "description": "Review code like a teammate in a merge request",
+      "model": "ollama/llama3.1:70b",
+      "template": "Review the following changes as if you were a teammate in a merge request. Focus on risks, maintainability, and potential improvements.\n\n{{input}}",
+    },
+    "explain-infra": {
+      "description": "Explain and review Docker, compose, and config files",
+      "model": "ollama/llama3.1:70b",
+      "template": "Explain and review the following infrastructure or configuration files. Highlight potential issues, best practices, and improvements.\n\n{{input}}",
+    },
+    "summarize": {
+      "description": "Summarize the selected file, folder, or repository",
+      "model": "ollama/llama3.1:70b",
+      "template": "Summarize the following content. Explain what it is, how it fits into the project, and what is important to know.\n\n{{input}}",
+    },
+  },
+  "agent": {
+    "coder": {
+      "description": "Fast coding assistance with tool support",
+      "model": "ollama/qwen2.5-coder:14b",
+    },
+    "architect": {
+      "description": "System design and architectural reasoning",
+      "model": "ollama/llama3.1:70b",
+    },
+    "reader": {
+      "description": "Read-only explanation and analysis",
+      "model": "ollama/deepseek-coder-v2:lite",
+    },
+    "refactor": {
+      "description": "Deep refactoring and code quality improvements",
+      "model": "ollama/qwen2.5-coder:32b",
+    },
+    "reviewer": {
+      "description": "PR-style review focused on risk and maintainability",
+      "model": "ollama/llama3.1:70b",
+    },
+  },
+  "mcp": {},
+  "disabled_providers": [],
+}

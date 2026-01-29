@@ -86,7 +86,7 @@ plugins=(
   pipenv
   pyenv
   python
-  qrcode
+  # qrcode
   rsync
   rust
   ssh
@@ -95,8 +95,8 @@ plugins=(
   sudo
   tmux
   ubuntu
-  wakeonlan
-  web-search
+  # wakeonlan
+  # web-search
   zoxide
   # zsh-autocomplete
   zsh-autosuggestions
