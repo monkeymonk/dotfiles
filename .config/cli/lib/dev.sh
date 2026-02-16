@@ -1,4 +1,5 @@
 # lib/dev.sh
+# Depends: lib/ux.sh (cli_print_ok)
 
 cli_benchurl() {
   # https://stackoverflow.com/questions/18215389/

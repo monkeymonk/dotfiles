@@ -11,6 +11,7 @@ HISTCONTROL=ignoreboth
 shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
+HISTORY_IGNORE='(ls|cd|pwd|exit|sudo reboot|history|cd -|cd ..)'
 
 shopt -s checkwinsize
 
@@ -42,69 +43,36 @@ reload() {
   echo "Bash config reloaded in ${elapsed}ms"
 }
 
-cli_cd() {
-  builtin cd "$@" || return
-  ls -Fa
-}
-
-cli_up() {
-  limit=${1:-1}
-  d=
-  i=0
-  while [ "$i" -lt "$limit" ]; do
-    d="../$d"
-    i=$((i + 1))
-  done
-
-  if [ ! -d "$d" ]; then
-    command -v cli_print_error >/dev/null 2>&1 && cli_print_error "Couldn't go up $limit dirs." || echo "Couldn't go up $limit dirs." >&2
-    return 1
-  fi
-
-  cli_cd "$d"
-}
-
-# starship
-if command -v starship >/dev/null 2>&1; then
-  eval "$(starship init bash)"
-fi
-
-# fzf
-if [ -f "$HOME/.fzf.bash" ]; then
-  . "$HOME/.fzf.bash"
-fi
-
-# "global" venv (preserve prior behavior)
-if [ -f "$HOME/venv/bin/activate" ]; then
-  . "$HOME/venv/bin/activate"
-fi
-
-# pyenv (bash init)
+# pyenv lazy loading (loads on first use)
 if [ -d "${PYENV_ROOT:-$HOME/.pyenv}" ] && command -v pyenv >/dev/null 2>&1; then
-  eval "$(pyenv init --path)"
-  eval "$(pyenv init -)"
+  _lazy_load_pyenv() {
+    unset -f pyenv python python3 pip pip3 _lazy_load_pyenv 2>/dev/null
+    eval "$(command pyenv init --path)"
+    eval "$(command pyenv init -)"
+  }
+
+  pyenv() { _lazy_load_pyenv; command pyenv "$@"; }
+  python() { _lazy_load_pyenv; command python "$@"; }
+  python3() { _lazy_load_pyenv; command python3 "$@"; }
+  pip() { _lazy_load_pyenv; command pip "$@"; }
+  pip3() { _lazy_load_pyenv; command pip3 "$@"; }
 fi
 
-alias cd='cli_cd'
-alias up='cli_up'
-alias ..='cli_up 2'
-alias ...='cli_up 3'
-alias ....='cli_up 4'
-
-# nvm (optional)
+# nvm lazy loading (loads on first use)
 if [ -n "${NVM_DIR-}" ] && [ -s "$NVM_DIR/nvm.sh" ]; then
-  . "$NVM_DIR/nvm.sh"
+  _lazy_load_nvm() {
+    unset -f nvm node npm npx _lazy_load_nvm 2>/dev/null
+    . "$NVM_DIR/nvm.sh"
 
-  if [ -f "$HOME/.config/cli/bin/cdnvm.sh" ]; then
-    . "$HOME/.config/cli/bin/cdnvm.sh"
-    alias cd='cdnvm'
-    cdnvm "$PWD" || return 0
-  fi
-fi
+    if [ -f "$HOME/.config/cli/bin/cdnvm.sh" ]; then
+      . "$HOME/.config/cli/bin/cdnvm.sh"
+      alias cd='cdnvm'
+      cdnvm "$PWD" || true
+    fi
+  }
 
-# tmux autostart
-if command -v tmux >/dev/null 2>&1; then
-  if [ -z "${TMUX-}" ]; then
-    tmux new-session -A -s Default -c ~
-  fi
+  nvm() { _lazy_load_nvm; nvm "$@"; }
+  node() { _lazy_load_nvm; node "$@"; }
+  npm() { _lazy_load_nvm; npm "$@"; }
+  npx() { _lazy_load_nvm; npx "$@"; }
 fi

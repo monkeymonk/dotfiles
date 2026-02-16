@@ -69,3 +69,6 @@ case ${-:-} in
   esac
   ;;
 esac
+
+# Clean up bootstrap-only helpers
+unset -f cli_source_if_exists cli_source_dir

@@ -7,6 +7,7 @@ setopt HIST_IGNORE_DUPS       # Don't record duplicate entries
 setopt HIST_IGNORE_SPACE      # Don't record entries starting with space
 setopt HIST_REDUCE_BLANKS     # Remove extra blanks from history
 setopt SHARE_HISTORY          # Share history between sessions
+HISTORY_IGNORE="(ls|cd|pwd|exit|sudo reboot|history|cd -|cd ..)"
 
 # Directory navigation
 setopt AUTO_CD                # cd by typing directory name
