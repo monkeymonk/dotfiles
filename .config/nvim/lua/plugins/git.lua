@@ -9,7 +9,7 @@ return {
       "nvim-telescope/telescope.nvim",
     },
     config = true,
-    event = "VeryLazy",
+    cmd = "Neogit",
     keys = {
       {
         "<leader>gg",
@@ -69,7 +69,6 @@ return {
     config = function()
       require("telescope").load_extension("advanced_git_search")
     end,
-    event = "VeryLazy",
     keys = {
       {
         "<leader>gB",
@@ -102,7 +101,6 @@ return {
   -- https://github.com/emmanueltouzery/agitator.nvim
   {
     "emmanueltouzery/agitator.nvim",
-    event = "VeryLazy",
     keys = {
       {
         "<leader>gt",
@@ -119,7 +117,7 @@ return {
   {
     "akinsho/git-conflict.nvim",
     config = true,
-    event = "VeryLazy",
+    event = "BufReadPost", -- Load when opening files (to detect conflicts)
     version = "*",
   },
 }

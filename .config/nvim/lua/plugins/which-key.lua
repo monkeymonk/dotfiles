@@ -81,7 +81,7 @@ return {
   -- https://github.com/NStefan002/screenkey.nvim
   {
     "NStefan002/screenkey.nvim",
-    lazy = false,
+    cmd = "Screenkey", -- Only load when :Screenkey command is used
     version = "*", -- or branch = "main", to use the latest commit
   },
 }

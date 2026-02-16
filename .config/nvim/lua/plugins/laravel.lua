@@ -321,51 +321,21 @@ return {
   {
     "EmranMR/tree-sitter-blade",
     dependencies = "nvim-treesitter/nvim-treesitter",
-    config = function()
-      require("nvim-treesitter.parsers").blade = {
-        filetype = "blade",
-        install_info = {
-          branch = "main",
-          files = { "src/parser.c" },
-          generate_requires_npm = true,
-          requires_generate_from_grammar = true,
-          url = "https://github.com/EmranMR/tree-sitter-blade",
-        },
-      }
-
-      vim.filetype.add({
-        pattern = {
-          [".*%.blade%.php"] = "blade",
-        },
-      })
-    end,
+    ft = "blade",
+    build = ":TSInstall blade",
   },
 
-  -- Add a Treesitter parser for Laravel Blade to provide Blade syntax highlighting.
+  -- Configure Treesitter for Blade syntax highlighting
   {
     "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
-      vim.list_extend(opts.ensure_installed, {
+      -- Ensure blade and php_only parsers are installed
+      vim.list_extend(opts.ensure_installed or {}, {
         "blade",
         "php_only",
       })
-    end,
-    config = function(_, opts)
-      vim.filetype.add({
-        pattern = {
-          [".*%.blade%.php"] = "blade",
-        },
-      })
 
-      require("nvim-treesitter").setup(opts)
-      require("nvim-treesitter.parsers").blade = {
-        filetype = "blade",
-        install_info = {
-          url = "https://github.com/EmranMR/tree-sitter-blade",
-          files = { "src/parser.c" },
-          branch = "main",
-        },
-      }
+      return opts
     end,
   },
 }

@@ -67,3 +67,6 @@ vim.filetype.add({ pattern = { [".*/git/config.*"] = "git_config" } })
 
 -- Set requirements-lock.txt or any variant as "requirements".
 vim.filetype.add({ pattern = { ["requirements.*.txt"] = "requirements" } })
+
+-- Set .blade.php files as "blade" (Laravel templates)
+vim.filetype.add({ pattern = { [".*%.blade%.php"] = "blade" } })

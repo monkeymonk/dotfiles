@@ -88,7 +88,7 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.helm" },
     { import = "lazyvim.plugins.extras.lang.json" },
     { import = "lazyvim.plugins.extras.lang.markdown" },
-    { import = "lazyvim.plugins.extras.lang.dotnet" },
+    -- { import = "lazyvim.plugins.extras.lang.dotnet" }, -- Disabled: Not used
     { import = "lazyvim.plugins.extras.lang.php" },
     { import = "lazyvim.plugins.extras.lang.python" },
     { import = "lazyvim.plugins.extras.lang.rust" },
@@ -111,24 +111,28 @@ require("lazy").setup({
     -- import custom plugins
     {
       dir = vim.fn.stdpath("config") .. "/monkeymonk/ascii",
+      lazy = false, -- Must load at startup (used by alpha dashboard timer)
       config = function()
         require("ascii").setup()
       end,
     },
     {
       dir = vim.fn.stdpath("config") .. "/monkeymonk/duplicate-lines",
+      cmd = { "DuplicatesHighlight", "DuplicatesShowInQuickfix", "DuplicatesClearHighlights" },
       config = function()
         require("duplicate-lines").setup()
       end,
     },
     {
       dir = vim.fn.stdpath("config") .. "/monkeymonk/markers",
+      event = "VeryLazy", -- Needs to remap 'm' key, load early but not at startup
       config = function()
         require("markers").setup()
       end,
     },
     {
       dir = vim.fn.stdpath("config") .. "/monkeymonk/tips",
+      lazy = false, -- Must load at startup (used by alpha dashboard timer)
       config = function()
         require("tips").setup()
       end,

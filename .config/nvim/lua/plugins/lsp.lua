@@ -25,7 +25,7 @@ return {
   {
     "zeioth/garbage-day.nvim",
     dependencies = "neovim/nvim-lspconfig",
-    event = "VeryLazy",
+    event = "LspAttach", -- Only load when LSP attaches
     opts = {
       excluded_lsp_clients = {},
       notifications = true,

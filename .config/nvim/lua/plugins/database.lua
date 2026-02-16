@@ -4,8 +4,7 @@ return {
   -- https://github.com/kristijanhusak/vim-dadbod-completion
   {
     "kristijanhusak/vim-dadbod-completion",
-    event = "VeryLazy",
-    ft = { "sql", "mysql", "plsql" },
+    ft = { "sql", "mysql", "plsql" }, -- Only load for SQL filetypes
   },
 
   -- Simple UI for https://github.com/tpope/vim-dadbod
@@ -17,7 +16,6 @@ return {
       { "tpope/vim-dadbod", lazy = true },
       { "kristijanhusak/vim-dadbod-completion", ft = { "sql", "mysql", "plsql" }, lazy = true },
     },
-    event = "VeryLazy",
     init = function()
       vim.g.db_ui_use_nerd_fonts = true
       vim.g.db_ui_show_database_icon = true
@@ -79,7 +77,6 @@ return {
     "tpope/vim-dadbod",
     cmd = "DB",
     dependencies = "kristijanhusak/vim-dadbod-completion",
-    event = "VeryLazy",
   },
 
   -- Interactive database client for neovim
@@ -90,14 +87,13 @@ return {
       -- Install tries to automatically detect the install method.
       -- if it fails, try calling it with one of these parameters:
       --    "curl", "wget", "bitsadmin", "go"
-      require("d ee").install()
+      require("dbee").install()
     end,
     config = function(_, opts)
       require("dbee").setup(opts)
     end,
     dependencies = "MunifTanjim/nui.nvim",
     -- enabled = false,
-    event = "VeryLazy",
     keys = {
       {
         "<leader>Db",
