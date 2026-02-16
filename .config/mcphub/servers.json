@@ -53,7 +53,8 @@
         "@modelcontextprotocol/server-postgres",
         "${POSTGRESQL_URL}"
       ],
-      "command": "npx"
+      "command": "npx",
+      "disabled": true
     },
     "sequentialthinking": {
       "args": [
