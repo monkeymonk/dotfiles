@@ -15,8 +15,6 @@ alias home='cd ~'
 
 alias please='sudo -'
 alias root='sudo -i'
-alias su='sudo -i'
-alias sudo='sudo -i'
 
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
@@ -58,6 +56,10 @@ alias :q='exit'
 alias q='exit'
 alias quit='exit'
 
-alias afk='xdg-screensaver lock'
+if [ "$OS" = macos ]; then
+  alias afk='pmset displaysleepnow'
+elif command -v xdg-screensaver >/dev/null 2>&1; then
+  alias afk='xdg-screensaver lock'
+fi
 alias logout='sudo pkill -u $USER'
 alias reboot='sudo reboot'

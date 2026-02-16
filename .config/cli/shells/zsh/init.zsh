@@ -13,83 +13,83 @@ autoload -Uz add-zsh-hook 2>/dev/null || true
 # Bun completions
 [[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 
-cli_cd() {
-  builtin cd "$@" || return
-  ls -Fa
-}
-
-cli_up() {
-  limit=${1:-1}
-  d=
-  i=0
-  while [ "$i" -lt "$limit" ]; do
-    d="../$d"
-    i=$((i + 1))
-  done
-
-  if [ ! -d "$d" ]; then
-    cli_print_error "Couldn't go up $limit dirs."
-    return 1
-  fi
-
-  cli_cd "$d"
-}
-
-alias cd='cli_cd'
-alias up='cli_up'
-alias ..='cli_up 2'
-alias ...='cli_up 3'
-alias ....='cli_up 4'
-
-# Prefer htop / batcat when present
-if command -v htop >/dev/null 2>&1; then
-  alias oldtop='/usr/bin/top'
-  alias top='htop'
-fi
-
-if command -v batcat >/dev/null 2>&1; then
-  alias oldcat='/usr/bin/cat'
-  alias bat='batcat'
-  alias cat='batcat'
-fi
-
-# starship
-if command -v starship >/dev/null 2>&1; then
-  eval "$(starship init zsh)"
-fi
-
-# fzf
-if [ -f "$HOME/.fzf.zsh" ]; then
-  source "$HOME/.fzf.zsh"
-fi
-
-# "global" venv (preserve prior behavior)
-if [ -f "$HOME/venv/bin/activate" ]; then
-  source "$HOME/venv/bin/activate"
-fi
-
-# pyenv (zsh init)
+# pyenv lazy loading (loads on first use)
 if [ -d "$PYENV_ROOT" ] && command -v pyenv >/dev/null 2>&1; then
-  eval "$(pyenv init --path)"
-  eval "$(pyenv init -)"
+  # Disable Oh My Zsh aliases that conflict with our function wrappers
+  disable -a pyenv python python3 pip pip3 2>/dev/null
+
+  # Helper to clean up and init pyenv
+  _lazy_load_pyenv() {
+    unfunction pyenv python python3 pip pip3 _lazy_load_pyenv 2>/dev/null
+    eval "$(command pyenv init --path)"
+    eval "$(command pyenv init -)"
+  }
+
+  # Lazy-load wrappers
+  function pyenv() {
+    _lazy_load_pyenv
+    pyenv "$@"
+  }
+
+  function python() {
+    _lazy_load_pyenv
+    python "$@"
+  }
+
+  function python3() {
+    _lazy_load_pyenv
+    python3 "$@"
+  }
+
+  function pip() {
+    _lazy_load_pyenv
+    pip "$@"
+  }
+
+  function pip3() {
+    _lazy_load_pyenv
+    pip3 "$@"
+  }
 fi
 
-# nvm + .nvmrc auto-load (optional)
+# nvm lazy loading (loads on first use)
 if [ -n "${NVM_DIR-}" ] && [ -s "$NVM_DIR/nvm.sh" ]; then
-  source "$NVM_DIR/nvm.sh"
+  # Disable Oh My Zsh aliases that conflict with our function wrappers
+  disable -a nvm node npm npx 2>/dev/null
 
-  if [ -f "$HOME/.config/cli/bin/load-nvmrc.zsh" ]; then
-    source "$HOME/.config/cli/bin/load-nvmrc.zsh"
-    add-zsh-hook chpwd load-nvmrc
-    load-nvmrc
-  fi
-fi
+  # Helper to clean up and init nvm
+  _lazy_load_nvm() {
+    unfunction nvm node npm npx _lazy_load_nvm 2>/dev/null
+    source "$NVM_DIR/nvm.sh"
 
-# tmux autostart (preserve previous behavior)
-if command -v tmux >/dev/null 2>&1; then
-  if [ -z "${TMUX-}" ]; then
-    tmux new-session -A -s Default -c ~
-  fi
+    # Load .nvmrc auto-switching after nvm is loaded
+    if [ -f "$HOME/.config/cli/bin/load-nvmrc.zsh" ]; then
+      source "$HOME/.config/cli/bin/load-nvmrc.zsh"
+      add-zsh-hook chpwd load-nvmrc
+      load-nvmrc
+    fi
+  }
+
+  # Lazy-load wrappers
+  function nvm() {
+    _lazy_load_nvm
+    nvm "$@"
+  }
+
+  function node() {
+    _lazy_load_nvm
+    node "$@"
+  }
+
+  function npm() {
+    _lazy_load_nvm
+    npm "$@"
+  }
+
+  function npx() {
+    _lazy_load_nvm
+    npx "$@"
+  }
 fi
 
 # zsh-specific helper aliases
