@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(claude mcp --help:*)",
+      "Bash(ls *)",
+      "Bash(ls:*)",
+      "Bash(node test-config-full.mjs:*)",
+      "Bash(node test-config.mjs:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsx:*)",
+      "Bash(nvm ls:*)",
+      "Bash(ollama list:*)",
+      "Bash(source:*)",
+      "Bash(test:*)",
+      "Bash(tsx test:*)",
+      "Read(.env.example)",
+      "mcp__ollama__get_local_status",
+      "mcp__ollama__list_local_models",
+      "mcp__ollama__update_local_config",
+      "mcp__ollama__use_local_model",
+      "WebFetch(domain:homelab.local)",
+      "WebFetch(domain:localhost)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./secrets/**)",
+      "Read(./build)"
+    ],
+    "ask": [
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y ccstatusline@latest",
+    "padding": 0
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "rust-analyzer-lsp@claude-plugins-official": false,
+    "php-lsp@claude-plugins-official": false
+  }
+}
