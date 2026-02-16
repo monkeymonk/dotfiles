@@ -23,8 +23,7 @@ return {
       telescope.load_extension("package_info")
     end,
     dependencies = "MunifTanjim/nui.nvim",
-    event = "VeryLazy",
-    ft = "json",
+    ft = "json", -- Only load for package.json files
     keys = {
       { "<leader>rS", "<cmd> lua require('package-info').show() <CR>", desc = "Show dependencies latest version" },
       { "<leader>rs", "<cmd> lua require('package-info').toggle() <CR>", desc = "Toggle dependency versions" },

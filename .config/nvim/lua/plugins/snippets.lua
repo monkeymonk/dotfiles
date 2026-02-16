@@ -95,7 +95,7 @@ return {
       {
         "garymjr/nvim-snippets",
         opts = {
-          search_paths = { vim.fn.stdpath("config") .. "snippets" },
+          search_paths = { vim.fn.stdpath("config") .. "/snippets" },
         },
       },
       {
@@ -104,7 +104,7 @@ return {
           settings = {
             snippet = {
               enable = true,
-              source = vim.fn.stdpath("config") .. "snippets",
+              source = vim.fn.stdpath("config") .. "/snippets",
             },
           },
         },
@@ -125,7 +125,7 @@ return {
     },
     opts = {
       jsonFormatter = "jq",
-      snippetDir = vim.fn.stdpath("config") .. "snippets",
+      snippetDir = vim.fn.stdpath("config") .. "/snippets",
     },
   },
 

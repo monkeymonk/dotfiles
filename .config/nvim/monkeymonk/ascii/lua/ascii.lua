@@ -1,10 +1,17 @@
-local config = {
-  library = require("library"),
-}
 local M = {}
-local ascii = require("utils")
+local config = {}
+local ascii = nil
+local library = nil
 
 function M.setup(opts)
+  -- Load dependencies when setup is called (after rtp is configured)
+  if not library then
+    library = require("library")
+    config.library = library
+  end
+  if not ascii then
+    ascii = require("utils")
+  end
   if opts ~= nil then
     config = vim.tbl_extend("force", config, opts)
   end
@@ -14,10 +21,18 @@ end
 
 -- Expose the commands directly
 function M.getRandomArt()
+  -- Ensure dependencies are loaded
+  if not ascii or not config.library then
+    M.setup()
+  end
   return ascii.getRandomArt(config.library)
 end
 
 function M.getArtByName(name)
+  -- Ensure dependencies are loaded
+  if not ascii or not config.library then
+    M.setup()
+  end
   return ascii.getArtByName(name, config.library)
 end
 

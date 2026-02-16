@@ -5,7 +5,6 @@ return {
     "jay-babu/mason-nvim-dap.nvim",
     cmd = { "DapInstall", "DapUninstall" },
     dependencies = "mason.nvim",
-    event = "VeryLazy",
     opts = {
       -- Makes a best effort to setup the various debuggers with
       -- reasonable debug configurations
@@ -55,17 +54,17 @@ return {
   {
     "Pocco81/DAPInstall.nvim",
     cmd = { "DIInstall", "DIUninstall", "DIList" },
-    event = "VeryLazy",
   },
 
   -- This plugin adds virtual text support to nvim-dap. nvim-treesitter is used to find variable definitions.
   -- https://github.com/theHamsta/nvim-dap-virtual-text
   {
     "theHamsta/nvim-dap-virtual-text",
+    dependencies = "mfussenegger/nvim-dap",
     config = function(_, opts)
       require("nvim-dap-virtual-text").setup(opts)
     end,
-    event = "VeryLazy",
+    lazy = true, -- Loads when nvim-dap loads
   },
 
   {

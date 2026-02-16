@@ -138,7 +138,6 @@ return {
       "ravitemer/mcphub.nvim",
     },
     -- enabled = false,
-    event = "VeryLazy",
     keys = {
       {
         "<leader>a+",
@@ -159,21 +158,27 @@ return {
         ft = "NvimTree",
       },
     },
-    lazy = false,
+    lazy = false, -- Avante needs to load for autocomplete
     opts = function()
       local mcphub = require("mcphub")
 
       -- Detect if Ollama is running
       local function ollama_available()
-        return vim.fn.executable("ollama") == 1
+        local available = vim.fn.executable("ollama") == 1
+        if available then
+          vim.notify("Ollama detected! Using Ollama for autocomplete", vim.log.levels.INFO)
+        else
+          vim.notify("Ollama not found. Falling back to OpenAI", vim.log.levels.WARN)
+        end
+        return available
       end
 
       return {
-        -- 🔁 AUTO SUGGESTIONS (AUTOCOMPLETE)
-        auto_suggestions_provider = ollama_available() and "ollama" or "openai",
+        -- 🔁 AUTO SUGGESTIONS (AUTOCOMPLETE) - DISABLED TO AVOID OPENAI CHARGES
+        auto_suggestions_provider = "ollama",
 
         behaviour = {
-          auto_suggestions = true,
+          auto_suggestions = false, -- DISABLED: No autocomplete (saves OpenAI credits)
           support_paste_from_clipboard = true,
         },
 
@@ -183,13 +188,8 @@ return {
         providers = {
           -- 🔥 OLLAMA (LOCAL)
           ollama = {
-            endpoint = "http://localhost:11434/v1",
-            model = "deepseek-coder-v2:lite",
-            timeout = 30,
-            extra = {
-              temperature = 0.1,
-              max_tokens = 64, -- IMPORTANT for autocomplete
-            },
+            model = "qwen2.5-coder:7b",
+            is_env_set = require("avante.providers.ollama").check_endpoint_alive,
           },
 
           -- ☁️ OPENAI (FALLBACK / TOOLS / RAG)
@@ -199,24 +199,26 @@ return {
           },
         },
 
-        -- RAG / EMBEDDINGS (KEEP OPENAI)
-        embed = {
-          provider = "openai",
-          endpoint = "https://api.openai.com/v1",
-          api_key = "OPENAI_API_KEY",
-          model = "text-embedding-3-large",
-        },
+        -- RAG / EMBEDDINGS - DISABLED TO AVOID OPENAI CHARGES
+        -- If you want RAG features, you'll need OpenAI API key
+        -- embed = {
+        --   provider = "openai",
+        --   endpoint = "https://api.openai.com/v1",
+        --   api_key = "OPENAI_API_KEY",
+        --   model = "text-embedding-3-large",
+        -- },
 
-        llm = {
-          provider = "openai",
-          endpoint = "https://api.openai.com/v1",
-          api_key = "OPENAI_API_KEY",
-          model = "gpt-4o-mini",
-          extra = {
-            temperature = 0.7,
-            max_tokens = 512,
-          },
-        },
+        -- LLM FOR TOOLS - DISABLED TO AVOID OPENAI CHARGES
+        -- llm = {
+        --   provider = "openai",
+        --   endpoint = "https://api.openai.com/v1",
+        --   api_key = "OPENAI_API_KEY",
+        --   model = "gpt-4o-mini",
+        --   extra = {
+        --     temperature = 0.7,
+        --     max_tokens = 512,
+        --   },
+        -- },
 
         -- MCP / TOOLS
         custom_tools = function()
@@ -247,6 +249,7 @@ return {
   -- https://github.com/olimorris/codecompanion.nvim
   {
     "olimorris/codecompanion.nvim",
+    cmd = { "CodeCompanion", "CodeCompanionChat", "CodeCompanionActions" },
     dependencies = {
       "nvim-lua/plenary.nvim",
       "nvim-treesitter/nvim-treesitter",
