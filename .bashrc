@@ -9,4 +9,4 @@
 
 # ~/.bashrc: executed by bash(1) for non-login shells.
 
-[ -f "$HOME/.config/cli/start.sh" ] && . "$HOME/.config/cli/start.sh"
+[ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"

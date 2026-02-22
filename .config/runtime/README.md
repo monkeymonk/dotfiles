@@ -92,10 +92,7 @@ Register a hook with:
 runtime_hook_register <phase> <function_name>
 ```
 
-Plugins can also be auto-registered by convention. If a plugin defines a
-`runtime_plugin_<name>` function and does not call `runtime_hook_register`,
-bootstrap will register it automatically to `post_config`. To override the phase,
-set `RUNTIME_PLUGIN_PHASE` before defining the function.
+Plugins must explicitly register hook functions using `runtime_hook_register`.
 
 ## Scripts
 

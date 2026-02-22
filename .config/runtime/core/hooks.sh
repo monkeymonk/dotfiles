@@ -22,7 +22,6 @@ runtime_hook_register() {
         eval "$_var=\"$_fn\""
     fi
 
-    _runtime_hook_register_all "$_fn"
 }
 
 runtime_hook_run() {
@@ -31,6 +30,11 @@ runtime_hook_run() {
 
     _var="RUNTIME_HOOKS_${_phase}"
     eval "_hooks=\${$_var-}"
+    if [ -n "${ZSH_VERSION-}" ]; then
+        setopt LOCAL_OPTIONS SH_WORD_SPLIT
+    fi
+    _old_ifs=$IFS
+    IFS=' '
     for _fn in $_hooks; do
         if command -v "$_fn" >/dev/null 2>&1; then
             "$_fn"
@@ -38,26 +42,5 @@ runtime_hook_run() {
             warn "missing hook: $_fn (phase: $_phase)"
         fi
     done
-}
-
-_runtime_hook_list_has() {
-    _list=$1
-    _item=$2
-    case " $_list " in
-        *" $_item "*) return 0 ;;
-    esac
-    return 1
-}
-
-_runtime_hook_register_all() {
-    _fn=$1
-    [ -n "$_fn" ] || return 1
-    if _runtime_hook_list_has "${RUNTIME_HOOKS_ALL-}" "$_fn"; then
-        return 0
-    fi
-    if [ -n "${RUNTIME_HOOKS_ALL-}" ]; then
-        RUNTIME_HOOKS_ALL="$RUNTIME_HOOKS_ALL $_fn"
-    else
-        RUNTIME_HOOKS_ALL="$_fn"
-    fi
+    IFS=$_old_ifs
 }

@@ -5,7 +5,7 @@
 # ╲__╱__╱__╱╲╲___╱___╱
 #
 
-. "$HOME/.config/shell/start.sh"
+[ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"
 
 # ~/.profile: executed by the command interpreter for login shells.
 # This file is not read by bash(1), if ~/.bash_profile or ~/.bash_login
