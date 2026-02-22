@@ -495,43 +495,46 @@ EOF
 }
 
 runtime_ollama_aliases() {
+    [ "${RUNTIME_OLLAMA_ALIASES_LOADED-}" = "1" ] && return 0
+    RUNTIME_OLLAMA_ALIASES_LOADED=1
     command -v alx >/dev/null 2>&1 || return 1
 
-    alx add llm-explain '_llm_explain' --desc "LLM explain" --tags "llm"
-    alx add llm-summary '_llm_summary' --desc "LLM summary" --tags "llm"
-    alx add llm-arch '_llm_arch' --desc "LLM architecture" --tags "llm"
+    alx add llm-explain '_llm_explain' --desc "LLM explain" --tags "llm,code"
+    alx add llm-summary '_llm_summary' --desc "LLM summary" --tags "llm,summary"
+    alx add llm-arch '_llm_arch' --desc "LLM architecture" --tags "llm,analysis"
 
-    alx add llm-review '_llm_review' --desc "LLM review" --tags "llm,git"
-    alx add llm-review-edit '_llm_review_edit' --desc "LLM review edit" --tags "llm,git"
-    alx add llm-commit '_llm_commit' --desc "LLM commit" --tags "llm,git"
+    alx add llm-review '_llm_review' --desc "LLM review" --tags "llm,git,review"
+    alx add llm-review-edit '_llm_review_edit' --desc "LLM review edit" --tags "llm,git,review,editor"
+    alx add llm-commit '_llm_commit' --desc "LLM commit" --tags "llm,git,commit"
 
     alx add llm-cmd '_llm_cmd' --desc "LLM command" --tags "llm,shell"
-    alx add llm-explain-cmd '_llm_explain_cmd' --desc "LLM explain command" --tags "llm,shell"
+    alx add llm-explain-cmd '_llm_explain_cmd' --desc "LLM explain command" --tags "llm,shell,explain"
 
-    alx add llm-refactor '_llm_refactor' --desc "LLM refactor" --tags "llm"
-    alx add llm-refactor-edit '_llm_refactor_edit' --desc "LLM refactor edit" --tags "llm"
-    alx add llm-optimize '_llm_optimize' --desc "LLM optimize" --tags "llm"
-    alx add llm-optimize-edit '_llm_optimize_edit' --desc "LLM optimize edit" --tags "llm"
-    alx add llm-security '_llm_security' --desc "LLM security" --tags "llm"
+    alx add llm-refactor '_llm_refactor' --desc "LLM refactor" --tags "llm,refactor"
+    alx add llm-refactor-edit '_llm_refactor_edit' --desc "LLM refactor edit" --tags "llm,refactor,editor"
+    alx add llm-optimize '_llm_optimize' --desc "LLM optimize" --tags "llm,optimize"
+    alx add llm-optimize-edit '_llm_optimize_edit' --desc "LLM optimize edit" --tags "llm,optimize,editor"
+    alx add llm-security '_llm_security' --desc "LLM security" --tags "llm,security"
 
-    alx add llm-test '_llm_test' --desc "LLM test" --tags "llm"
-    alx add llm-test-edit '_llm_test_edit' --desc "LLM test edit" --tags "llm"
-    alx add llm-doc '_llm_doc' --desc "LLM doc" --tags "llm"
-    alx add llm-doc-edit '_llm_doc_edit' --desc "LLM doc edit" --tags "llm"
+    alx add llm-test '_llm_test' --desc "LLM test" --tags "llm,test"
+    alx add llm-test-edit '_llm_test_edit' --desc "LLM test edit" --tags "llm,test,editor"
+    alx add llm-doc '_llm_doc' --desc "LLM doc" --tags "llm,docs"
+    alx add llm-doc-edit '_llm_doc_edit' --desc "LLM doc edit" --tags "llm,docs,editor"
 
-    alx add llm-debug '_llm_debug' --desc "LLM debug" --tags "llm"
-    alx add llm-fix '_llm_fix' --desc "LLM fix" --tags "llm"
+    alx add llm-debug '_llm_debug' --desc "LLM debug" --tags "llm,debug"
+    alx add llm-fix '_llm_fix' --desc "LLM fix" --tags "llm,fix"
 
-    alx add llm-implement '_llm_implement' --desc "LLM implement" --tags "llm"
-    alx add llm-convert '_llm_convert' --desc "LLM convert" --tags "llm"
-    alx add llm-api-client '_llm_api_client' --desc "LLM API client" --tags "llm"
+    alx add llm-implement '_llm_implement' --desc "LLM implement" --tags "llm,plan"
+    alx add llm-convert '_llm_convert' --desc "LLM convert" --tags "llm,convert"
+    alx add llm-api-client '_llm_api_client' --desc "LLM API client" --tags "llm,api"
 
-    alx add llm-code '_llm_code' --desc "LLM code" --tags "llm"
-    alx add llm-explain-edit '_llm_explain_edit' --desc "LLM explain edit" --tags "llm"
+    alx add llm-code '_llm_code' --desc "LLM code" --tags "llm,interactive"
+    alx add llm-explain-edit '_llm_explain_edit' --desc "LLM explain edit" --tags "llm,code,editor"
 
-    alx add llm-help '_llm_help' --desc "LLM help" --tags "llm"
+    alx add llm-help '_llm_help' --desc "LLM help" --tags "llm,help"
 }
 
+    runtime_ollama_aliases
 }
 
 runtime_hook_register post_config runtime_plugin_ollama

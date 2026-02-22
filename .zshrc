@@ -127,5 +127,11 @@ source $ZSH/oh-my-zsh.sh
 # ╲__╱__╱__╱╲╲___╱___╱
 #
 
-[ -f "$HOME/.config/cli/start.sh" ] && . "$HOME/.config/cli/start.sh"
+[ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"
 
+
+# alx — alias registry
+export PATH="/home/monkeymonk/.local/share/alx/bin:$PATH"
+
+# cdx — extensible cd wrapper
+source "/home/monkeymonk/.local/share/cdx/cdx.sh"

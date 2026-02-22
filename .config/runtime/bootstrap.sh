@@ -45,20 +45,8 @@ if [ -d "$RUNTIME_ROOT/plugins" ]; then
     for _f in "$RUNTIME_ROOT"/plugins/*.sh; do
         [ -f "$_f" ] || continue
         . "$_f"
-
-        _plugin_base=${_f##*/}
-        _plugin_name=${_plugin_base%.sh}
-        _plugin_fn="runtime_plugin_${_plugin_name}"
-        _plugin_phase=${RUNTIME_PLUGIN_PHASE:-post_config}
-        unset RUNTIME_PLUGIN_PHASE
-
-        if command -v "$_plugin_fn" >/dev/null 2>&1; then
-            if ! _runtime_hook_list_has "${RUNTIME_HOOKS_ALL-}" "$_plugin_fn"; then
-                runtime_hook_register "$_plugin_phase" "$_plugin_fn"
-            fi
-        fi
     done
-    unset _f _plugin_base _plugin_name _plugin_fn _plugin_phase
+    unset _f
 fi
 
 # Context phase (allows plugins to register early hooks).
@@ -91,6 +79,9 @@ fi
 
 # Load secrets (alphabetical). Errors must be visible.
 if [ -d "$RUNTIME_ROOT/secrets" ]; then
+    if [ -n "${ZSH_VERSION-}" ]; then
+        setopt LOCAL_OPTIONS NULL_GLOB
+    fi
     for _f in "$RUNTIME_ROOT"/secrets/*.sh; do
         [ -f "$_f" ] || continue
         if ! . "$_f"; then

@@ -9,12 +9,16 @@ runtime_plugin_cdx() {
     fi
 
     runtime_cdx_aliases() {
+        [ "${RUNTIME_CDX_ALIASES_LOADED-}" = "1" ] && return 0
+        RUNTIME_CDX_ALIASES_LOADED=1
         [ "$HAS_CDX" -eq 1 ] || return 0
         command -v alx >/dev/null 2>&1 || return 1
 
-        alx add cd 'cdx' --desc "cd via cdx" --tags "cdx,nav"
-        alx add up 'cdx_up' --desc "up via cdx" --tags "cdx,nav"
+        alx add cd 'cdx' --desc "cd via cdx" --tags "cdx,nav,cd"
+        alx add up 'cdx_up' --desc "up via cdx" --tags "cdx,nav,up"
     }
+
+    runtime_cdx_aliases
 }
 
 runtime_hook_register post_scripts runtime_plugin_cdx
