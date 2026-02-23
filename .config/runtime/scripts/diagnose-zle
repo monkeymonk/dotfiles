@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+set -eu
+
+RUNTIME_ROOT="${RUNTIME_ROOT:-$HOME/.config/runtime}"
+PLUGIN_DIR="$RUNTIME_ROOT/plugins"
+CACHE_DIR="/tmp/starship-cache"
+mkdir -p "$CACHE_DIR"
+
+run_case() {
+  plugins="$1"
+  name="$2"
+  out=$(mktemp)
+
+  if command -v script >/dev/null 2>&1; then
+    env RUNTIME_PLUGIN_ALLOWLIST="$plugins" \
+      STARSHIP_CACHE="$CACHE_DIR" \
+      script -q -c "zsh -i -c 'true'" "$out" >/dev/null 2>&1 || true
+  else
+    env RUNTIME_PLUGIN_ALLOWLIST="$plugins" \
+      STARSHIP_CACHE="$CACHE_DIR" \
+      zsh -i -c 'true' >"$out" 2>&1 || true
+  fi
+
+  if rg -q "not enough arguments for -C" "$out"; then
+    printf '%s\n' "FAIL: $name"
+    rg -n "not enough arguments for -C" "$out"
+  else
+    printf '%s\n' "OK: $name"
+  fi
+
+  rm -f "$out"
+}
+
+run_case "alx" "alx-only"
+
+for f in "$PLUGIN_DIR"/*.sh; do
+  [ -f "$f" ] || continue
+  base=${f##*/}
+  plugin=${base%.sh}
+  [ "$plugin" = "alx" ] && continue
+  run_case "alx $plugin" "alx + $plugin"
+done
