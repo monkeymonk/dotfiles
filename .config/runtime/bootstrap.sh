@@ -85,7 +85,7 @@ if [ -d "$RUNTIME_ROOT/secrets" ]; then
     for _f in "$RUNTIME_ROOT"/secrets/*.sh; do
         [ -f "$_f" ] || continue
         if ! . "$_f"; then
-            printf '%s\n' "runtime: warning: failed to source $_f" >&2
+            warn "failed to source $_f"
         fi
     done
     unset _f

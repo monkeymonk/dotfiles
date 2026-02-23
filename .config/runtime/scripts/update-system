@@ -2,6 +2,12 @@
 
 set -eu
 
+_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+_runtime_root=$(CDPATH= cd -- "$_script_dir/.." && pwd)
+if [ -f "$_runtime_root/core/log.sh" ]; then
+    . "$_runtime_root/core/log.sh"
+fi
+
 if command -v apt-get >/dev/null 2>&1; then
     sudo apt update -y && sudo apt upgrade -y
 fi
@@ -48,12 +54,20 @@ fi
 
 if [ -d "$HOME/.oh-my-zsh" ] && command -v omz >/dev/null 2>&1; then
     printf '\n'
-    echo "Updating Oh My Zsh..."
+    if command -v info >/dev/null 2>&1; then
+        info "Updating Oh My Zsh..."
+    else
+        echo "Updating Oh My Zsh..."
+    fi
     omz update
 fi
 
 if [ -d "$HOME/.tmux/plugins/tpm" ]; then
     printf '\n'
-    echo "Updating Tmux plugins..."
+    if command -v info >/dev/null 2>&1; then
+        info "Updating Tmux plugins..."
+    else
+        echo "Updating Tmux plugins..."
+    fi
     "$HOME/.tmux/plugins/tpm/bin/update_plugins" all
 fi

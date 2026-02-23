@@ -78,6 +78,33 @@ runtime_plugin_shell() {
                 fi
             }
 
+            reload() {
+                # Reload zsh config. Default is a clean re-exec to avoid state drift.
+                local mode start_time end_time elapsed
+                mode="${1:-hard}"
+                case "$mode" in
+                    soft)
+                        start_time=$(date +%s%N)
+                        if [ -f "$HOME/.zshrc" ]; then
+                            . "$HOME/.zshrc"
+                        fi
+                        end_time=$(date +%s%N)
+                        elapsed=$(( (end_time - start_time) / 1000000 ))
+                        if command -v info >/dev/null 2>&1; then
+                            info "ZSH config reloaded in ${elapsed}ms"
+                        else
+                            echo "ZSH config reloaded in ${elapsed}ms"
+                        fi
+                        ;;
+                    hard|*)
+                        if command -v info >/dev/null 2>&1; then
+                            info "Re-exec zsh (fresh session)..."
+                        fi
+                        exec "${SHELL:-zsh}" -l
+                        ;;
+                esac
+            }
+
             ;;
 
         bash)
@@ -101,6 +128,33 @@ runtime_plugin_shell() {
                     . /etc/bash_completion
                 fi
             fi
+
+            reload() {
+                # Reload bash config. Default is a clean re-exec to avoid state drift.
+                local mode start_time end_time elapsed
+                mode="${1:-hard}"
+                case "$mode" in
+                    soft)
+                        start_time=$(date +%s%N)
+                        if [ -f "$HOME/.bashrc" ]; then
+                            . "$HOME/.bashrc"
+                        fi
+                        end_time=$(date +%s%N)
+                        elapsed=$(( (end_time - start_time) / 1000000 ))
+                        if command -v info >/dev/null 2>&1; then
+                            info "Bash config reloaded in ${elapsed}ms"
+                        else
+                            echo "Bash config reloaded in ${elapsed}ms"
+                        fi
+                        ;;
+                    hard|*)
+                        if command -v info >/dev/null 2>&1; then
+                            info "Re-exec bash (fresh session)..."
+                        fi
+                        exec "${SHELL:-bash}" -l
+                        ;;
+                esac
+            }
             ;;
     esac
 }
