@@ -1,3 +1,5 @@
+typeset -U path
+
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -129,9 +131,5 @@ source $ZSH/oh-my-zsh.sh
 
 [ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"
 
-
 # alx — alias registry
 export PATH="/home/monkeymonk/.local/share/alx/bin:$PATH"
-
-# cdx — extensible cd wrapper
-source "/home/monkeymonk/.local/share/cdx/cdx.sh"

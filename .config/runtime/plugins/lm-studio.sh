@@ -6,4 +6,4 @@ runtime_plugin_lm_studio() {
     fi
 }
 
-runtime_hook_register post_config runtime_plugin_lm_studio
+runtime_hook_register setup runtime_plugin_lm_studio

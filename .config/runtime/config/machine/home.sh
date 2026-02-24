@@ -1,4 +1,4 @@
 # Home machine overrides.
 
-# Example:
-# export HOME_PROFILE=1
+export BROWSER="${BROWSER:-brave}"
+export TERMINAL="${TERMINAL:-ghostty}"

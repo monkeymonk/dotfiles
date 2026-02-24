@@ -1,6 +1,7 @@
 # Editor preferences.
 
 runtime_plugin_editor() {
+    local _runtime_editor _runtime_has_nvim
     if has_cmd nvim; then
         _runtime_has_nvim=1
     else
@@ -27,4 +28,4 @@ runtime_plugin_editor() {
     unset _runtime_editor _runtime_has_nvim
 }
 
-runtime_hook_register post_config runtime_plugin_editor
+runtime_hook_register setup runtime_plugin_editor

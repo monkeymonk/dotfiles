@@ -1,24 +1,25 @@
 # cdx integration.
 
 runtime_plugin_cdx() {
-    HAS_CDX=0
-    if [ -f "$HOME/.local/share/cdx/cdx.sh" ]; then
-        HAS_CDX=1
-    elif command -v cdx >/dev/null 2>&1; then
-        HAS_CDX=1
-    fi
+	local HAS_CDX
+	HAS_CDX=0
+	if [ -f "$HOME/.local/bin/cdx.sh" ]; then
+		safe_source "$HOME/.local/bin/cdx.sh" || true
+	fi
+	if command -v cdx >/dev/null 2>&1; then
+		HAS_CDX=1
+	fi
 
-    runtime_cdx_aliases() {
-        [ "${RUNTIME_CDX_ALIASES_LOADED-}" = "1" ] && return 0
-        RUNTIME_CDX_ALIASES_LOADED=1
-        [ "$HAS_CDX" -eq 1 ] || return 0
-        command -v alx >/dev/null 2>&1 || return 1
+	runtime_cdx_aliases() {
+		[ "${RUNTIME_CDX_ALIASES_LOADED-}" = "1" ] && return 0
+		RUNTIME_CDX_ALIASES_LOADED=1
+		[ "$HAS_CDX" -eq 1 ] || return 0
 
-        alx add cd 'cdx' --desc "cd via cdx" --tags "cdx,nav,cd"
-        alx add up 'cdx_up' --desc "up via cdx" --tags "cdx,nav,up"
-    }
+		# runtime_alias cd 'cdx' --desc "cd via cdx" --tags "cdx,nav,cd"
+		runtime_alias up 'cdx --up' --desc "up via cdx" --tags "cdx,nav,up"
+	}
 
-    runtime_cdx_aliases
+	runtime_cdx_aliases
 }
 
-runtime_hook_register post_scripts runtime_plugin_cdx
+runtime_hook_register interactive runtime_plugin_cdx

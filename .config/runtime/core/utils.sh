@@ -1,5 +1,17 @@
 # General helpers.
 
+has_cmd() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+has_file() {
+    [ -f "$1" ]
+}
+
+has_dir() {
+    [ -d "$1" ]
+}
+
 die() {
     printf '%s\n' "runtime: $*" >&2
     return 1
@@ -10,6 +22,7 @@ try_or_warn() {
 }
 
 safe_source() {
+    local _file
     _file=$1
     [ -f "$_file" ] || return 1
     if . "$_file"; then
@@ -20,6 +33,7 @@ safe_source() {
 }
 
 guard_double_load() {
+    local _var _val
     _var=$1
     [ -n "$_var" ] || return 1
     eval "_val=\${${_var}-}"
@@ -36,4 +50,15 @@ require_cmd() {
         return 1
     fi
     return 0
+}
+
+runtime_alias() {
+    # runtime_alias <name> <command> [--desc "..."] [--tags "..."]
+    # Uses alx if available, falls back to plain alias.
+    if command -v alx >/dev/null 2>&1; then
+        # Keep registry in sync with runtime definitions.
+        alx add "$@" --force
+    else
+        alias "$1=$2"
+    fi
 }

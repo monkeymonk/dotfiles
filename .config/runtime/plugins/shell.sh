@@ -33,78 +33,6 @@ runtime_plugin_shell() {
             setopt NO_CLOBBER
             setopt NO_BEEP
 
-            # Clipboard helpers
-            clipboard() {
-                if [ -n "${WAYLAND_DISPLAY-}" ] && command -v wl-copy >/dev/null 2>&1; then
-                    wl-copy
-                    return
-                fi
-                if [ -n "${DISPLAY-}" ]; then
-                    if command -v xclip >/dev/null 2>&1; then
-                        xclip -selection clipboard
-                        return
-                    elif command -v xsel >/dev/null 2>&1; then
-                        xsel --clipboard --input
-                        return
-                    fi
-                fi
-                if command -v pbcopy >/dev/null 2>&1; then
-                    pbcopy
-                    return
-                fi
-                if command -v clip.exe >/dev/null 2>&1; then
-                    clip.exe
-                    return
-                fi
-                if command -v putclip >/dev/null 2>&1; then
-                    putclip
-                    return
-                fi
-                data=$(cat | base64 | tr -d '\r\n')
-                printf '\033]52;c;%s\a' "$data"
-            }
-
-            clipboard_get() {
-                if [ -n "${WAYLAND_DISPLAY-}" ] && command -v wl-paste >/dev/null 2>&1; then
-                    wl-paste
-                elif [ -n "${DISPLAY-}" ] && command -v xclip >/dev/null 2>&1; then
-                    xclip -selection clipboard -o
-                elif [ -n "${DISPLAY-}" ] && command -v xsel >/dev/null 2>&1; then
-                    xsel --clipboard --output
-                elif command -v pbpaste >/dev/null 2>&1; then
-                    pbpaste
-                elif command -v powershell.exe >/dev/null 2>&1; then
-                    powershell.exe Get-Clipboard | tr -d '\r'
-                fi
-            }
-
-            reload() {
-                # Reload zsh config. Default is a clean re-exec to avoid state drift.
-                local mode start_time end_time elapsed
-                mode="${1:-hard}"
-                case "$mode" in
-                    soft)
-                        start_time=$(date +%s%N)
-                        if [ -f "$HOME/.zshrc" ]; then
-                            . "$HOME/.zshrc"
-                        fi
-                        end_time=$(date +%s%N)
-                        elapsed=$(( (end_time - start_time) / 1000000 ))
-                        if command -v info >/dev/null 2>&1; then
-                            info "ZSH config reloaded in ${elapsed}ms"
-                        else
-                            echo "ZSH config reloaded in ${elapsed}ms"
-                        fi
-                        ;;
-                    hard|*)
-                        if command -v info >/dev/null 2>&1; then
-                            info "Re-exec zsh (fresh session)..."
-                        fi
-                        exec "${SHELL:-zsh}" -l
-                        ;;
-                esac
-            }
-
             ;;
 
         bash)
@@ -129,34 +57,8 @@ runtime_plugin_shell() {
                 fi
             fi
 
-            reload() {
-                # Reload bash config. Default is a clean re-exec to avoid state drift.
-                local mode start_time end_time elapsed
-                mode="${1:-hard}"
-                case "$mode" in
-                    soft)
-                        start_time=$(date +%s%N)
-                        if [ -f "$HOME/.bashrc" ]; then
-                            . "$HOME/.bashrc"
-                        fi
-                        end_time=$(date +%s%N)
-                        elapsed=$(( (end_time - start_time) / 1000000 ))
-                        if command -v info >/dev/null 2>&1; then
-                            info "Bash config reloaded in ${elapsed}ms"
-                        else
-                            echo "Bash config reloaded in ${elapsed}ms"
-                        fi
-                        ;;
-                    hard|*)
-                        if command -v info >/dev/null 2>&1; then
-                            info "Re-exec bash (fresh session)..."
-                        fi
-                        exec "${SHELL:-bash}" -l
-                        ;;
-                esac
-            }
             ;;
     esac
 }
 
-runtime_hook_register late runtime_plugin_shell
+runtime_hook_register interactive runtime_plugin_shell

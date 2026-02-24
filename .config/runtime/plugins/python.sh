@@ -7,4 +7,4 @@ runtime_plugin_python() {
     fi
 }
 
-runtime_hook_register post_config runtime_plugin_python
+runtime_hook_register setup runtime_plugin_python

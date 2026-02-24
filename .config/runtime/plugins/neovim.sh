@@ -1,7 +1,7 @@
 # Neovim integration.
 
 runtime_plugin_neovim() {
-	has_cmd nvim || return 0
+	require_cmd nvim || return 0
 
 	if [ -z "${EDITOR-}" ]; then
 		export EDITOR="nvim"
@@ -13,18 +13,15 @@ runtime_plugin_neovim() {
 		export MANPAGER="nvim +Man!"
 	fi
 
-	if command -v alx >/dev/null 2>&1 && command -v runtime_neovim_aliases >/dev/null 2>&1; then
-		runtime_neovim_aliases
-	fi
+	runtime_neovim_aliases
 }
 
 runtime_neovim_aliases() {
 	[ "${RUNTIME_NEOVIM_ALIASES_LOADED-}" = "1" ] && return 0
 	RUNTIME_NEOVIM_ALIASES_LOADED=1
-	command -v alx >/dev/null 2>&1 || return 1
-	alx add v "nvim" --desc "Neovim editor" --tags "nvim,editor"
-	alx add vim "nvim" --desc "Neovim editor" --tags "nvim,editor"
-	alx add vl "nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
+	runtime_alias v "nvim" --desc "Neovim editor" --tags "nvim,editor"
+	runtime_alias vim "nvim" --desc "Neovim editor" --tags "nvim,editor"
+	runtime_alias vl "nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
 }
 
-runtime_hook_register post_config runtime_plugin_neovim
+runtime_hook_register setup runtime_plugin_neovim

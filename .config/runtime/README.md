@@ -43,11 +43,11 @@ The `core/` layer provides safe primitives only:
 - `context.sh`: OS and machine context (`RUNTIME_OS`, `RUNTIME_HOST`, `RUNTIME_DISTRO`, `RUNTIME_IS_WORK`, `RUNTIME_IS_HOME`)
 - `env.sh`: safe defaults for `EDITOR`, `PAGER`, `XDG_*`
 - `hooks.sh`: hook registry (`runtime_hook_register`, `runtime_hook_run`)
-- `system.sh`: helpers like `is_mac`, `has_cmd`
+- `system.sh`: helpers like `is_mac`, `is_linux`
 - `path.sh`: `path_prepend`, `path_append`, `path_remove`
 - `log.sh`: `info`, `warn`, `error` with TTY-only output
 - `prompt.sh`: `confirm`, `choose_one`, `choose_multi` (fzf if present)
-- `utils.sh`: `die`, `safe_source`, `guard_double_load`, `require_cmd`
+- `utils.sh`: `die`, `safe_source`, `guard_double_load`, `has_cmd`, `has_file`, `has_dir`, `require_cmd`
 
 No tool-specific logic belongs here.
 

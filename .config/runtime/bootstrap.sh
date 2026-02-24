@@ -2,11 +2,14 @@
 
 # Single entry point for runtime environment.
 
-# Guard against double-loading.
-if [ "${RUNTIME_BOOTSTRAP_LOADED-}" = "1" ]; then
-    return 0 2>/dev/null || exit 0
+# Guard against double-loading in the same shell (except explicit reloads).
+if [ "${RUNTIME_BOOTSTRAP_LOADED-}" = "$$" ]; then
+    if [ "${RUNTIME_BOOTSTRAP_RELOAD-}" != "1" ]; then
+        return 0 2>/dev/null || exit 0
+    fi
 fi
-RUNTIME_BOOTSTRAP_LOADED=1
+RUNTIME_BOOTSTRAP_LOADED=$$
+unset RUNTIME_BOOTSTRAP_RELOAD
 
 # Resolve RUNTIME_ROOT without external commands.
 if [ -n "${ZSH_VERSION-}" ]; then
@@ -34,9 +37,14 @@ for _f in \
     "$RUNTIME_ROOT/core/path.sh" \
     "$RUNTIME_ROOT/core/prompt.sh" \
     "$RUNTIME_ROOT/core/system.sh" \
-    "$RUNTIME_ROOT/core/utils.sh"
+    "$RUNTIME_ROOT/core/utils.sh" \
+    "$RUNTIME_ROOT/core/lazy.sh"
 do
-    [ -f "$_f" ] && . "$_f"
+    if [ ! -f "$_f" ]; then
+        printf 'runtime: missing core: %s\n' "$_f" >&2
+    elif ! . "$_f"; then
+        printf 'runtime: failed to source: %s\n' "$_f" >&2
+    fi
 done
 unset _f
 
@@ -50,24 +58,23 @@ if [ -d "$RUNTIME_ROOT/plugins" ]; then
 fi
 
 # Context phase (allows plugins to register early hooks).
-runtime_hook_run pre_context
+runtime_hook_run bootstrap
 if [ -f "$RUNTIME_ROOT/core/context.sh" ]; then
     . "$RUNTIME_ROOT/core/context.sh"
 fi
-runtime_hook_run post_context
 
 # Load config modules.
-runtime_hook_run pre_config
 for _f in \
     "$RUNTIME_ROOT/config/defaults.sh" \
     "$RUNTIME_ROOT/config/exports.sh" \
     "$RUNTIME_ROOT/config/paths.sh" \
-    "$RUNTIME_ROOT/config/context.sh"
+    "$RUNTIME_ROOT/config/context.sh" \
+    "$RUNTIME_ROOT/config/aliases.sh"
 do
     [ -f "$_f" ] && . "$_f"
 done
 unset _f
-runtime_hook_run post_config
+runtime_hook_run setup
 
 # Load machine overrides based on context.
 if [ "${RUNTIME_IS_WORK-}" = "1" ] && [ -f "$RUNTIME_ROOT/config/machine/work.sh" ]; then
@@ -96,7 +103,6 @@ runtime_hook_run post_secrets
 if [ -d "$RUNTIME_ROOT/scripts" ]; then
     path_prepend "$RUNTIME_ROOT/scripts"
 fi
-runtime_hook_run post_scripts
 
 # Export aliases via alx.
 if command -v alx >/dev/null 2>&1; then
@@ -110,6 +116,25 @@ if [ -f "$HOME/.local/share/cdx/cdx.sh" ]; then
         runtime_cdx_aliases
     fi
 fi
-runtime_hook_run late
+runtime_hook_run interactive
+
+# Final PATH cleanup (some external scripts append without de-duping).
+path_dedupe
+
+runtime_reload() {
+    case "${1:-hard}" in
+        soft)
+            RUNTIME_BOOTSTRAP_RELOAD=1
+            case "${SHELL_FAMILY:-}" in
+                zsh)  [ -f "$HOME/.zshrc" ]  && . "$HOME/.zshrc"  ;;
+                bash) [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc" ;;
+            esac
+            unset RUNTIME_BOOTSTRAP_RELOAD
+            ;;
+        hard|*)
+            exec "${SHELL:-sh}" -l
+            ;;
+    esac
+}
 
 unset _runtime_src _runtime_dir
