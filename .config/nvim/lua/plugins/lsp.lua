@@ -3,6 +3,9 @@ return {
     "neovim/nvim-lspconfig",
     opts = {
       servers = {
+        ltex = {
+          filetypes = { "tex", "latex", "bib", "plaintex" },
+        },
         cssls = {
           settings = {
             css = {
