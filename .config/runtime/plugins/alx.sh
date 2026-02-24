@@ -8,4 +8,4 @@ runtime_plugin_alx() {
     command -v alx >/dev/null 2>&1 || return 0
 }
 
-runtime_hook_register pre_context runtime_plugin_alx
+runtime_hook_register bootstrap runtime_plugin_alx

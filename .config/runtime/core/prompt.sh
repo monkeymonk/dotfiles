@@ -1,6 +1,7 @@
 # Interactive helpers.
 
 confirm() {
+    local _prompt _answer
     _prompt=${1:-"Continue?"}
     [ -t 0 ] || return 1
     printf '%s [y/N]: ' "$_prompt" >&2
@@ -12,6 +13,7 @@ confirm() {
 }
 
 choose_one() {
+    local _prompt _choice
     _prompt=$1
     shift
     [ "$#" -gt 0 ] || return 1
@@ -33,6 +35,7 @@ choose_one() {
 }
 
 choose_multi() {
+    local _prompt _choice _i _opt _n _out _line
     _prompt=$1
     shift
     [ "$#" -gt 0 ] || return 1

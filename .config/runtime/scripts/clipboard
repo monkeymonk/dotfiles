@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+
+set -eu
+
+_copy() {
+    if [ -n "${WAYLAND_DISPLAY-}" ] && command -v wl-copy >/dev/null 2>&1; then
+        wl-copy
+    elif [ -n "${DISPLAY-}" ] && command -v xclip >/dev/null 2>&1; then
+        xclip -selection clipboard
+    elif [ -n "${DISPLAY-}" ] && command -v xsel >/dev/null 2>&1; then
+        xsel --clipboard --input
+    elif command -v pbcopy >/dev/null 2>&1; then
+        pbcopy
+    elif command -v clip.exe >/dev/null 2>&1; then
+        clip.exe
+    else
+        content=$(cat)
+        encoded=$(printf '%s' "$content" | base64 | tr -d '\n')
+        printf '\033]52;c;%s\a' "$encoded"
+    fi
+}
+
+_paste() {
+    if [ -n "${WAYLAND_DISPLAY-}" ] && command -v wl-paste >/dev/null 2>&1; then
+        wl-paste
+    elif [ -n "${DISPLAY-}" ] && command -v xclip >/dev/null 2>&1; then
+        xclip -selection clipboard -o
+    elif [ -n "${DISPLAY-}" ] && command -v xsel >/dev/null 2>&1; then
+        xsel --clipboard --output
+    elif command -v pbpaste >/dev/null 2>&1; then
+        pbpaste
+    elif command -v powershell.exe >/dev/null 2>&1; then
+        powershell.exe Get-Clipboard | tr -d '\r'
+    else
+        printf 'clipboard: no paste backend available\n' >&2
+        exit 1
+    fi
+}
+
+case "${1-}" in
+    get) _paste ;;
+    *)   _copy ;;
+esac

@@ -17,4 +17,4 @@ runtime_plugin_rust() {
     fi
 }
 
-runtime_hook_register post_config runtime_plugin_rust
+runtime_hook_register setup runtime_plugin_rust

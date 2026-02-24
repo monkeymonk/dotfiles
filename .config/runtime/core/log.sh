@@ -33,11 +33,17 @@ success() {
 }
 
 warn() {
-    __runtime_log_enabled || return 0
-    printf '%s\n' "${_C_WARN}warn:${_C_RESET} $*" >&2
+    if __runtime_log_enabled; then
+        printf '%s\n' "${_C_WARN}warn:${_C_RESET} $*" >&2
+    else
+        printf 'warn: %s\n' "$*" >&2
+    fi
 }
 
 error() {
-    __runtime_log_enabled || return 0
-    printf '%s\n' "${_C_ERROR}error:${_C_RESET} $*" >&2
+    if __runtime_log_enabled; then
+        printf '%s\n' "${_C_ERROR}error:${_C_RESET} $*" >&2
+    else
+        printf 'error: %s\n' "$*" >&2
+    fi
 }
