@@ -83,9 +83,25 @@ elif [ -r /proc/1/cgroup ]; then
     unset _cgroup_content
 fi
 
-# Server detection: Linux with no display server.
+# Session type detection.
+case "${XDG_SESSION_TYPE-}" in
+    x11|wayland|tty|mir)
+        RUNTIME_SESSION_TYPE="${XDG_SESSION_TYPE}" ;;
+    *)
+        if [ -n "${WAYLAND_DISPLAY-}" ]; then
+            RUNTIME_SESSION_TYPE="wayland"
+        elif [ -n "${DISPLAY-}" ]; then
+            RUNTIME_SESSION_TYPE="x11"
+        else
+            RUNTIME_SESSION_TYPE="tty"
+        fi
+        ;;
+esac
+
+# Server detection: Linux with no graphical session.
 RUNTIME_IS_SERVER=0
-if [ "$RUNTIME_OS" = "linux" ] && [ -z "${DISPLAY-}" ] && [ -z "${WAYLAND_DISPLAY-}" ]; then
+if [ "$RUNTIME_OS" = "linux" ] && [ "$RUNTIME_SESSION_TYPE" = "tty" ] && \
+   [ -z "${DISPLAY-}" ] && [ -z "${WAYLAND_DISPLAY-}" ]; then
     RUNTIME_IS_SERVER=1
 fi
 
@@ -94,3 +110,34 @@ RUNTIME_IS_SSH=0
 if [ -n "${SSH_CLIENT-}" ] || [ -n "${SSH_TTY-}" ]; then
     RUNTIME_IS_SSH=1
 fi
+
+# Show all context variables.
+runtime_context() {
+    runtime_is_offline >/dev/null 2>&1
+    printf '%s\n' \
+        "RUNTIME_OS=$RUNTIME_OS" \
+        "RUNTIME_HOST=$RUNTIME_HOST" \
+        "RUNTIME_DISTRO=$RUNTIME_DISTRO" \
+        "SHELL_FAMILY=$SHELL_FAMILY" \
+        "RUNTIME_SESSION_TYPE=$RUNTIME_SESSION_TYPE" \
+        "RUNTIME_IS_WORK=$RUNTIME_IS_WORK" \
+        "RUNTIME_IS_HOME=$RUNTIME_IS_HOME" \
+        "RUNTIME_IS_CI=$RUNTIME_IS_CI" \
+        "RUNTIME_IS_CONTAINER=$RUNTIME_IS_CONTAINER" \
+        "RUNTIME_IS_SERVER=$RUNTIME_IS_SERVER" \
+        "RUNTIME_IS_SSH=$RUNTIME_IS_SSH" \
+        "RUNTIME_IS_OFFLINE=$RUNTIME_IS_OFFLINE"
+}
+
+# Offline detection (lazy, 1s timeout on first call).
+runtime_is_offline() {
+    if [ -z "${RUNTIME_IS_OFFLINE+x}" ]; then
+        RUNTIME_IS_OFFLINE=0
+        if ! command -v ping >/dev/null 2>&1 || \
+           ! ping -c1 -W1 1.1.1.1 >/dev/null 2>&1; then
+            RUNTIME_IS_OFFLINE=1
+        fi
+        export RUNTIME_IS_OFFLINE
+    fi
+    [ "$RUNTIME_IS_OFFLINE" -eq 1 ]
+}
