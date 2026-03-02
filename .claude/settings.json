@@ -6,7 +6,6 @@
   },
   "permissions": {
     "allow": [
-      "Bash(chmod:*)",
       "Bash(claude mcp --help:*)",
       "Bash(ls *)",
       "Bash(ls:*)",
@@ -26,18 +25,13 @@
       "mcp__ollama__list_local_models",
       "mcp__ollama__update_local_config",
       "mcp__ollama__use_local_model",
+      "WebFetch(domain:cherrylab.test)",
+      "WebFetch(domain:zych.link)",
       "WebFetch(domain:homelab.local)",
       "WebFetch(domain:localhost)"
     ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./secrets/**)",
-      "Read(./build)"
-    ],
-    "ask": [
-      "Bash(curl *)",
-      "Bash(wget *)"
-    ]
+    "deny": ["Read(./.env)", "Read(./secrets/**)", "Read(./build)"],
+    "ask": ["Bash(curl *)", "Bash(wget *)"]
   },
   "statusLine": {
     "type": "command",
