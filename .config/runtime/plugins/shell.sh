@@ -61,4 +61,4 @@ runtime_plugin_shell() {
     esac
 }
 
-runtime_hook_register interactive runtime_plugin_shell
+hook_register interactive runtime_plugin_shell

@@ -18,4 +18,4 @@ runtime_plugin_tmux() {
     command -v alx >/dev/null 2>&1 && runtime_tmux_aliases
 }
 
-runtime_hook_register interactive runtime_plugin_tmux
+hook_register interactive runtime_plugin_tmux

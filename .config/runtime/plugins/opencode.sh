@@ -6,4 +6,4 @@ runtime_plugin_opencode() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_opencode
+hook_register setup runtime_plugin_opencode

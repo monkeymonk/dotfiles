@@ -19,4 +19,4 @@ runtime_plugin_git() {
     runtime_git_aliases
 }
 
-runtime_hook_register setup runtime_plugin_git
+hook_register setup runtime_plugin_git

@@ -1,21 +1,21 @@
 # Hook registry for bootstrap phases.
+# Pure POSIX string-based storage — no arrays, no shell-specific branching.
 
-_runtime_hook_var() {
-    printf '%s\n' "RUNTIME_HOOKS_${1}"
+_HOOKS_PHASES=""
+
+_hook_var() {
+    printf '_HOOKS_%s' "$1"
 }
 
-_runtime_hook_init_array() {
-    local _var
-    _var=$1
-    if [ -n "${ZSH_VERSION-}" ]; then
-        eval "typeset -ga ${_var} >/dev/null 2>&1 || true"
-    else
-        eval "declare -g -a ${_var} >/dev/null 2>&1 || true"
-    fi
+_hook_track_phase() {
+    case " $_HOOKS_PHASES " in
+        *" $1 "*) return 0 ;;
+    esac
+    _HOOKS_PHASES="${_HOOKS_PHASES:+$_HOOKS_PHASES }$1"
 }
 
-runtime_hook_register() {
-    local _phase _fn _var
+hook_register() {
+    local _phase _fn _var _cur
     _phase=$1
     _fn=$2
 
@@ -29,26 +29,30 @@ runtime_hook_register() {
             ;;
     esac
 
-    _var=$(_runtime_hook_var "$_phase")
-    _runtime_hook_init_array "$_var"
-    eval "${_var}+=(\"$_fn\")"
+    _var=$(_hook_var "$_phase")
+    eval "_cur=\${${_var}-}"
+    case " $_cur " in
+        *" $_fn "*) return 0 ;;
+    esac
+    eval "${_var}=\"\${${_var}:+\${${_var}} }${_fn}\""
+    _hook_track_phase "$_phase"
 }
 
-runtime_hook_run() {
-    local _phase _var _len _fn _t0 _t1
+hook_run() {
+    local _phase _var _hooks _fn _t0 _t1
     _phase=$1
     [ -n "$_phase" ] || return 1
 
-    _var=$(_runtime_hook_var "$_phase")
-    eval "_len=\${#${_var}[@]-0}"
-    if [ "${_len}" -eq 0 ]; then
-        return 0
+    _var=$(_hook_var "$_phase")
+    eval "_hooks=\${${_var}-}"
+    [ -n "$_hooks" ] || return 0
+
+    # Ensure word splitting in zsh
+    if [ -n "${ZSH_VERSION-}" ]; then
+        setopt LOCAL_OPTIONS SH_WORD_SPLIT
     fi
 
-    # Copy hooks into a local array to handle zsh 1-based indexing.
-    local _hooks
-    eval "_hooks=(\"\${${_var}[@]}\")"
-    for _fn in "${_hooks[@]}"; do
+    for _fn in $_hooks; do
         [ -n "$_fn" ] || continue
         if command -v "$_fn" >/dev/null 2>&1; then
             if [ "${RUNTIME_DEBUG:-0}" = "1" ]; then
@@ -65,27 +69,24 @@ runtime_hook_run() {
     done
 }
 
-# Print registered hooks and RUNTIME_* vars for debugging.
-runtime_status() {
-    local _phase _var _len _fn _hooks
-    printf 'RUNTIME_ROOT:    %s\n' "${RUNTIME_ROOT:-unset}"
-    printf 'RUNTIME_OS:      %s\n' "${RUNTIME_OS:-unset}"
-    printf 'RUNTIME_DISTRO:  %s\n' "${RUNTIME_DISTRO:-unset}"
-    printf 'RUNTIME_HOST:    %s\n' "${RUNTIME_HOST:-unset}"
-    printf 'RUNTIME_IS_WORK: %s\n' "${RUNTIME_IS_WORK:-0}"
-    printf 'RUNTIME_IS_HOME: %s\n' "${RUNTIME_IS_HOME:-0}"
-    printf 'SHELL_FAMILY:    %s\n' "${SHELL_FAMILY:-unset}"
-    printf '\nHooks:\n'
-    for _phase in bootstrap setup post_secrets interactive; do
-        _var=$(_runtime_hook_var "$_phase")
-        eval "_len=\${#${_var}[@]-0}"
-        if [ "${_len:-0}" -eq 0 ]; then
+hook_list() {
+    local _filter _phase _var _hooks _fn
+    _filter=${1-}
+
+    if [ -n "${ZSH_VERSION-}" ]; then
+        setopt LOCAL_OPTIONS SH_WORD_SPLIT
+    fi
+
+    for _phase in $_HOOKS_PHASES; do
+        [ -z "$_filter" ] || [ "$_phase" = "$_filter" ] || continue
+        _var=$(_hook_var "$_phase")
+        eval "_hooks=\${${_var}-}"
+        if [ -z "$_hooks" ]; then
             printf '  %-16s (none)\n' "$_phase"
             continue
         fi
         printf '  %s:\n' "$_phase"
-        eval "_hooks=(\"\${${_var}[@]}\")"
-        for _fn in "${_hooks[@]}"; do
+        for _fn in $_hooks; do
             printf '    - %s\n' "$_fn"
         done
     done

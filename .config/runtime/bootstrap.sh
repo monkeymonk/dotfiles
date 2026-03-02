@@ -38,7 +38,9 @@ for _f in \
     "$RUNTIME_ROOT/core/prompt.sh" \
     "$RUNTIME_ROOT/core/system.sh" \
     "$RUNTIME_ROOT/core/utils.sh" \
-    "$RUNTIME_ROOT/core/lazy.sh"
+    "$RUNTIME_ROOT/core/lazy.sh" \
+    "$RUNTIME_ROOT/core/registry.sh" \
+    "$RUNTIME_ROOT/core/runtime.sh"
 do
     if [ ! -f "$_f" ]; then
         printf 'runtime: missing core: %s\n' "$_f" >&2
@@ -58,10 +60,11 @@ if [ -d "$RUNTIME_ROOT/plugins" ]; then
 fi
 
 # Context phase (allows plugins to register early hooks).
-runtime_hook_run bootstrap
+hook_run bootstrap
 if [ -f "$RUNTIME_ROOT/core/context.sh" ]; then
     . "$RUNTIME_ROOT/core/context.sh"
 fi
+hook_run context
 
 # Load config modules.
 for _f in \
@@ -74,7 +77,7 @@ do
     [ -f "$_f" ] && . "$_f"
 done
 unset _f
-runtime_hook_run setup
+hook_run setup
 
 # Load machine overrides based on context.
 if [ "${RUNTIME_IS_WORK-}" = "1" ] && [ -f "$RUNTIME_ROOT/config/machine/work.sh" ]; then
@@ -97,7 +100,7 @@ if [ -d "$RUNTIME_ROOT/secrets" ]; then
     done
     unset _f
 fi
-runtime_hook_run post_secrets
+hook_run post_secrets
 
 # Prepend scripts to PATH.
 if [ -d "$RUNTIME_ROOT/scripts" ]; then
@@ -116,7 +119,7 @@ if [ -f "$HOME/.local/share/cdx/cdx.sh" ]; then
         runtime_cdx_aliases
     fi
 fi
-runtime_hook_run interactive
+hook_run interactive
 
 # Final PATH cleanup (some external scripts append without de-duping).
 path_dedupe

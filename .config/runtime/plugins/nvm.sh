@@ -19,4 +19,4 @@ runtime_plugin_nvm() {
     lazy_load _nvm_load nvm node npm npx
 }
 
-runtime_hook_register setup runtime_plugin_nvm
+hook_register setup runtime_plugin_nvm

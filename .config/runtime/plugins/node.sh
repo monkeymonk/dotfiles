@@ -6,4 +6,4 @@ runtime_plugin_node() {
     export NODE_ENV="${NODE_ENV:-development}"
 }
 
-runtime_hook_register setup runtime_plugin_node
+hook_register setup runtime_plugin_node

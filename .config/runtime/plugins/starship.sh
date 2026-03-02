@@ -6,4 +6,4 @@ runtime_plugin_starship() {
     eval "$(starship init "${SHELL_FAMILY:-sh}")"
 }
 
-runtime_hook_register interactive runtime_plugin_starship
+hook_register interactive runtime_plugin_starship

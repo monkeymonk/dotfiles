@@ -1,5 +1,7 @@
 # Runtime context detection.
 
+registry_init CTX
+
 : "${RUNTIME_MACHINE:=${HOSTNAME:-unknown}}"
 RUNTIME_HOST="${RUNTIME_MACHINE}"
 
@@ -27,6 +29,11 @@ elif [ -n "${BASH_VERSION-}" ]; then
 else
     SHELL_FAMILY="sh"
 fi
+
+registry_add CTX RUNTIME_OS system
+registry_add CTX RUNTIME_HOST system
+registry_add CTX RUNTIME_DISTRO system
+registry_add CTX SHELL_FAMILY session
 
 # Context classification.
 # Priority order:
@@ -61,12 +68,16 @@ if [ "$RUNTIME_IS_WORK" -eq 0 ] && [ "$RUNTIME_IS_HOME" -eq 0 ]; then
     esac
 fi
 
+registry_add CTX RUNTIME_IS_WORK system
+registry_add CTX RUNTIME_IS_HOME system
+
 # CI detection.
 RUNTIME_IS_CI=0
 if [ "${CI-}" = "true" ] || [ -n "${GITHUB_ACTIONS-}" ] || [ -n "${GITLAB_CI-}" ] || \
    [ -n "${TRAVIS-}" ] || [ -n "${CIRCLECI-}" ]; then
     RUNTIME_IS_CI=1
 fi
+registry_add CTX RUNTIME_IS_CI session
 
 # Container detection.
 RUNTIME_IS_CONTAINER=0
@@ -82,6 +93,7 @@ elif [ -r /proc/1/cgroup ]; then
     done < /proc/1/cgroup
     unset _cgroup_content
 fi
+registry_add CTX RUNTIME_IS_CONTAINER session
 
 # Session type detection.
 case "${XDG_SESSION_TYPE-}" in
@@ -97,6 +109,7 @@ case "${XDG_SESSION_TYPE-}" in
         fi
         ;;
 esac
+registry_add CTX RUNTIME_SESSION_TYPE session
 
 # Server detection: Linux with no graphical session.
 RUNTIME_IS_SERVER=0
@@ -104,40 +117,51 @@ if [ "$RUNTIME_OS" = "linux" ] && [ "$RUNTIME_SESSION_TYPE" = "tty" ] && \
    [ -z "${DISPLAY-}" ] && [ -z "${WAYLAND_DISPLAY-}" ]; then
     RUNTIME_IS_SERVER=1
 fi
+registry_add CTX RUNTIME_IS_SERVER session
 
 # SSH detection.
 RUNTIME_IS_SSH=0
 if [ -n "${SSH_CLIENT-}" ] || [ -n "${SSH_TTY-}" ]; then
     RUNTIME_IS_SSH=1
 fi
+registry_add CTX RUNTIME_IS_SSH session
+
+# Offline detection (lazy, 1s timeout on first call).
+_runtime_resolve_offline() {
+    RUNTIME_IS_OFFLINE=0
+    if ! command -v ping >/dev/null 2>&1 || \
+       ! ping -c1 -W1 1.1.1.1 >/dev/null 2>&1; then
+        RUNTIME_IS_OFFLINE=1
+    fi
+    export RUNTIME_IS_OFFLINE
+}
+registry_add_lazy CTX RUNTIME_IS_OFFLINE _runtime_resolve_offline session
+
+runtime_is_offline() {
+    registry_resolve CTX RUNTIME_IS_OFFLINE
+    [ "$RUNTIME_IS_OFFLINE" -eq 1 ]
+}
 
 # Show all context variables.
 runtime_context() {
-    runtime_is_offline >/dev/null 2>&1
-    printf '%s\n' \
-        "RUNTIME_OS=$RUNTIME_OS" \
-        "RUNTIME_HOST=$RUNTIME_HOST" \
-        "RUNTIME_DISTRO=$RUNTIME_DISTRO" \
-        "SHELL_FAMILY=$SHELL_FAMILY" \
-        "RUNTIME_SESSION_TYPE=$RUNTIME_SESSION_TYPE" \
-        "RUNTIME_IS_WORK=$RUNTIME_IS_WORK" \
-        "RUNTIME_IS_HOME=$RUNTIME_IS_HOME" \
-        "RUNTIME_IS_CI=$RUNTIME_IS_CI" \
-        "RUNTIME_IS_CONTAINER=$RUNTIME_IS_CONTAINER" \
-        "RUNTIME_IS_SERVER=$RUNTIME_IS_SERVER" \
-        "RUNTIME_IS_SSH=$RUNTIME_IS_SSH" \
-        "RUNTIME_IS_OFFLINE=$RUNTIME_IS_OFFLINE"
-}
-
-# Offline detection (lazy, 1s timeout on first call).
-runtime_is_offline() {
-    if [ -z "${RUNTIME_IS_OFFLINE+x}" ]; then
-        RUNTIME_IS_OFFLINE=0
-        if ! command -v ping >/dev/null 2>&1 || \
-           ! ping -c1 -W1 1.1.1.1 >/dev/null 2>&1; then
-            RUNTIME_IS_OFFLINE=1
+    local _scope=""
+    local _resolve=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --scope) _scope="$2"; shift 2 ;;
+            --resolve) _resolve=1; shift ;;
+            *) shift ;;
+        esac
+    done
+    if [ -n "$_scope" ]; then
+        if [ "$_resolve" = "1" ]; then
+            registry_dump CTX --tag "$_scope" --resolve
+        else
+            registry_dump CTX --tag "$_scope"
         fi
-        export RUNTIME_IS_OFFLINE
+    elif [ "$_resolve" = "1" ]; then
+        registry_dump CTX --resolve
+    else
+        registry_dump CTX --resolve
     fi
-    [ "$RUNTIME_IS_OFFLINE" -eq 1 ]
 }

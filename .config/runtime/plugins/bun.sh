@@ -9,4 +9,4 @@ runtime_plugin_bun() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_bun
+hook_register setup runtime_plugin_bun

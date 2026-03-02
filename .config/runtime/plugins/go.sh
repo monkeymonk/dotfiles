@@ -8,4 +8,4 @@ runtime_plugin_go() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_go
+hook_register setup runtime_plugin_go

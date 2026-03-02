@@ -23,4 +23,4 @@ runtime_plugin_ollama() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_ollama
+hook_register setup runtime_plugin_ollama

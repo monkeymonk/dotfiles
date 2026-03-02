@@ -6,4 +6,4 @@ runtime_plugin_docker() {
     export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
 }
 
-runtime_hook_register setup runtime_plugin_docker
+hook_register setup runtime_plugin_docker

@@ -55,4 +55,4 @@ runtime_plugin_fzf() {
 	fi
 }
 
-runtime_hook_register setup runtime_plugin_fzf
+hook_register setup runtime_plugin_fzf
