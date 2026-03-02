@@ -22,4 +22,4 @@ runtime_plugin_cdx() {
 	runtime_cdx_aliases
 }
 
-runtime_hook_register interactive runtime_plugin_cdx
+hook_register interactive runtime_plugin_cdx

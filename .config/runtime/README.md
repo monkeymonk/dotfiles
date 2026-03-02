@@ -23,31 +23,39 @@ runtime/
 2. Guards against double-loading
 3. Loads core modules (deterministic order)
 4. Loads plugins (register hooks only)
-5. Runs context hooks, then loads context
-6. Runs config hooks, then loads config modules (including `config/paths.sh` and `config/context.sh`)
-7. Loads machine overrides
-8. Loads secrets
-9. Prepends `scripts/` to `PATH`
-10. Exports aliases via `alx`
-11. Sources `cdx` if installed
-12. Runs late hooks
+5. Runs `bootstrap` hooks
+6. Loads `core/context.sh`
+7. Runs `context` hooks
+8. Loads config modules (`defaults.sh`, `exports.sh`, `paths.sh`, `context.sh`, `aliases.sh`)
+9. Runs `setup` hooks
+10. Loads machine overrides
+11. Loads secrets
+12. Runs `post_secrets` hooks
+13. Prepends `scripts/` to `PATH`
+14. Exports aliases via `alx`
+15. Sources `cdx` if installed
+16. Runs `interactive` hooks
+17. Deduplicates `PATH`
 
 Load order is strict:
 
-`core → plugins → pre_context → context → post_context → pre_config → config → post_config → machine → secrets → post_secrets → scripts → post_scripts → alx/cdx → late`
+`core → plugins → [bootstrap] → context → [context] → config → [setup] → machine → secrets → [post_secrets] → scripts → alx/cdx → [interactive]`
 
 ## Core (Primitives)
 
 The `core/` layer provides safe primitives only:
 
-- `context.sh`: OS and machine context (`RUNTIME_OS`, `RUNTIME_HOST`, `RUNTIME_DISTRO`, `RUNTIME_IS_WORK`, `RUNTIME_IS_HOME`)
 - `env.sh`: safe defaults for `EDITOR`, `PAGER`, `XDG_*`
-- `hooks.sh`: hook registry (`runtime_hook_register`, `runtime_hook_run`)
-- `system.sh`: helpers like `is_mac`, `is_linux`
-- `path.sh`: `path_prepend`, `path_append`, `path_remove`
-- `log.sh`: `info`, `warn`, `error` with TTY-only output
+- `log.sh`: `info`, `success`, `warn`, `error` with TTY-only output
+- `hooks.sh`: hook registry (`hook_register`, `hook_run`, `hook_list`)
+- `path.sh`: `path_prepend`, `path_append`, `path_remove`, `path_dedupe`
 - `prompt.sh`: `confirm`, `choose_one`, `choose_multi` (fzf if present)
-- `utils.sh`: `die`, `safe_source`, `guard_double_load`, `has_cmd`, `has_file`, `has_dir`, `require_cmd`
+- `system.sh`: helpers like `is_mac`, `is_linux`
+- `utils.sh`: `has_cmd`, `has_file`, `has_dir`, `require_cmd`, `die`, `try_or_warn`, `safe_source`, `guard_double_load`, `runtime_alias`
+- `lazy.sh`: `lazy_load` for deferred command initialization
+- `registry.sh`: generic tagged key-value registry (`registry_init`, `registry_add`, `registry_add_lazy`, `registry_resolve`, `registry_get`, `registry_dump`)
+- `context.sh`: OS and machine context (`RUNTIME_OS`, `RUNTIME_HOST`, `RUNTIME_DISTRO`, `RUNTIME_IS_WORK`, `RUNTIME_IS_HOME`, etc.), plus `runtime_context` and `runtime_is_offline`
+- `runtime.sh`: runtime-level diagnostics (`runtime_status`)
 
 No tool-specific logic belongs here.
 
@@ -59,6 +67,7 @@ No tool-specific logic belongs here.
 - `exports.sh`: pure environment exports (no logic)
 - `paths.sh`: base PATH entries (no tool-specific logic)
 - `context.sh`: context-derived exports (OS/distro/host)
+- `aliases.sh`: shell aliases
 - `machine/*.sh`: machine-specific overrides loaded from context
 
 ## Secrets
@@ -72,11 +81,9 @@ alphabetical. Errors are visible in the shell.
 
 - Guard with `require_cmd` for tool integrations
 - Register hook functions instead of executing work at load time
-- Avoid aliases
 - Avoid heavy commands at startup
 - Use `path_prepend`/`path_append` for tool-specific PATH when needed
 
-Plugins should export environment variables or define helper functions only.
 Plugins are loaded before context/config; use hooks to run code at the right phase.
 To disable a plugin, rename it to `.name.sh` (dotfiles are ignored by the loader).
 
@@ -84,15 +91,15 @@ To disable a plugin, rename it to `.name.sh` (dotfiles are ignored by the loader
 
 Available phases (in order):
 
-`pre_context`, `post_context`, `pre_config`, `post_config`, `post_secrets`, `post_scripts`, `late`
+`bootstrap`, `context`, `setup`, `post_secrets`, `interactive`
 
 Register a hook with:
 
 ```sh
-runtime_hook_register <phase> <function_name>
+hook_register <phase> <function_name>
 ```
 
-Plugins must explicitly register hook functions using `runtime_hook_register`.
+Plugins must explicitly register hook functions using `hook_register`.
 
 ## Scripts
 
@@ -124,4 +131,18 @@ Add this to your shell rc:
 
 ```bash
 [ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"
+```
+
+## Debugging
+
+Set `RUNTIME_DEBUG=1` to print per-hook timing to stderr.
+
+Reload options:
+
+```sh
+# Soft reload (re-sources in-place, state may linger)
+runtime_reload soft
+
+# Hard reload (re-exec shell — clean state)
+runtime_reload hard
 ```

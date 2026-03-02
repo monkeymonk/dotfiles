@@ -10,6 +10,11 @@ path_prepend "/sbin"
 path_prepend "$HOME/.local/bin"
 path_prepend "$HOME/bin"
 
+# Language toolchains
+if [ -d "$HOME/.cargo/bin" ]; then
+	path_prepend "$HOME/.cargo/bin"
+fi
+
 # System package managers / platforms
 if [ -d "/snap/bin" ] && command -v snap >/dev/null 2>&1; then
 	path_prepend "/snap/bin"

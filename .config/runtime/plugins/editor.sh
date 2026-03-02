@@ -28,4 +28,4 @@ runtime_plugin_editor() {
     unset _runtime_editor _runtime_has_nvim
 }
 
-runtime_hook_register setup runtime_plugin_editor
+hook_register setup runtime_plugin_editor

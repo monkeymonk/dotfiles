@@ -9,4 +9,4 @@ runtime_plugin_pnpm() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_pnpm
+hook_register setup runtime_plugin_pnpm

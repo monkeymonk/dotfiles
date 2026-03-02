@@ -6,4 +6,4 @@ runtime_plugin_composer() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_composer
+hook_register setup runtime_plugin_composer

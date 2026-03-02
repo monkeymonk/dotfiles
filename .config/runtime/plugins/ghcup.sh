@@ -10,4 +10,4 @@ runtime_plugin_ghcup() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_ghcup
+hook_register setup runtime_plugin_ghcup

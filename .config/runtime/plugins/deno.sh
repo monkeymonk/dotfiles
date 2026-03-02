@@ -6,4 +6,4 @@ runtime_plugin_deno() {
     fi
 }
 
-runtime_hook_register setup runtime_plugin_deno
+hook_register setup runtime_plugin_deno

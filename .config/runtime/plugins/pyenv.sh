@@ -25,4 +25,4 @@ runtime_plugin_pyenv() {
     lazy_load _pyenv_load pyenv python python3 pip pip3
 }
 
-runtime_hook_register setup runtime_plugin_pyenv
+hook_register setup runtime_plugin_pyenv

@@ -24,4 +24,4 @@ runtime_neovim_aliases() {
 	runtime_alias vl "nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
 }
 
-runtime_hook_register setup runtime_plugin_neovim
+hook_register setup runtime_plugin_neovim
