@@ -13,15 +13,14 @@ runtime_plugin_alx() {
 
     command -v alx >/dev/null 2>&1 || return 0
 
-    # Shim: intercept alias definitions, persist in alx, define real alias.
+    # Override alias builtin to persist definitions in alx registry.
     # Handles multiple definitions: alias a='foo' b='bar'
-    # Passes flags (-p, -g, etc.) and lookups straight to builtin.
-    _alx_shim_alias() {
+    # Passes flags (-p, -g, etc.) and bare lookups straight to builtin.
+    alias() {
         if [ $# -eq 0 ]; then
             builtin alias
             return
         fi
-        # Flags go straight through
         if [ "${1#-}" != "$1" ]; then
             builtin alias "$@"
             return
@@ -35,8 +34,6 @@ runtime_plugin_alx() {
         done
         builtin alias "$@"
     }
-
-    alias() { _alx_shim_alias "$@"; }
 
     runtime_alias falx 'eval "$(alx list | fzf --delimiter=$'\''\t'\'' --with-nth=1,2,3 | cut -f1)"' \
         --desc "Fuzzy search aliases" --tags "alias,fzf"
