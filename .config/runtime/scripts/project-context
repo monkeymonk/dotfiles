@@ -1,0 +1,93 @@
+#!/usr/bin/env sh
+# Print project context for the given directory (or cwd).
+# Detects tech stack, project markers, git info, directory structure.
+# Output: plain text, one fact per line. Machine- and LLM-friendly.
+#
+# Usage: project-context [directory]
+
+set -e
+
+dir="${1:-$PWD}"
+dir="$(cd "$dir" && pwd)"
+
+echo "directory: $dir"
+echo "basename: $(basename "$dir")"
+
+# --- project markers ---
+for f in \
+    package.json composer.json Cargo.toml go.mod pyproject.toml \
+    requirements.txt setup.py setup.cfg Pipfile \
+    Gemfile build.gradle build.gradle.kts pom.xml \
+    Makefile CMakeLists.txt meson.build \
+    flake.nix shell.nix default.nix \
+    deno.json bun.lockb \
+    pubspec.yaml mix.exs rebar.config \
+    .sln .csproj
+do
+    [ -f "$dir/$f" ] && echo "file: $f"
+done
+
+# --- container / infra ---
+for f in \
+    Dockerfile docker-compose.yml docker-compose.yaml \
+    compose.yml compose.yaml \
+    Vagrantfile Procfile \
+    terraform.tf main.tf \
+    pulumi.yaml serverless.yml \
+    k8s/ chart/ helm/
+do
+    case "$f" in
+        */) [ -d "$dir/$f" ] && echo "dir: $f" ;;
+        *)  [ -f "$dir/$f" ] && echo "file: $f" ;;
+    esac
+done
+
+# --- config / tooling ---
+for f in \
+    .eslintrc.js .eslintrc.json .eslintrc.yml eslint.config.js eslint.config.mjs \
+    .prettierrc .prettierrc.json prettier.config.js \
+    tsconfig.json jsconfig.json \
+    .editorconfig .envrc .tool-versions .mise.toml \
+    .github/workflows .gitlab-ci.yml .circleci \
+    justfile Taskfile.yml \
+    vitest.config.ts jest.config.js jest.config.ts \
+    playwright.config.ts cypress.config.ts \
+    .env .env.example
+do
+    case "$f" in
+        */) [ -d "$dir/$f" ] && echo "dir: $f" ;;
+        *)  [ -f "$dir/$f" ] && echo "file: $f" ;;
+    esac
+done
+
+# --- key directories ---
+for d in \
+    src lib app components pages api routes \
+    cmd pkg internal \
+    tests spec __tests__ test \
+    docs scripts migrations \
+    public static assets dist build out
+do
+    [ -d "$dir/$d" ] && echo "dir: $d/"
+done
+
+# --- git info ---
+if [ -d "$dir/.git" ] || git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+    echo "vcs: git"
+    branch=$(git -C "$dir" branch --show-current 2>/dev/null)
+    [ -n "$branch" ] && echo "branch: $branch"
+
+    # top file extensions by count
+    exts=$(git -C "$dir" ls-files 2>/dev/null \
+        | grep '\.' \
+        | sed 's/.*\.//' \
+        | sort | uniq -c | sort -rn \
+        | head -5 \
+        | awk '{printf "%s(%d) ", $2, $1}')
+    [ -n "$exts" ] && echo "extensions: $exts"
+
+    # dirty state
+    if ! git -C "$dir" diff --quiet 2>/dev/null; then
+        echo "git-dirty: yes"
+    fi
+fi

@@ -147,6 +147,8 @@ Any command set via `ZSH_TIPS_GENERATOR` must follow:
 
 Default generator: `tips-generate-ollama` (uses Ollama via `project-context` + `curl` + `jq`).
 
+Dynamic tips only generate for project directories (detected by `is-project-dir`). A directory is considered a project if it contains a git repo, package manifests, build files, or AI agent context files (CLAUDE.md, AGENTS.md, etc.).
+
 ### Configuration
 
 | Variable | Default | Description |
@@ -167,6 +169,13 @@ dir="$1"
 [ -f "$dir/Makefile" ] && echo "Run 'make help' to see available targets"
 [ -f "$dir/package.json" ] && echo "Run 'npm test' to execute the test suite"
 [ -d "$dir/.git" ] && echo "Use 'git log --oneline -10' for recent history"
+```
+
+Force refresh tips for current directory:
+
+```sh
+tips-refresh          # current directory
+tips-refresh ~/myapp  # specific directory
 ```
 
 Debug: `ZSH_TIPS_DEBUG=1 exec zsh -l` then `tail -f ~/.cache/runtime/tips-debug.log`

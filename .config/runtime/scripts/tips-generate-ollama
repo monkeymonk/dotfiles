@@ -1,0 +1,71 @@
+#!/usr/bin/env sh
+set -e
+
+# Ollama-based tip generator for zsh-tips.zsh
+# Contract: takes directory path as $1, outputs tips to stdout (one per line)
+
+_dir="${1:-.}"
+
+# --- dependency checks (generator owns these) ---
+command -v project-context >/dev/null 2>&1 || exit 1
+command -v is-project-dir >/dev/null 2>&1 || exit 1
+command -v curl >/dev/null 2>&1 || exit 1
+command -v jq >/dev/null 2>&1 || exit 1
+
+# --- config ---
+_model="${ZSH_TIPS_DYNAMIC_MODEL:-${OLLAMA_MODEL_FLASH:-${OLLAMA_MODEL:-qwen2.5-coder:7b}}}"
+_host="${OLLAMA_HOST:-127.0.0.1:11434}"
+_debug="${ZSH_TIPS_DEBUG:-0}"
+_dbglog="${ZSH_TIPS_DEBUG_LOG:-${XDG_CACHE_HOME:-$HOME/.cache}/runtime/tips-debug.log}"
+
+_dbg() {
+  if [ "$_debug" = 1 ]; then
+    printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*" >> "$_dbglog"
+  fi
+}
+
+# --- project gate: skip non-project directories ---
+if ! is-project-dir "$_dir"; then
+  _dbg "SKIP: not a project directory: $_dir"
+  exit 1
+fi
+
+# --- context ---
+ctx=$(project-context "$_dir")
+if [ -z "$ctx" ]; then
+  _dbg "SKIP: empty context for $_dir"
+  exit 1
+fi
+_dbg "--- CONTEXT ---"
+[ "$_debug" = 1 ] && printf '%s\n' "$ctx" >> "$_dbglog"
+
+# --- prompt ---
+prompt="Generate 8-12 short practical terminal tips for this project context. One tip per line, no numbering, no bullets, no prefix. Keep each under 100 chars. No generic filler.
+
+$ctx"
+_dbg "--- PROMPT ---"
+[ "$_debug" = 1 ] && printf '%s\n' "$prompt" >> "$_dbglog"
+_dbg "model=$_model host=$_host"
+
+# --- generate ---
+payload=$(jq -n --arg m "$_model" --arg p "$prompt" \
+  '{model:$m,prompt:$p,stream:false}')
+_dbg "--- PAYLOAD ---"
+[ "$_debug" = 1 ] && printf '%s\n' "$payload" >> "$_dbglog"
+
+raw=$(curl -sf "http://$_host/api/generate" -d "$payload")
+rc=$?
+_dbg "curl exit=$rc"
+if [ $rc -ne 0 ] || [ -z "$raw" ]; then
+  _dbg "FAIL: curl returned rc=$rc or empty response"
+  exit 1
+fi
+_dbg "--- RAW RESPONSE (first 500 chars) ---"
+[ "$_debug" = 1 ] && printf '%.500s\n' "$raw" >> "$_dbglog"
+
+result=$(printf '%s' "$raw" | jq -r '.response')
+_dbg "--- PARSED TIPS ---"
+[ "$_debug" = 1 ] && printf '%s\n' "$result" >> "$_dbglog"
+_dbg "--- END ---"
+
+printf '%s\n' "$result"

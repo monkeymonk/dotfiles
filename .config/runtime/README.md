@@ -59,7 +59,8 @@ The `core/` layer provides safe primitives only:
 | `utils.sh` | `has_cmd`, `has_file`, `has_dir`, `require_cmd`, `die`, `try_or_warn`, `safe_source`, `guard_double_load`, `runtime_alias` | General utilities |
 | `lazy.sh` | `lazy_load` | Deferred command initialization |
 | `registry.sh` | `registry_init`, `registry_add`, `registry_add_lazy`, `registry_resolve`, `registry_get`, `registry_dump` | Tagged key-value registry with lazy evaluation |
-| `context.sh` | `runtime_context`, `runtime_is_offline` | OS and machine context detection |
+| `context.sh` | `runtime_context`, `runtime_is_offline`, `ctx_set`, `ctx_set_lazy` | OS and machine context detection |
+| `lib.sh` | — | Script bootstrap (logging + utils for standalone scripts) |
 | `runtime.sh` | `runtime_status` | Runtime diagnostics |
 
 No tool-specific logic belongs here.
@@ -127,21 +128,19 @@ To disable a plugin, rename it to `.name.sh` (dotfiles are ignored by the loader
 | `composer.sh` | PHP Composer | setup |
 | `deno.sh` | Deno runtime | setup |
 | `docker.sh` | Docker | setup |
-| `editor.sh` | Editor detection (nvim/vim) | setup |
+| `uv.sh` | UV Python package manager | setup |
 | `eza.sh` | Modern ls replacement | setup |
 | `fzf.sh` | Fuzzy finder (fd integration) | setup |
 | `ghcup.sh` | Haskell (GHCup) | setup |
 | `git.sh` | Git aliases | setup |
 | `go.sh` | Go lang | setup |
 | `lm-studio.sh` | LM Studio | setup |
-| `neovim.sh` | Neovim (EDITOR/VISUAL) | setup |
+| `neovim.sh` | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback) | setup |
 | `node.sh` | Node.js | setup |
 | `nvm.sh` | Node version manager (lazy) | setup |
 | `ollama.sh` | Ollama LLM (loads ai/ module) | setup |
 | `opencode.sh` | VS Code | setup |
 | `pnpm.sh` | PNPM package manager | setup |
-| `pyenv.sh` | Python version manager (lazy) | setup |
-| `python.sh` | Python | setup |
 | `rust.sh` | Rust / Cargo | setup |
 | `shell.sh` | Shell-specific config | interactive |
 | `starship.sh` | Starship prompt | setup |
@@ -195,13 +194,21 @@ When idle for 8 seconds, displays contextual tips:
 
 - Static pool from `ai/data/tips.txt`
 - Dynamic tips generated via `tips-generate-ollama` (Ollama-powered, project-aware)
+- Only triggers for project directories (detected by `is-project-dir`)
 - 70/30 weight favoring dynamic tips
+- Force refresh with `tips-refresh [dir]`
 - Configurable: `ZSH_TIPS_DYNAMIC`, `ZSH_TIPS_GENERATOR`, `ZSH_TIPS_DYNAMIC_TTL`
 - Caching via `cache-run`
 
 ## Scripts
 
 `scripts/` contains executable, self-contained commands prepended to `PATH`.
+
+Scripts can bootstrap logging and utils via `core/lib.sh`:
+
+```sh
+. "${0%/*}/../core/lib.sh"
+```
 
 | Script | Purpose |
 |---|---|
@@ -212,7 +219,9 @@ When idle for 8 seconds, displays contextual tips:
 | `project-context` | Extract project metadata |
 | `recent` | Show recently modified files |
 | `serve` | Simple HTTP server |
+| `is-project-dir` | Check if a directory is a project root (exit 0/1) |
 | `tips-generate-ollama` | Generate dynamic shell tips via Ollama |
+| `tips-refresh` | Force-regenerate Ollama tips: `tips-refresh [dir]` |
 | `update-system` | System package manager updates |
 
 ## Dependencies
@@ -272,6 +281,7 @@ Create `plugins/myplugin.sh`:
 ```sh
 _myplugin_setup() {
     require_cmd mytool || return 0
+    guard_double_load RUNTIME_MYPLUGIN_LOADED || return 0
     runtime_alias myalias 'mytool --flag' --desc "..." --tags "..."
 }
 hook_register setup _myplugin_setup

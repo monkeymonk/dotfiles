@@ -1,8 +1,7 @@
 # AI/LLM alias registrations via alx.
 
 runtime_ai_aliases() {
-    [ "${RUNTIME_AI_ALIASES_LOADED-}" = "1" ] && return 0
-    RUNTIME_AI_ALIASES_LOADED=1
+    guard_double_load RUNTIME_AI_ALIASES_LOADED || return 0
 
     runtime_alias llm-explain '_llm_explain' --desc "LLM explain" --tags "llm,code"
     runtime_alias llm-summary '_llm_summary' --desc "LLM summary" --tags "llm,summary"

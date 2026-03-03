@@ -3,17 +3,7 @@
 # System-wide update script. Each section is independent — failures
 # are logged but do not abort subsequent sections.
 
-_script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-_runtime_root=$(CDPATH= cd -- "$_script_dir/.." && pwd)
-if [ -f "$_runtime_root/core/log.sh" ]; then
-    . "$_runtime_root/core/log.sh"
-fi
-
-# Fallbacks if log.sh didn't load
-command -v info >/dev/null 2>&1 || info() { printf 'info: %s\n' "$*"; }
-command -v success >/dev/null 2>&1 || success() { printf 'success: %s\n' "$*"; }
-command -v warn >/dev/null 2>&1 || warn() { printf 'warn: %s\n' "$*" >&2; }
-command -v error >/dev/null 2>&1 || error() { printf 'error: %s\n' "$*" >&2; }
+. "${0%/*}/../core/lib.sh"
 
 _failed=""
 
@@ -73,12 +63,8 @@ if command -v go >/dev/null 2>&1; then
     info "Go: installed (no global updater — binaries managed individually)"
 fi
 
-if command -v pyenv >/dev/null 2>&1; then
-    run_section "Pyenv" pyenv update
-fi
-
-if command -v pipx >/dev/null 2>&1; then
-    run_section "Pipx" pipx upgrade-all
+if command -v uv >/dev/null 2>&1; then
+    run_section "UV" sh -c 'uv self update && uv python upgrade && uv tool upgrade --all'
 fi
 
 if command -v composer >/dev/null 2>&1; then

@@ -1,0 +1,49 @@
+#!/usr/bin/env sh
+# Check if a directory looks like a project root.
+# Exits 0 if project markers found, 1 otherwise.
+#
+# Usage: is-project-dir [directory]
+#
+# Checks (any match = project):
+#   - Git repository (.git or inside a git worktree)
+#   - AI agent context files (CLAUDE.md, AGENTS.md, etc.)
+#   - Language/package manager manifest files
+#   - Build system files
+#   - Container/infra files
+
+dir="${1:-$PWD}"
+
+# --- git repo ---
+[ -d "$dir/.git" ] && exit 0
+git -C "$dir" rev-parse --git-dir >/dev/null 2>&1 && exit 0
+
+# --- AI agent context files ---
+for f in \
+    CLAUDE.md AGENTS.md GEMINI.md COPILOT.md \
+    .cursorrules .cursorignore \
+    .github/copilot-instructions.md \
+    .clinerules .windsurfrules
+do
+    [ -f "$dir/$f" ] && exit 0
+done
+
+# --- package/build manifests ---
+for f in \
+    package.json composer.json Cargo.toml go.mod pyproject.toml \
+    requirements.txt setup.py setup.cfg Pipfile \
+    Gemfile build.gradle build.gradle.kts pom.xml \
+    Makefile CMakeLists.txt meson.build \
+    flake.nix shell.nix default.nix \
+    deno.json bun.lockb \
+    pubspec.yaml mix.exs rebar.config \
+    .sln .csproj \
+    Dockerfile docker-compose.yml docker-compose.yaml \
+    compose.yml compose.yaml \
+    terraform.tf main.tf \
+    justfile Taskfile.yml \
+    README.md README.rst README
+do
+    [ -f "$dir/$f" ] && exit 0
+done
+
+exit 1

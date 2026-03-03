@@ -11,8 +11,7 @@ runtime_plugin_cdx() {
 	fi
 
 	runtime_cdx_aliases() {
-		[ "${RUNTIME_CDX_ALIASES_LOADED-}" = "1" ] && return 0
-		RUNTIME_CDX_ALIASES_LOADED=1
+		guard_double_load RUNTIME_CDX_ALIASES_LOADED || return 0
 		[ "$HAS_CDX" -eq 1 ] || return 0
 
 		# runtime_alias cd 'cdx' --desc "cd via cdx" --tags "cdx,nav,cd"

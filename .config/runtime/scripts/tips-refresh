@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+# Force-regenerate Ollama tips for a directory.
+# Usage: tips-refresh [directory]
+#
+# Clears the cache entry and runs the generator in foreground,
+# so you can see the result immediately. The zsh-tips plugin
+# picks up the new cache automatically on next rotation.
+
+set -e
+
+dir="${1:-$PWD}"
+dir="$(cd "$dir" && pwd)"
+
+command -v tips-generate-ollama >/dev/null 2>&1 || { echo "error: tips-generate-ollama not found" >&2; exit 1; }
+
+# --- clear existing cache ---
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/runtime/cache-run"
+if command -v md5sum >/dev/null 2>&1; then
+    hash=$(printf '%s' "tips:$dir" | md5sum | cut -d' ' -f1)
+elif command -v md5 >/dev/null 2>&1; then
+    hash=$(printf '%s' "tips:$dir" | md5 -q)
+else
+    hash=$(printf '%s' "tips:$dir" | tr -c '[:alnum:]_-' '_')
+fi
+rm -f "$cache_dir/$hash"
+
+# --- regenerate ---
+echo "Generating tips for $dir ..."
+output=$(tips-generate-ollama "$dir")
+
+if [ -z "$output" ]; then
+    echo "error: generator returned empty output" >&2
+    exit 1
+fi
+
+# --- write cache ---
+mkdir -p "$cache_dir"
+printf '%s\n' "$output" > "$cache_dir/$hash"
+count=$(printf '%s\n' "$output" | grep -c '.')
+echo "Done — $count tips cached."

@@ -2,6 +2,15 @@
 
 registry_init CTX
 
+ctx_set() {
+    eval "$1=\"$2\""; export "$1"
+    registry_add CTX "$1" "${3:-_}"
+}
+
+ctx_set_lazy() {
+    registry_add_lazy CTX "$1" "$2" "${3:-_}"
+}
+
 : "${RUNTIME_MACHINE:=${HOSTNAME:-unknown}}"
 RUNTIME_HOST="${RUNTIME_MACHINE}"
 
@@ -30,10 +39,10 @@ else
     SHELL_FAMILY="sh"
 fi
 
-registry_add CTX RUNTIME_OS system
-registry_add CTX RUNTIME_HOST system
-registry_add CTX RUNTIME_DISTRO system
-registry_add CTX SHELL_FAMILY session
+ctx_set RUNTIME_OS "$RUNTIME_OS" system
+ctx_set RUNTIME_HOST "$RUNTIME_HOST" system
+ctx_set RUNTIME_DISTRO "$RUNTIME_DISTRO" system
+ctx_set SHELL_FAMILY "$SHELL_FAMILY" session
 
 # Context classification.
 # Priority order:
@@ -68,8 +77,8 @@ if [ "$RUNTIME_IS_WORK" -eq 0 ] && [ "$RUNTIME_IS_HOME" -eq 0 ]; then
     esac
 fi
 
-registry_add CTX RUNTIME_IS_WORK system
-registry_add CTX RUNTIME_IS_HOME system
+ctx_set RUNTIME_IS_WORK "$RUNTIME_IS_WORK" system
+ctx_set RUNTIME_IS_HOME "$RUNTIME_IS_HOME" system
 
 # CI detection.
 RUNTIME_IS_CI=0
@@ -77,7 +86,7 @@ if [ "${CI-}" = "true" ] || [ -n "${GITHUB_ACTIONS-}" ] || [ -n "${GITLAB_CI-}" 
    [ -n "${TRAVIS-}" ] || [ -n "${CIRCLECI-}" ]; then
     RUNTIME_IS_CI=1
 fi
-registry_add CTX RUNTIME_IS_CI session
+ctx_set RUNTIME_IS_CI "$RUNTIME_IS_CI" session
 
 # Container detection.
 RUNTIME_IS_CONTAINER=0
@@ -93,7 +102,7 @@ elif [ -r /proc/1/cgroup ]; then
     done < /proc/1/cgroup
     unset _cgroup_content
 fi
-registry_add CTX RUNTIME_IS_CONTAINER session
+ctx_set RUNTIME_IS_CONTAINER "$RUNTIME_IS_CONTAINER" session
 
 # Session type detection.
 case "${XDG_SESSION_TYPE-}" in
@@ -109,7 +118,7 @@ case "${XDG_SESSION_TYPE-}" in
         fi
         ;;
 esac
-registry_add CTX RUNTIME_SESSION_TYPE session
+ctx_set RUNTIME_SESSION_TYPE "$RUNTIME_SESSION_TYPE" session
 
 # Server detection: Linux with no graphical session.
 RUNTIME_IS_SERVER=0
@@ -117,14 +126,14 @@ if [ "$RUNTIME_OS" = "linux" ] && [ "$RUNTIME_SESSION_TYPE" = "tty" ] && \
    [ -z "${DISPLAY-}" ] && [ -z "${WAYLAND_DISPLAY-}" ]; then
     RUNTIME_IS_SERVER=1
 fi
-registry_add CTX RUNTIME_IS_SERVER session
+ctx_set RUNTIME_IS_SERVER "$RUNTIME_IS_SERVER" session
 
 # SSH detection.
 RUNTIME_IS_SSH=0
 if [ -n "${SSH_CLIENT-}" ] || [ -n "${SSH_TTY-}" ]; then
     RUNTIME_IS_SSH=1
 fi
-registry_add CTX RUNTIME_IS_SSH session
+ctx_set RUNTIME_IS_SSH "$RUNTIME_IS_SSH" session
 
 # Offline detection (lazy, 1s timeout on first call).
 _runtime_resolve_offline() {
@@ -135,7 +144,7 @@ _runtime_resolve_offline() {
     fi
     export RUNTIME_IS_OFFLINE
 }
-registry_add_lazy CTX RUNTIME_IS_OFFLINE _runtime_resolve_offline session
+ctx_set_lazy RUNTIME_IS_OFFLINE _runtime_resolve_offline session
 
 runtime_is_offline() {
     registry_resolve CTX RUNTIME_IS_OFFLINE

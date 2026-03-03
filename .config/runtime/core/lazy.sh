@@ -7,27 +7,17 @@
 #   3. Re-executes the original command with original args
 
 lazy_load() {
-  local loader_fn="$1"
-  shift
-  local cmds=("$@")
-
-  # Build the unset/unfunction call with all cmd names (baked in at registration time)
-  local unset_cmd
-  if [ -n "$ZSH_VERSION" ]; then
-    unset_cmd="unfunction ${cmds[*]}"
-  else
-    unset_cmd="unset -f ${cmds[*]}"
-  fi
-
-  local cmd
-  for cmd in "${cmds[@]}"; do
-    # Each stub captures: loader_fn, unset_cmd, and its own cmd name
-    eval "
-${cmd}() {
-  ${unset_cmd}
-  ${loader_fn}
-  ${cmd} \"\$@\"
-}
-"
-  done
+    local _loader_fn="$1"; shift
+    local _unset_cmd _cmd
+    if [ -n "${ZSH_VERSION-}" ]; then
+        _unset_cmd="unfunction"
+    else
+        _unset_cmd="unset -f"
+    fi
+    for _cmd in "$@"; do
+        _unset_cmd="$_unset_cmd $_cmd"
+    done
+    for _cmd in "$@"; do
+        eval "${_cmd}() { ${_unset_cmd}; ${_loader_fn}; ${_cmd} \"\$@\"; }"
+    done
 }

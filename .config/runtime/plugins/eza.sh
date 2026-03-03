@@ -6,8 +6,7 @@ runtime_plugin_eza() {
 }
 
 runtime_eza_aliases() {
-    [ "${RUNTIME_EZA_ALIASES_LOADED-}" = "1" ] && return 0
-    RUNTIME_EZA_ALIASES_LOADED=1
+    guard_double_load RUNTIME_EZA_ALIASES_LOADED || return 0
 
     local _defaults="--icons --git --group-directories-first"
 
