@@ -53,7 +53,7 @@ runtime_alias :q 'exit' --desc "Exit shell" --tags "shell,exit"
 runtime_alias q 'exit' --desc "Exit shell" --tags "shell,exit"
 runtime_alias quit 'exit' --desc "Exit shell" --tags "shell,exit"
 
-if [ "$OS" = macos ]; then
+if [ "$RUNTIME_OS" = "mac" ]; then
 	runtime_alias afk 'pmset displaysleepnow' --desc "Sleep display" --tags "sys,power"
 elif command -v xdg-screensaver >/dev/null 2>&1; then
 	runtime_alias afk 'xdg-screensaver lock' --desc "Lock screen" --tags "sys,lock"

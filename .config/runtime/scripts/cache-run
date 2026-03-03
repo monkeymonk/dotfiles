@@ -1,0 +1,91 @@
+#!/usr/bin/env sh
+# Cache the output of a command with a TTL.
+# Usage: cache-run <key> <ttl_seconds> <command...>
+#
+# If a fresh cache entry exists (age < ttl), prints it and exits.
+# Otherwise runs the command, caches stdout, and prints it.
+# Stderr is passed through (not cached).
+#
+# Cache location: $XDG_CACHE_HOME/runtime/cache-run/ (default ~/.cache/runtime/cache-run/)
+#
+# Options:
+#   --bg    Run in background if cache is stale; serve stale cache immediately.
+#           If no cache exists yet, runs in foreground.
+#   --dir   Override cache directory.
+#   --      End of options.
+#
+# Examples:
+#   cache-run "myip" 300 curl -s ifconfig.me
+#   cache-run "tips:$PWD" 3600 sh -c 'project-context | ollama run ...'
+#   cache-run --bg "tips:$PWD" 3600 tips-for-dir
+
+set -e
+
+# --- parse options ---
+bg=0
+cache_base="${XDG_CACHE_HOME:-$HOME/.cache}/runtime/cache-run"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --bg)  bg=1; shift ;;
+        --dir) cache_base="$2"; shift 2 ;;
+        --)    shift; break ;;
+        *)     break ;;
+    esac
+done
+
+key="$1"; shift
+ttl="$1"; shift
+# remaining args = command
+
+[ -n "$key" ] || { echo "Usage: cache-run <key> <ttl> <command...>" >&2; exit 1; }
+[ -n "$ttl" ] || { echo "Usage: cache-run <key> <ttl> <command...>" >&2; exit 1; }
+[ $# -gt 0 ] || { echo "Usage: cache-run <key> <ttl> <command...>" >&2; exit 1; }
+
+mkdir -p "$cache_base"
+
+# safe filename from key
+if command -v md5sum >/dev/null 2>&1; then
+    hash=$(printf '%s' "$key" | md5sum | cut -d' ' -f1)
+elif command -v md5 >/dev/null 2>&1; then
+    hash=$(printf '%s' "$key" | md5 -q)
+else
+    hash=$(printf '%s' "$key" | tr -c '[:alnum:]_-' '_')
+fi
+
+cache_file="$cache_base/$hash"
+
+# --- check freshness ---
+if [ -f "$cache_file" ]; then
+    now=$(date +%s)
+    mtime=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null || echo 0)
+    age=$(( now - mtime ))
+
+    if [ "$age" -lt "$ttl" ] && [ -s "$cache_file" ]; then
+        cat "$cache_file"
+        exit 0
+    fi
+
+    # stale — in bg mode, serve stale and refresh in background
+    if [ "$bg" = 1 ]; then
+        [ -s "$cache_file" ] && cat "$cache_file"
+        ( "$@" > "$cache_file.tmp" 2>/dev/null && [ -s "$cache_file.tmp" ] && mv "$cache_file.tmp" "$cache_file" || rm -f "$cache_file.tmp" ) &
+        exit 0
+    fi
+fi
+
+# --- no cache or expired (foreground) ---
+if [ "$bg" = 1 ] && [ ! -f "$cache_file" ]; then
+    # first run in bg mode with no cache: run foreground
+    "$@" | tee "$cache_file.tmp"
+    if [ -s "$cache_file.tmp" ]; then
+        mv "$cache_file.tmp" "$cache_file"
+    else
+        rm -f "$cache_file.tmp"
+        exit 1
+    fi
+    exit $?
+fi
+
+"$@" > "$cache_file.tmp" && [ -s "$cache_file.tmp" ] && mv "$cache_file.tmp" "$cache_file" || { rm -f "$cache_file.tmp"; exit 1; }
+cat "$cache_file"
