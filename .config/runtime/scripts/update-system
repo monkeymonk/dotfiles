@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
-set -eu
+# System-wide update script. Each section is independent — failures
+# are logged but do not abort subsequent sections.
 
 _script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 _runtime_root=$(CDPATH= cd -- "$_script_dir/.." && pwd)
@@ -8,66 +9,141 @@ if [ -f "$_runtime_root/core/log.sh" ]; then
     . "$_runtime_root/core/log.sh"
 fi
 
+# Fallbacks if log.sh didn't load
+command -v info >/dev/null 2>&1 || info() { printf 'info: %s\n' "$*"; }
+command -v success >/dev/null 2>&1 || success() { printf 'success: %s\n' "$*"; }
+command -v warn >/dev/null 2>&1 || warn() { printf 'warn: %s\n' "$*" >&2; }
+command -v error >/dev/null 2>&1 || error() { printf 'error: %s\n' "$*" >&2; }
+
+_failed=""
+
+run_section() {
+    _name="$1"
+    shift
+    info "$_name"
+    if "$@"; then
+        success "$_name done"
+    else
+        error "$_name failed"
+        _failed="${_failed} ${_name}"
+    fi
+    printf '\n'
+}
+
+# -------------------------------------------------------------------
+# System package managers
+# -------------------------------------------------------------------
+
 if command -v apt-get >/dev/null 2>&1; then
-    sudo apt update -y && sudo apt upgrade -y
+    run_section "APT" sh -c 'sudo apt update -y && sudo apt upgrade -y && sudo apt autoremove -y && sudo apt autoclean'
 fi
 
 if command -v yum >/dev/null 2>&1; then
-    sudo yum update -y
+    run_section "YUM" sudo yum update -y
 fi
 
 if command -v pacman >/dev/null 2>&1; then
-    sudo pacman -Syu --noconfirm
+    run_section "Pacman" sudo pacman -Syu --noconfirm
 fi
 
-if command -v npm >/dev/null 2>&1; then
-    npm cache clean && npm i -g && npm update -g
-fi
-
-if command -v composer >/dev/null 2>&1; then
-    composer global update
-fi
-
-if command -v rustup >/dev/null 2>&1; then
-    rustup update
-fi
-
-if command -v python >/dev/null 2>&1; then
-    python -m pip install --user --upgrade pip
-    python -m pip list --outdated --format=legacy | awk '{ print $1 }' | xargs -n1 pip install -U
-fi
-
-if command -v pyenv >/dev/null 2>&1; then
-    pyenv update
+if command -v flatpak >/dev/null 2>&1; then
+    run_section "Flatpak" flatpak update -y
 fi
 
 if command -v snap >/dev/null 2>&1; then
-    sudo snap refresh
+    run_section "Snap" sudo snap refresh
+fi
+
+# -------------------------------------------------------------------
+# Language toolchains
+# -------------------------------------------------------------------
+
+if command -v rustup >/dev/null 2>&1; then
+    run_section "Rustup" rustup update
 fi
 
 if command -v cargo >/dev/null 2>&1; then
-    if ! command -v cargo-update >/dev/null 2>&1; then
-        cargo install cargo-update
-    fi
-    cargo install-update -a
+    run_section "Cargo" sh -c '
+        command -v cargo-install-update >/dev/null 2>&1 || cargo install cargo-update
+        cargo install-update -a
+    '
 fi
 
-if [ -d "$HOME/.oh-my-zsh" ] && command -v omz >/dev/null 2>&1; then
-    printf '\n'
-    if command -v info >/dev/null 2>&1; then
-        info "Updating Oh My Zsh..."
-    else
-        echo "Updating Oh My Zsh..."
-    fi
-    omz update
+if command -v go >/dev/null 2>&1; then
+    info "Go: installed (no global updater — binaries managed individually)"
+fi
+
+if command -v pyenv >/dev/null 2>&1; then
+    run_section "Pyenv" pyenv update
+fi
+
+if command -v pipx >/dev/null 2>&1; then
+    run_section "Pipx" pipx upgrade-all
+fi
+
+if command -v composer >/dev/null 2>&1; then
+    run_section "Composer" composer global update
+fi
+
+if command -v gem >/dev/null 2>&1; then
+    run_section "RubyGems" gem update --user-install
+fi
+
+# -------------------------------------------------------------------
+# JS/TS runtimes
+# -------------------------------------------------------------------
+
+if command -v npm >/dev/null 2>&1; then
+    run_section "NPM" sh -c 'npm cache clean --force && npm update -g'
+fi
+
+if command -v bun >/dev/null 2>&1; then
+    run_section "Bun" bun upgrade
+fi
+
+# -------------------------------------------------------------------
+# Tools
+# -------------------------------------------------------------------
+
+if command -v ollama >/dev/null 2>&1; then
+    run_section "Ollama" sh -c '
+        ollama list 2>/dev/null | tail -n +2 | awk "{print \$1}" | while read -r model; do
+            info "  Pulling $model"
+            ollama pull "$model"
+        done
+    '
+fi
+
+if [ -d "$HOME/.fzf" ]; then
+    run_section "fzf" sh -c 'cd "$HOME/.fzf" && git pull && ./install --bin'
+fi
+
+# -------------------------------------------------------------------
+# Editors & shells
+# -------------------------------------------------------------------
+
+if command -v nvim >/dev/null 2>&1 && [ -d "$HOME/.local/share/nvim/lazy" ]; then
+    run_section "Neovim plugins" nvim --headless '+Lazy! sync' +qa
+fi
+
+if [ -d "$HOME/.oh-my-zsh" ]; then
+    run_section "Oh My Zsh" sh -c '
+        cd "$HOME/.oh-my-zsh" && git pull --rebase --autostash
+    '
 fi
 
 if [ -d "$HOME/.tmux/plugins/tpm" ]; then
-    printf '\n'
-    if command -v info >/dev/null 2>&1; then
-        info "Updating Tmux plugins..."
-    else
-        echo "Updating Tmux plugins..."
-    fi
-    "$HOME/.tmux/plugins/tpm/bin/update_plugins" all
+    run_section "Tmux plugins" "$HOME/.tmux/plugins/tpm/bin/update_plugins" all
+fi
+
+# -------------------------------------------------------------------
+# Summary
+# -------------------------------------------------------------------
+
+printf '\n'
+if [ -n "$_failed" ]; then
+    warn "Sections with failures:${_failed}"
+    exit 1
+else
+    success "All updates completed successfully"
 fi

@@ -1,5 +1,8 @@
 # Ollama helper functions. Sourced by plugins/ollama.sh after ollama is confirmed present.
-# All functions depend on OLLAMA_MODEL being set.
+# Uses OLLAMA_MODEL as default, plus specialized vars:
+#   OLLAMA_MODEL_CODE, OLLAMA_MODEL_REASON, OLLAMA_MODEL_FAST,
+#   OLLAMA_MODEL_OCR, OLLAMA_MODEL_VISION, OLLAMA_MODEL_EMBED,
+#   OLLAMA_MODEL_THINK, OLLAMA_MODEL_FLASH
 
 # Validate file arg, pipe content to ollama with a prompt
 _llm_file_prompt() {
@@ -38,13 +41,13 @@ _llm_review() {
     if [ -n "$1" ]; then
         diff_cmd="git diff $1"
     fi
-    $diff_cmd | ollama run "$OLLAMA_MODEL" "Review this git diff. Focus on: bugs, security issues, best practices, and improvements. Be concise."
+    $diff_cmd | ollama run "$OLLAMA_MODEL_REASON" "Review this git diff. Focus on: bugs, security issues, best practices, and improvements. Be concise."
 }
 
 _llm_commit() {
     local msg _reply
     if ! git diff --cached --quiet; then
-        msg=$(git diff --cached | ollama run "$OLLAMA_MODEL" "Generate a concise git commit message (50 chars max) for these changes. Format: '<type>: <description>'. Types: feat, fix, docs, style, refactor, test, chore. Output ONLY the commit message, nothing else.")
+        msg=$(git diff --cached | ollama run "$OLLAMA_MODEL_FAST" "Generate a concise git commit message (50 chars max) for these changes. Format: '<type>: <description>'. Types: feat, fix, docs, style, refactor, test, chore. Output ONLY the commit message, nothing else.")
         echo "Suggested commit message:"
         echo "$msg"
         echo
@@ -78,18 +81,27 @@ _llm_explain_cmd() {
 }
 
 _llm_refactor() {
-    _llm_file_prompt "llm-refactor" \
-        "Suggest refactoring improvements for this code. Focus on: readability, performance, maintainability, and best practices. Be specific and concise." "$1"
+    local _file="$1"
+    [ -n "$_file" ] || { echo "Usage: llm-refactor <file>"; return 1; }
+    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
+    cat "$_file" | ollama run "$OLLAMA_MODEL_CODE" \
+        "Suggest refactoring improvements for this code. Focus on: readability, performance, maintainability, and best practices. Be specific and concise."
 }
 
 _llm_optimize() {
-    _llm_file_prompt "llm-optimize" \
-        "Suggest performance optimizations for this code. Focus on algorithmic improvements, memory usage, and execution speed. Provide specific code suggestions." "$1"
+    local _file="$1"
+    [ -n "$_file" ] || { echo "Usage: llm-optimize <file>"; return 1; }
+    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
+    cat "$_file" | ollama run "$OLLAMA_MODEL_CODE" \
+        "Suggest performance optimizations for this code. Focus on algorithmic improvements, memory usage, and execution speed. Provide specific code suggestions."
 }
 
 _llm_test() {
-    _llm_file_prompt "llm-test" \
-        "Generate test cases for this code. Include: edge cases, error conditions, and happy paths. Use the appropriate testing framework for the language." "$1"
+    local _file="$1"
+    [ -n "$_file" ] || { echo "Usage: llm-test <file>"; return 1; }
+    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
+    cat "$_file" | ollama run "$OLLAMA_MODEL_CODE" \
+        "Generate test cases for this code. Include: edge cases, error conditions, and happy paths. Use the appropriate testing framework for the language."
 }
 
 _llm_doc() {
@@ -102,14 +114,14 @@ _llm_debug() {
         echo "Usage: llm-debug \"<error message or description>\""
         return 1
     fi
-    ollama run "$OLLAMA_MODEL" "I'm getting this error: $*
+    ollama run "$OLLAMA_MODEL_REASON" "I'm getting this error: $*
 
 Help me debug it. Provide: 1) likely causes, 2) how to investigate, 3) potential solutions. Be concise."
 }
 
 _llm_code() {
     local model
-    model="${1:-deepseek-r1:14b}"
+    model="${1:-$OLLAMA_MODEL_CODE}"
     echo "Starting coding session with $model..."
     echo "Tips: Paste code directly, ask specific questions, type /bye to exit"
     ollama run "$model" "You are a coding assistant. Provide concise, practical code solutions. Include explanations only when necessary. Prefer code examples over lengthy descriptions."
@@ -152,7 +164,7 @@ _llm_review_edit() {
     {
         echo "# Code Review: $title"
         echo ""
-        $diff_cmd | ollama run "$OLLAMA_MODEL" "Review this git diff. Provide: 1) Summary of changes, 2) Potential issues (bugs, security, performance), 3) Suggestions for improvement. Be detailed and specific."
+        $diff_cmd | ollama run "$OLLAMA_MODEL_REASON" "Review this git diff. Provide: 1) Summary of changes, 2) Potential issues (bugs, security, performance), 3) Suggestions for improvement. Be detailed and specific."
         echo ""
         echo "---"
         echo "## Diff"
@@ -174,7 +186,7 @@ _llm_refactor_edit() {
         return 1
     fi
     tmpfile=$(mktemp --suffix=.md)
-    cat "$1" | ollama run "$OLLAMA_MODEL" "Provide detailed refactoring suggestions for this code. Include: 1) Current issues/smells, 2) Proposed refactorings with code examples, 3) Benefits of each change." > "$tmpfile"
+    cat "$1" | ollama run "$OLLAMA_MODEL_CODE" "Provide detailed refactoring suggestions for this code. Include: 1) Current issues/smells, 2) Proposed refactorings with code examples, 3) Benefits of each change." > "$tmpfile"
     nvim -O "$1" "$tmpfile"
 }
 
@@ -203,7 +215,7 @@ _llm_test_edit() {
     esac
 
     echo "Generating tests for $1..."
-    cat "$1" | ollama run "$OLLAMA_MODEL" "Generate comprehensive tests for this code. Use the appropriate testing framework for the language. Include: setup, test cases for happy paths, edge cases, error conditions, and cleanup." > "$test_file"
+    cat "$1" | ollama run "$OLLAMA_MODEL_CODE" "Generate comprehensive tests for this code. Use the appropriate testing framework for the language. Include: setup, test cases for happy paths, edge cases, error conditions, and cleanup." > "$test_file"
 
     echo "Tests generated: $test_file"
     nvim -O "$1" "$test_file"
@@ -249,7 +261,7 @@ _llm_fix() {
         echo "$error_context"
         echo ""
         echo "## Analysis & Solution"
-        cat "$1" | ollama run "$OLLAMA_MODEL" "This code has an error: $error_context
+        cat "$1" | ollama run "$OLLAMA_MODEL_REASON" "This code has an error: $error_context
 
 Provide: 1) Root cause analysis, 2) Exact fix (show code changes), 3) Why this fixes it. Be concise and actionable."
     } > "$tmpfile"
@@ -272,7 +284,7 @@ _llm_optimize_edit() {
     tmpfile=$(mktemp --suffix=".$ext")
 
     echo "Generating optimized version of $1..."
-    cat "$1" | ollama run "$OLLAMA_MODEL" "Optimize this code for performance. Output ONLY the optimized code, no explanations. Preserve all functionality while improving: algorithmic complexity, memory usage, and execution speed." > "$tmpfile"
+    cat "$1" | ollama run "$OLLAMA_MODEL_CODE" "Optimize this code for performance. Output ONLY the optimized code, no explanations. Preserve all functionality while improving: algorithmic complexity, memory usage, and execution speed." > "$tmpfile"
 
     echo "Optimized version: $tmpfile"
     nvim -d "$1" "$tmpfile"
@@ -294,7 +306,7 @@ _llm_convert() {
         return 1
     fi
 
-    echo "$input" | ollama run "$OLLAMA_MODEL" "Task: $instruction
+    echo "$input" | ollama run "$OLLAMA_MODEL_CODE" "Task: $instruction
 
 Input code:
 $input
@@ -326,7 +338,7 @@ _llm_implement() {
         echo ""
         echo "Context: $context"
         echo ""
-        ollama run "$OLLAMA_MODEL" "Feature request: $feature
+        ollama run "$OLLAMA_MODEL_REASON" "Feature request: $feature
 
 Project context: $context
 
@@ -358,7 +370,7 @@ _llm_security() {
     {
         echo "# Security Analysis: $1"
         echo ""
-        cat "$1" | ollama run "$OLLAMA_MODEL" "Perform a security audit of this code. Check for:
+        cat "$1" | ollama run "$OLLAMA_MODEL_REASON" "Perform a security audit of this code. Check for:
 - SQL injection vulnerabilities
 - XSS vulnerabilities
 - Command injection
@@ -397,7 +409,7 @@ _llm_api_client() {
     output_file="api-client.${language}"
 
     echo "Generating $language API client from $spec_file..."
-    cat "$spec_file" | ollama run "$OLLAMA_MODEL" "Generate a complete API client in $language for this OpenAPI/Swagger specification. Include:
+    cat "$spec_file" | ollama run "$OLLAMA_MODEL_CODE" "Generate a complete API client in $language for this OpenAPI/Swagger specification. Include:
 - Type definitions
 - Error handling
 - Request/response interceptors
@@ -443,6 +455,77 @@ Be concise and insightful." >> "$tmpfile"
     nvim "$tmpfile" -c "set filetype=markdown"
 }
 
+## ---------------------------------------------------------------------------
+## Vision, OCR, Embedding, and specialized model helpers
+## ---------------------------------------------------------------------------
+
+_llm_ocr() {
+    local _file
+    _file="$1"
+    [ -n "$_file" ] || { echo "Usage: llm-ocr <image_file>"; return 1; }
+    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
+    local _b64
+    _b64=$(base64 -w0 "$_file")
+    printf '%s' "$_b64" | ollama run "$OLLAMA_MODEL_OCR" "Extract all text from this image. Return only the extracted text, preserving layout where possible."
+}
+
+_llm_vision() {
+    local _file _prompt
+    _file="$1"
+    _prompt="${2:-Describe this image in detail. Include objects, text, layout, and any relevant observations.}"
+    [ -n "$_file" ] || { echo "Usage: llm-vision <image_file> [prompt]"; return 1; }
+    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
+    local _b64
+    _b64=$(base64 -w0 "$_file")
+    printf '%s' "$_b64" | ollama run "$OLLAMA_MODEL_VISION" "$_prompt"
+}
+
+_llm_embed() {
+    local _input
+    if [ -n "$1" ] && [ -f "$1" ]; then
+        _input=$(cat "$1")
+    elif [ -n "$1" ]; then
+        _input="$*"
+    else
+        _input=$(cat)
+    fi
+    [ -n "$_input" ] || { echo "Usage: llm-embed <text|file>  OR  echo text | llm-embed"; return 1; }
+    curl -sf "http://${OLLAMA_HOST}/api/embed" \
+        -d "$(printf '{"model":"%s","input":"%s"}' "$OLLAMA_MODEL_EMBED" "$(echo "$_input" | sed 's/"/\\"/g; s/$/\\n/' | tr -d '\n')")"
+}
+
+_llm_think() {
+    if [ -z "$1" ]; then
+        echo "Usage: llm-think \"<question or problem>\""
+        return 1
+    fi
+    ollama run "$OLLAMA_MODEL_THINK" "$*"
+}
+
+_llm_flash() {
+    if [ -z "$1" ]; then
+        echo "Usage: llm-flash \"<prompt>\"  OR  <input> | llm-flash \"<prompt>\""
+        return 1
+    fi
+    local _stdin=""
+    if [ ! -t 0 ]; then
+        _stdin=$(cat)
+    fi
+    if [ -n "$_stdin" ]; then
+        echo "$_stdin" | ollama run "$OLLAMA_MODEL_FLASH" "$*"
+    else
+        ollama run "$OLLAMA_MODEL_FLASH" "$*"
+    fi
+}
+
+_llm_flash_file() {
+    local _file="$1" _prompt="$2"
+    [ -n "$_file" ] || { echo "Usage: llm-flash-file <file> \"<prompt>\""; return 1; }
+    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
+    [ -n "$_prompt" ] || _prompt="Analyze this file and provide key insights. Be concise."
+    cat "$_file" | ollama run "$OLLAMA_MODEL_FLASH" "$_prompt"
+}
+
 _llm_help() {
     cat <<EOF
 Ollama Integration Commands
@@ -485,12 +568,32 @@ Development:
   llm-convert "instruction"       - Convert code (pipe input)
   llm-api-client <spec> <lang>    - Generate API client
 
+Vision & OCR:
+  llm-ocr <image>                 - Extract text from image (glm-ocr)
+  llm-vision <image> [prompt]     - Analyze/describe image (llama3.2-vision)
+
+Embedding:
+  llm-embed <text|file>           - Generate embeddings (nomic-embed-text)
+
+Fast & Reasoning:
+  llm-think "question"            - Quick reasoning (lfm2.5-thinking)
+  llm-flash "prompt"              - Fast general task (glm-4.7-flash)
+  llm-flash-file <file> "prompt"  - Fast file analysis (glm-4.7-flash)
+
 Interactive:
   llm-code [model]                - Start coding session
 
 Configuration:
-  OLLAMA_MODEL                    - Default model (current: $OLLAMA_MODEL)
-  OLLAMA_HOST                     - API endpoint (current: $OLLAMA_HOST)
+  OLLAMA_MODEL          - Default model          (current: $OLLAMA_MODEL)
+  OLLAMA_MODEL_CODE     - Code generation model   (current: $OLLAMA_MODEL_CODE)
+  OLLAMA_MODEL_REASON   - Reasoning model          (current: $OLLAMA_MODEL_REASON)
+  OLLAMA_MODEL_FAST     - Fast/light model         (current: $OLLAMA_MODEL_FAST)
+  OLLAMA_MODEL_OCR      - OCR model                (current: $OLLAMA_MODEL_OCR)
+  OLLAMA_MODEL_VISION   - Vision model             (current: $OLLAMA_MODEL_VISION)
+  OLLAMA_MODEL_EMBED    - Embedding model          (current: $OLLAMA_MODEL_EMBED)
+  OLLAMA_MODEL_THINK    - Thinking/reasoning model (current: $OLLAMA_MODEL_THINK)
+  OLLAMA_MODEL_FLASH    - Flash/fast general model (current: $OLLAMA_MODEL_FLASH)
+  OLLAMA_HOST           - API endpoint             (current: $OLLAMA_HOST)
 
 EOF
 }
@@ -530,6 +633,13 @@ runtime_ollama_aliases() {
 
     runtime_alias llm-code '_llm_code' --desc "LLM code" --tags "llm,interactive"
     runtime_alias llm-explain-edit '_llm_explain_edit' --desc "LLM explain edit" --tags "llm,code,editor"
+
+    runtime_alias llm-ocr '_llm_ocr' --desc "LLM OCR" --tags "llm,ocr,vision"
+    runtime_alias llm-vision '_llm_vision' --desc "LLM vision" --tags "llm,vision,image"
+    runtime_alias llm-embed '_llm_embed' --desc "LLM embed" --tags "llm,embedding"
+    runtime_alias llm-think '_llm_think' --desc "LLM think" --tags "llm,reasoning"
+    runtime_alias llm-flash '_llm_flash' --desc "LLM flash" --tags "llm,fast"
+    runtime_alias llm-flash-file '_llm_flash_file' --desc "LLM flash file" --tags "llm,fast,file"
 
     runtime_alias llm-help '_llm_help' --desc "LLM help" --tags "llm,help"
 }
