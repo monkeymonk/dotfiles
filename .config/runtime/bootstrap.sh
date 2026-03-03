@@ -92,7 +92,7 @@ if [ -d "$RUNTIME_ROOT/secrets" ]; then
     if [ -n "${ZSH_VERSION-}" ]; then
         setopt LOCAL_OPTIONS NULL_GLOB
     fi
-    for _f in "$RUNTIME_ROOT"/secrets/*.sh; do
+    for _f in "$RUNTIME_ROOT"/secrets/*.env; do
         [ -f "$_f" ] || continue
         if ! . "$_f"; then
             warn "failed to source $_f"
