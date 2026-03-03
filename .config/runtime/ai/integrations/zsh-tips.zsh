@@ -117,13 +117,21 @@ _zsh_tip_rotate() {
 
 _zsh_tip_draw() {
   [[ -n "$BUFFER" ]] && return
-  POSTDISPLAY=$'\n\e[38;5;'"${ZSH_TIPS_COLOR}"'m'"${_zsh_tip_current_prefix}${_zsh_tip_current}"$'\e[0m'
+  local tip="${_zsh_tip_current_prefix}${_zsh_tip_current}"
+  POSTDISPLAY=$'\n'"$tip"
+  # Color the tip via region_highlight (positions relative to PREDISPLAY+BUFFER+POSTDISPLAY)
+  local start=$(( ${#BUFFER} + 1 ))  # +1 to skip the \n
+  local end=$(( start + ${#tip} ))
+  region_highlight=("${(@)region_highlight:#$start *}")
+  region_highlight+=("$start $end fg=${ZSH_TIPS_COLOR}")
   _zsh_tip_visible=1
+  zle -R
 }
 
 _zsh_tip_clear() {
   (( _zsh_tip_visible )) || return
   POSTDISPLAY=""
+  region_highlight=("${(@)region_highlight:#$(( ${#BUFFER} + 1 )) *}")
   _zsh_tip_visible=0
 }
 
