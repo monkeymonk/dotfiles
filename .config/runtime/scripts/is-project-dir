@@ -2,48 +2,113 @@
 # Check if a directory looks like a project root.
 # Exits 0 if project markers found, 1 otherwise.
 #
-# Usage: is-project-dir [directory]
+# Usage: is-project-dir [--inside] [directory]
+#
+# Options:
+#   --inside   Walk up parent directories to detect if we are
+#              somewhere inside a project (not just at the root).
+#
+# Without --inside, only checks the given directory for root markers.
 #
 # Checks (any match = project):
-#   - Git repository (.git or inside a git worktree)
+#   - Git repository (.git file or directory)
 #   - AI agent context files (CLAUDE.md, AGENTS.md, etc.)
 #   - Language/package manager manifest files
-#   - Build system files
-#   - Container/infra files
+#   - Build system / config / tooling files
+#   - Container/infra files and directories
+#   - Key project directories (src/, lib/, app/, etc.)
 
-dir="${1:-$PWD}"
-
-# --- git repo ---
-[ -d "$dir/.git" ] && exit 0
-git -C "$dir" rev-parse --git-dir >/dev/null 2>&1 && exit 0
-
-# --- AI agent context files ---
-for f in \
-    CLAUDE.md AGENTS.md GEMINI.md COPILOT.md \
-    .cursorrules .cursorignore \
-    .github/copilot-instructions.md \
-    .clinerules .windsurfrules
-do
-    [ -f "$dir/$f" ] && exit 0
+# --- parse args ---
+_inside=0
+_dir=""
+for _arg in "$@"; do
+    case "$_arg" in
+        --inside) _inside=1 ;;
+        *) _dir="$_arg" ;;
+    esac
 done
+_dir="${_dir:-$PWD}"
 
-# --- package/build manifests ---
-for f in \
-    package.json composer.json Cargo.toml go.mod pyproject.toml \
-    requirements.txt setup.py setup.cfg Pipfile \
-    Gemfile build.gradle build.gradle.kts pom.xml \
-    Makefile CMakeLists.txt meson.build \
-    flake.nix shell.nix default.nix \
-    deno.json bun.lockb \
-    pubspec.yaml mix.exs rebar.config \
-    .sln .csproj \
-    Dockerfile docker-compose.yml docker-compose.yaml \
-    compose.yml compose.yaml \
-    terraform.tf main.tf \
-    justfile Taskfile.yml \
-    README.md README.rst README
-do
-    [ -f "$dir/$f" ] && exit 0
-done
+_is_project_root() {
+    _d="$1"
 
-exit 1
+    # --- git repo root (.git dir or worktree file) ---
+    [ -e "$_d/.git" ] && return 0
+
+    # --- AI agent context files ---
+    for _f in \
+        CLAUDE.md AGENTS.md GEMINI.md COPILOT.md \
+        .cursorrules .cursorignore \
+        .github/copilot-instructions.md \
+        .clinerules .windsurfrules
+    do
+        [ -f "$_d/$_f" ] && return 0
+    done
+
+    # --- package/build manifests ---
+    for _f in \
+        package.json composer.json Cargo.toml go.mod pyproject.toml \
+        requirements.txt setup.py setup.cfg Pipfile \
+        Gemfile build.gradle build.gradle.kts pom.xml \
+        Makefile CMakeLists.txt meson.build \
+        flake.nix shell.nix default.nix \
+        deno.json bun.lockb \
+        pubspec.yaml mix.exs rebar.config \
+        .sln .csproj \
+        README.md README.rst README
+    do
+        [ -f "$_d/$_f" ] && return 0
+    done
+
+    # --- container / infra files ---
+    for _f in \
+        Dockerfile docker-compose.yml docker-compose.yaml \
+        compose.yml compose.yaml \
+        Vagrantfile Procfile \
+        terraform.tf main.tf \
+        pulumi.yaml serverless.yml \
+        justfile Taskfile.yml
+    do
+        [ -f "$_d/$_f" ] && return 0
+    done
+
+    # --- infra directories ---
+    for _f in k8s chart helm; do
+        [ -d "$_d/$_f" ] && return 0
+    done
+
+    # --- config / tooling files ---
+    for _f in \
+        tsconfig.json jsconfig.json \
+        .editorconfig .envrc .tool-versions .mise.toml \
+        .gitlab-ci.yml
+    do
+        [ -f "$_d/$_f" ] && return 0
+    done
+
+    # --- config / tooling directories ---
+    for _f in .github/workflows .circleci; do
+        [ -d "$_d/$_f" ] && return 0
+    done
+
+    # --- key project directories ---
+    for _f in src lib app cmd pkg internal; do
+        [ -d "$_d/$_f" ] && return 0
+    done
+
+    return 1
+}
+
+if [ "$_inside" -eq 1 ]; then
+    _dir="$(cd "$_dir" && pwd)"
+    while :; do
+        _is_project_root "$_dir" && exit 0
+        _parent="$(dirname "$_dir")"
+        [ "$_parent" = "$_dir" ] && break
+        _dir="$_parent"
+    done
+    exit 1
+else
+    _is_project_root "$_dir" && exit 0
+    exit 1
+fi
