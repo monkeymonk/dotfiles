@@ -1,0 +1,117 @@
+# Runtime — Core
+reload: re-exec your shell with a clean state (hard reload)
+reload soft: re-source configs in-place without losing shell state
+runtime_status: show loaded hooks, context vars, and runtime root
+RUNTIME_DEBUG=1 reload: time every hook during bootstrap
+hook_list: inspect all registered hooks by phase
+
+# Runtime — Navigation & Files
+Type a directory name without cd to enter it (AUTO_CD)
+Every cd pushes to the dir stack — use popd to go back
+up: interactively navigate up the directory tree (cdx)
+most: show the 10 largest items in the current directory
+count: count entries in the current directory
+recent: open the most recently modified file in cwd
+lla: list all files long-format (eza with icons + git status)
+lt / llt: tree view of current directory (eza)
+llh: list only dotfiles in the current directory
+
+# Runtime — Git
+gs/ga/gc/gp/gl/gd: short aliases for common git commands
+gds: git diff --staged — review what you're about to commit
+dotfiles: manage your bare dotfiles repo without cd
+
+# Runtime — Clipboard
+echo text | clipboard: copy to clipboard (auto-detects Wayland/X11/macOS/SSH)
+clipboard get: paste from clipboard
+
+# Runtime — LLM (Ollama)
+llm-cmd "how do I ...": ask how to do something in the shell
+llm-explain file.py: get a concise explanation of a file
+llm-review: review your staged git diff with AI
+llm-commit: generate a commit message from staged changes
+llm-debug "error message": get causes, investigation steps, and fixes
+llm-fix file.py "error": root-cause analysis + fix in nvim split
+llm-security file.py: run a security audit (SQLi, XSS, injection)
+llm-refactor file.py: get refactoring suggestions
+llm-test file.py: generate test cases for a file
+llm-doc file.py: generate markdown documentation
+llm-implement "feature": get an implementation plan with code examples
+llm-flash "prompt": fast general-purpose query (accepts stdin)
+llm-think "question": deep reasoning query
+llm-ocr image.png: extract text from an image
+llm-vision image.png: describe or analyze an image
+llm-help: print the full LLM alias reference with current models
+
+# Runtime — Tmux
+fux: fuzzy-select and load a tmuxp session
+Ctrl+B then d: detach from tmux session
+
+# Runtime — Aliases
+falx: fuzzy-search all runtime aliases with fzf and run the selected one
+
+# Runtime — Scripts
+serve 3000: start a local HTTP server and open it in the browser
+benchurl https://...: print detailed HTTP timing breakdown
+update-system: full system update (apt, pip, npm, bun, ollama, neovim, etc.)
+
+# Runtime — Editor
+v / vim: opens neovim
+vl: restore last neovim session
+Man pages open in neovim (MANPAGER=nvim +Man!)
+
+# Runtime — Shell Behavior
+Prefix a command with a space to keep it out of history
+> won't overwrite files (NO_CLOBBER) — use >| to force
+History is shared across all sessions in real time
+Extended glob: use ^, ~, # operators in patterns (EXTENDED_GLOB)
+Globbing is case-insensitive (NO_CASE_GLOB)
+
+# Runtime — Lazy Loading
+nvm/node/npm/npx: lazy-loaded — zero startup cost until first use
+pyenv/python/pip: lazy-loaded — zero startup cost until first use
+
+# Runtime — Safety
+cp, mv, rm, ln: aliased with -i to prompt before overwrite/delete
+
+# General — System
+htop: interactive process viewer (better than top)
+ncdu: interactive disk usage analyzer
+free -m: show memory usage in MB (aliased)
+psmem / pscpu: processes sorted by memory or CPU usage
+psa: show full process tree
+
+# General — Network
+myip: show your public IPv4 address
+header https://...: fetch HTTP headers only
+ss -tlnp: show listening TCP ports with process info
+curl -s ifconfig.me: another way to get your public IP
+
+# General — Search & Find
+fd: fast find alternative (used by fzf default command)
+rg: ripgrep — fast recursive grep with .gitignore support
+fzf: fuzzy finder — pipe anything into it for interactive selection
+Ctrl+R: fuzzy search command history (fzf-enhanced)
+Ctrl+T: fuzzy find files from cwd (fzf-enhanced)
+Alt+C: fuzzy cd into subdirectories (fzf-enhanced)
+
+# General — Text & Files
+bat: cat with syntax highlighting and git integration
+jq '.key': extract fields from JSON on the command line
+wc -l file: count lines in a file
+sort -u: sort and deduplicate lines
+diff <(cmd1) <(cmd2): compare output of two commands
+
+# General — Productivity
+!! : repeat last command
+sudo !!: re-run last command with sudo
+cd -: go back to previous directory
+Ctrl+Z then fg: suspend and resume a process
+watch -n2 cmd: repeat a command every 2 seconds
+xargs -P4: run commands in parallel (4 jobs)
+
+# General — Docker
+docker ps: list running containers
+docker stats: live resource usage for containers
+docker system prune: clean up unused images, containers, networks
+DOCKER_BUILDKIT=1 is enabled by default in this runtime
