@@ -124,9 +124,31 @@ hook_run interactive
 # Final PATH cleanup (some external scripts append without de-duping).
 path_dedupe
 
+_runtime_reset_state() {
+    # Clear hook registry so plugins re-register cleanly.
+    if [ -n "${ZSH_VERSION-}" ]; then
+        setopt LOCAL_OPTIONS SH_WORD_SPLIT
+    fi
+    for _phase in $_HOOKS_PHASES; do
+        eval "_HOOKS_${_phase}=''"
+    done
+    _HOOKS_PHASES=""
+
+    # Clear all plugin *_LOADED guards.
+    unset RUNTIME_TMUX_ALIASES_LOADED 2>/dev/null
+    unset RUNTIME_NEOVIM_ALIASES_LOADED 2>/dev/null
+    unset RUNTIME_EZA_ALIASES_LOADED 2>/dev/null
+    unset RUNTIME_CDX_ALIASES_LOADED 2>/dev/null
+    unset RUNTIME_OLLAMA_ALIASES_LOADED 2>/dev/null
+
+    # Clear bootstrap guard so it re-runs.
+    unset RUNTIME_BOOTSTRAP_LOADED
+}
+
 runtime_reload() {
     case "${1:-hard}" in
         soft)
+            _runtime_reset_state
             RUNTIME_BOOTSTRAP_RELOAD=1
             case "${SHELL_FAMILY:-}" in
                 zsh)  [ -f "$HOME/.zshrc" ]  && . "$HOME/.zshrc"  ;;
@@ -139,5 +161,7 @@ runtime_reload() {
             ;;
     esac
 }
+
+runtime_alias reload 'runtime_reload' --desc "Reload shell config (soft|hard)" --tags "shell,runtime"
 
 unset _runtime_src _runtime_dir
