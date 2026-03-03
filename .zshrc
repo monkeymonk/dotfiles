@@ -131,5 +131,3 @@ source $ZSH/oh-my-zsh.sh
 
 [ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"
 
-# alx — alias registry
-export PATH="/home/monkeymonk/.local/share/alx/bin:$PATH"
