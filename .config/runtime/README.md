@@ -118,11 +118,15 @@ alphabetical. Errors are visible in the shell.
 Plugins are loaded before context/config; use hooks to run code at the right phase.
 To disable a plugin, rename it to `.name.sh` (dotfiles are ignored by the loader).
 
+### Alias Capture (alx)
+
+When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` overrides the `alias` builtin with a shim that persists every alias definition into the alx registry while still creating the real shell alias. At the `interactive` phase, it sweeps any aliases defined before the shim was active (external tools, other rc files). This makes alx a transparent drop-in — existing code can keep using `alias` normally.
+
 ### Available Plugins
 
 | Plugin | Tool | Hook Phase |
 |---|---|---|
-| `alx.sh` | Alias management (alx) | bootstrap |
+| `alx.sh` | Alias management (alx) | bootstrap, interactive |
 | `bun.sh` | Bun runtime | setup |
 | `cdx.sh` | Directory navigation (cdx) | interactive |
 | `composer.sh` | PHP Composer | setup |
@@ -143,7 +147,7 @@ To disable a plugin, rename it to `.name.sh` (dotfiles are ignored by the loader
 | `pnpm.sh` | PNPM package manager | setup |
 | `rust.sh` | Rust / Cargo | setup |
 | `shell.sh` | Shell-specific config | interactive |
-| `starship.sh` | Starship prompt | setup |
+| `starship.sh` | Starship prompt | interactive |
 | `tmux.sh` | Tmux (auto-attach) | interactive |
 | `zsh.sh` | Zsh-specific config | interactive |
 
@@ -216,10 +220,10 @@ Scripts can bootstrap logging and utils via `core/lib.sh`:
 | `cache-run` | Caching wrapper with configurable TTL |
 | `clipboard` | Copy: `stdin \| clipboard`; Paste: `clipboard get` |
 | `diagnose-zle` | ZLE diagnostics |
+| `is-project-dir` | Check if a directory is a project root (exit 0/1) |
 | `project-context` | Extract project metadata |
 | `recent` | Show recently modified files |
 | `serve` | Simple HTTP server |
-| `is-project-dir` | Check if a directory is a project root (exit 0/1) |
 | `tips-generate-ollama` | Generate dynamic shell tips via Ollama |
 | `tips-refresh` | Force-regenerate Ollama tips: `tips-refresh [dir]` |
 | `update-system` | System package manager updates |
@@ -228,7 +232,7 @@ Scripts can bootstrap logging and utils via `core/lib.sh`:
 
 | Dependency | Required | Purpose |
 |---|---|---|
-| [alx](https://github.com/monkeymonk/alx) | Recommended | Alias management and export |
+| [alx](https://github.com/monkeymonk/alx) | Recommended | Alias management (drop-in `alias` replacement) |
 | [cdx](https://github.com/monkeymonk/cdx) | Optional | Directory navigation hooks |
 | [Ollama](https://ollama.com) | Optional | Local LLM (enables `ai/` module) |
 
