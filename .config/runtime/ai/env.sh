@@ -4,7 +4,7 @@
 : "${OLLAMA_MODEL:=qwen2.5-coder:7b}"
 : "${OLLAMA_MODEL_CODE:=qwen3-coder:30b}"
 : "${OLLAMA_MODEL_REASON:=qwen3.5:35b}"
-: "${OLLAMA_MODEL_FAST:=qwen3.5:9b}"
+: "${OLLAMA_MODEL_FAST:=qwen3.5:9b-q4_K_M}"
 : "${OLLAMA_MODEL_OCR:=glm-ocr:latest}"
 : "${OLLAMA_MODEL_VISION:=llama3.2-vision:11b}"
 : "${OLLAMA_MODEL_EMBED:=nomic-embed-text:latest}"

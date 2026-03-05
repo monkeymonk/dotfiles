@@ -20,12 +20,30 @@ is-project-dir "$_dir" || exit 1
 ctx=$(project-context "$_dir")
 [ -n "$ctx" ] || exit 1
 
-prompt="Generate 8-12 short practical terminal tips for this project context. One tip per line, no numbering, no bullets, no prefix. Keep each under 100 chars. No generic filler.
+prompt="You are a terminal tip generator. Output ONLY plain tip lines. STRICT RULES:
+- One tip per line
+- No numbering (no 1. 2. 3.)
+- No bullets (no - or *)
+- No prefixes, labels, or headers
+- No blank lines between tips
+- No markdown formatting
+- No explanations or preamble
+- Each tip under 100 characters
+- 8-12 tips total
 
+Tips must be specific to this project — reference actual tools, commands, scripts, and files from the context below. Prefer actionable shell commands over general advice.
+
+PROJECT CONTEXT:
 $ctx"
 
-payload=$(jq -n --arg m "$_model" --arg p "$prompt" '{model:$m,prompt:$p,stream:false}')
+payload=$(jq -n --arg m "$_model" --arg p "$prompt" \
+  '{model:$m,prompt:$p,stream:false,think:false}')
 
 raw=$(curl -sf "http://$_host/api/generate" -d "$payload") || exit 1
 
-printf '%s\n' "$raw" | jq -r '.response'
+# Extract response, strip numbering/bullets/blank lines, trim whitespace
+printf '%s\n' "$raw" | jq -r '.response' \
+  | sed 's/^[[:space:]]*[0-9]\{1,2\}[.)]\{1,2\}[[:space:]]*//' \
+  | sed 's/^[[:space:]]*[-*•][[:space:]]*//' \
+  | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+  | grep -v '^$'

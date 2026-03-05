@@ -48,20 +48,20 @@ Load order is strict:
 
 The `core/` layer provides safe primitives only:
 
-| Module | Functions | Purpose |
-|---|---|---|
-| `env.sh` | — | Safe defaults for `EDITOR`, `PAGER`, `XDG_*` |
-| `log.sh` | `info`, `success`, `warn`, `error` | TTY-only colorized logging |
-| `hooks.sh` | `hook_register`, `hook_run`, `hook_list` | Phase-based hook registry |
-| `path.sh` | `path_prepend`, `path_append`, `path_remove`, `path_dedupe` | Safe PATH manipulation |
-| `prompt.sh` | `confirm`, `choose_one`, `choose_multi` | Interactive prompts (fzf-aware) |
-| `system.sh` | `is_mac`, `is_linux` | OS detection helpers |
-| `utils.sh` | `has_cmd`, `has_file`, `has_dir`, `require_cmd`, `die`, `try_or_warn`, `safe_source`, `guard_double_load`, `runtime_alias` | General utilities |
-| `lazy.sh` | `lazy_load` | Deferred command initialization |
-| `registry.sh` | `registry_init`, `registry_add`, `registry_add_lazy`, `registry_resolve`, `registry_get`, `registry_dump` | Tagged key-value registry with lazy evaluation |
-| `context.sh` | `runtime_context`, `runtime_is_offline`, `ctx_set`, `ctx_set_lazy` | OS and machine context detection |
-| `lib.sh` | — | Script bootstrap (logging + utils for standalone scripts) |
-| `runtime.sh` | `runtime_status` | Runtime diagnostics |
+| Module        | Functions                                                                                                                  | Purpose                                                   |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `env.sh`      | —                                                                                                                          | Safe defaults for `EDITOR`, `PAGER`, `XDG_*`              |
+| `log.sh`      | `info`, `success`, `warn`, `error`                                                                                         | TTY-only colorized logging                                |
+| `hooks.sh`    | `hook_register`, `hook_run`, `hook_list`                                                                                   | Phase-based hook registry                                 |
+| `path.sh`     | `path_prepend`, `path_append`, `path_remove`, `path_dedupe`                                                                | Safe PATH manipulation                                    |
+| `prompt.sh`   | `confirm`, `choose_one`, `choose_multi`                                                                                    | Interactive prompts (fzf-aware)                           |
+| `system.sh`   | `is_mac`, `is_linux`                                                                                                       | OS detection helpers                                      |
+| `utils.sh`    | `has_cmd`, `has_file`, `has_dir`, `require_cmd`, `die`, `try_or_warn`, `safe_source`, `guard_double_load`, `runtime_alias` | General utilities                                         |
+| `lazy.sh`     | `lazy_load`                                                                                                                | Deferred command initialization                           |
+| `registry.sh` | `registry_init`, `registry_add`, `registry_add_lazy`, `registry_resolve`, `registry_get`, `registry_dump`                  | Tagged key-value registry with lazy evaluation            |
+| `context.sh`  | `runtime_context`, `runtime_is_offline`, `ctx_set`, `ctx_set_lazy`                                                         | OS and machine context detection                          |
+| `lib.sh`      | —                                                                                                                          | Script bootstrap (logging + utils for standalone scripts) |
+| `runtime.sh`  | `runtime_status`                                                                                                           | Runtime diagnostics                                       |
 
 No tool-specific logic belongs here.
 
@@ -69,20 +69,20 @@ No tool-specific logic belongs here.
 
 `core/context.sh` exports:
 
-| Variable | Source |
-|---|---|
-| `RUNTIME_OS` | `uname` → `mac` \| `linux` \| `unknown` |
-| `RUNTIME_HOST` | `hostname -s` |
-| `RUNTIME_DISTRO` | `/etc/os-release` ID field |
-| `SHELL_FAMILY` | `zsh` \| `bash` \| `sh` |
-| `RUNTIME_IS_WORK` | Machine classification (see below) |
-| `RUNTIME_IS_HOME` | Machine classification (see below) |
-| `RUNTIME_IS_CI` | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `TRAVIS`, `CIRCLECI` |
-| `RUNTIME_IS_CONTAINER` | `/.dockerenv`, `DOCKER_CONTAINER`, `/proc/1/cgroup` |
-| `RUNTIME_SESSION_TYPE` | `x11` \| `wayland` \| `tty` \| `mir` |
-| `RUNTIME_IS_SERVER` | Linux + TTY session + no DISPLAY/WAYLAND_DISPLAY |
-| `RUNTIME_IS_SSH` | `SSH_CLIENT` or `SSH_TTY` present |
-| `RUNTIME_IS_OFFLINE` | Lazy probe via `runtime_is_offline` (1s ping timeout) |
+| Variable               | Source                                                    |
+| ---------------------- | --------------------------------------------------------- |
+| `RUNTIME_OS`           | `uname` → `mac` \| `linux` \| `unknown`                   |
+| `RUNTIME_HOST`         | `hostname -s`                                             |
+| `RUNTIME_DISTRO`       | `/etc/os-release` ID field                                |
+| `SHELL_FAMILY`         | `zsh` \| `bash` \| `sh`                                   |
+| `RUNTIME_IS_WORK`      | Machine classification (see below)                        |
+| `RUNTIME_IS_HOME`      | Machine classification (see below)                        |
+| `RUNTIME_IS_CI`        | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `TRAVIS`, `CIRCLECI` |
+| `RUNTIME_IS_CONTAINER` | `/.dockerenv`, `DOCKER_CONTAINER`, `/proc/1/cgroup`       |
+| `RUNTIME_SESSION_TYPE` | `x11` \| `wayland` \| `tty` \| `mir`                      |
+| `RUNTIME_IS_SERVER`    | Linux + TTY session + no DISPLAY/WAYLAND_DISPLAY          |
+| `RUNTIME_IS_SSH`       | `SSH_CLIENT` or `SSH_TTY` present                         |
+| `RUNTIME_IS_OFFLINE`   | Lazy probe via `runtime_is_offline` (1s ping timeout)     |
 
 Machine classification priority:
 
@@ -124,32 +124,32 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 
 ### Available Plugins
 
-| Plugin | Tool | Hook Phase |
-|---|---|---|
-| `alx.sh` | Alias management (alx) | bootstrap, interactive |
-| `bun.sh` | Bun runtime | setup |
-| `cdx.sh` | Directory navigation (cdx) | interactive |
-| `composer.sh` | PHP Composer | setup |
-| `deno.sh` | Deno runtime | setup |
-| `docker.sh` | Docker | setup |
-| `uv.sh` | UV Python package manager | setup |
-| `eza.sh` | Modern ls replacement | setup |
-| `fzf.sh` | Fuzzy finder (fd integration) | setup |
-| `ghcup.sh` | Haskell (GHCup) | setup |
-| `git.sh` | Git aliases | setup |
-| `go.sh` | Go lang | setup |
-| `lm-studio.sh` | LM Studio | setup |
-| `neovim.sh` | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback) | setup |
-| `node.sh` | Node.js | setup |
-| `nvm.sh` | Node version manager (lazy) | setup |
-| `ollama.sh` | Ollama LLM (loads ai/ module) | setup |
-| `opencode.sh` | VS Code | setup |
-| `pnpm.sh` | PNPM package manager | setup |
-| `rust.sh` | Rust / Cargo | setup |
-| `shell.sh` | Shell-specific config | interactive |
-| `starship.sh` | Starship prompt | interactive |
-| `tmux.sh` | Tmux (auto-attach) | interactive |
-| `zsh.sh` | Zsh-specific config | interactive |
+| Plugin         | Tool                                             | Hook Phase             |
+| -------------- | ------------------------------------------------ | ---------------------- |
+| `alx.sh`       | Alias management (alx)                           | bootstrap, interactive |
+| `bun.sh`       | Bun runtime                                      | setup                  |
+| `cdx.sh`       | Directory navigation (cdx)                       | interactive            |
+| `composer.sh`  | PHP Composer                                     | setup                  |
+| `deno.sh`      | Deno runtime                                     | setup                  |
+| `docker.sh`    | Docker                                           | setup                  |
+| `uv.sh`        | UV Python package manager                        | setup                  |
+| `eza.sh`       | Modern ls replacement                            | setup                  |
+| `fzf.sh`       | Fuzzy finder (fd integration)                    | setup                  |
+| `ghcup.sh`     | Haskell (GHCup)                                  | setup                  |
+| `git.sh`       | Git aliases                                      | setup                  |
+| `go.sh`        | Go lang                                          | setup                  |
+| `lm-studio.sh` | LM Studio                                        | setup                  |
+| `neovim.sh`    | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback) | setup                  |
+| `node.sh`      | Node.js                                          | setup                  |
+| `nvm.sh`       | Node version manager (lazy)                      | setup                  |
+| `ollama.sh`    | Ollama LLM (loads ai/ module)                    | setup                  |
+| `opencode.sh`  | VS Code                                          | setup                  |
+| `pnpm.sh`      | PNPM package manager                             | setup                  |
+| `rust.sh`      | Rust / Cargo                                     | setup                  |
+| `shell.sh`     | Shell-specific config                            | interactive            |
+| `starship.sh`  | Starship prompt                                  | interactive            |
+| `tmux.sh`      | Tmux (auto-attach)                               | interactive            |
+| `zsh.sh`       | Zsh-specific config                              | interactive            |
 
 ### Hook Phases
 
@@ -169,17 +169,17 @@ The `ai/` module is loaded via `plugins/ollama.sh` when `ollama` is on PATH. Pro
 
 ### Model Configuration
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `OLLAMA_MODEL` | `qwen2.5-coder:7b` | General / default |
-| `OLLAMA_MODEL_CODE` | `qwen3-coder:30b` | Code generation |
-| `OLLAMA_MODEL_REASON` | `qwen3.5:35b` | Reviews / reasoning |
-| `OLLAMA_MODEL_FAST` | `qwen3.5:9b` | Quick tasks |
-| `OLLAMA_MODEL_OCR` | `glm-ocr:latest` | OCR |
-| `OLLAMA_MODEL_VISION` | `llama3.2-vision:11b` | Image analysis |
-| `OLLAMA_MODEL_EMBED` | `nomic-embed-text:latest` | Embeddings |
-| `OLLAMA_MODEL_THINK` | `lfm2.5-thinking:latest` | Deep thinking |
-| `OLLAMA_MODEL_FLASH` | `glm-4.7-flash:latest` | Flash inference |
+| Variable              | Default                   | Purpose             |
+| --------------------- | ------------------------- | ------------------- |
+| `OLLAMA_MODEL`        | `qwen2.5-coder:7b`        | General / default   |
+| `OLLAMA_MODEL_CODE`   | `qwen3-coder:30b`         | Code generation     |
+| `OLLAMA_MODEL_REASON` | `qwen3.5:35b`             | Reviews / reasoning |
+| `OLLAMA_MODEL_FAST`   | `qwen3.5:9b-q4_K_M`       | Quick tasks         |
+| `OLLAMA_MODEL_OCR`    | `glm-ocr:latest`          | OCR                 |
+| `OLLAMA_MODEL_VISION` | `llama3.2-vision:11b`     | Image analysis      |
+| `OLLAMA_MODEL_EMBED`  | `nomic-embed-text:latest` | Embeddings          |
+| `OLLAMA_MODEL_THINK`  | `lfm2.5-thinking:latest`  | Deep thinking       |
+| `OLLAMA_MODEL_FLASH`  | `glm-4.7-flash:latest`    | Flash inference     |
 
 ### Commands
 
@@ -214,27 +214,27 @@ Scripts can bootstrap logging and utils via `core/lib.sh`:
 . "${0%/*}/../core/lib.sh"
 ```
 
-| Script | Purpose |
-|---|---|
-| `benchurl` | URL benchmark timing |
-| `cache-run` | Caching wrapper with configurable TTL |
-| `clipboard` | Copy: `stdin \| clipboard`; Paste: `clipboard get` |
-| `diagnose-zle` | ZLE diagnostics |
-| `is-project-dir` | Check if a directory is a project root (exit 0/1) |
-| `project-context` | Extract project metadata |
-| `recent` | Show recently modified files |
-| `serve` | Simple HTTP server |
-| `tips-generate-ollama` | Generate dynamic shell tips via Ollama |
-| `tips-refresh` | Force-regenerate Ollama tips: `tips-refresh [dir]` |
-| `update-system` | System package manager updates |
+| Script                 | Purpose                                            |
+| ---------------------- | -------------------------------------------------- |
+| `benchurl`             | URL benchmark timing                               |
+| `cache-run`            | Caching wrapper with configurable TTL              |
+| `clipboard`            | Copy: `stdin \| clipboard`; Paste: `clipboard get` |
+| `diagnose-zle`         | ZLE diagnostics                                    |
+| `is-project-dir`       | Check if a directory is a project root (exit 0/1)  |
+| `project-context`      | Extract project metadata                           |
+| `recent`               | Show recently modified files                       |
+| `serve`                | Simple HTTP server                                 |
+| `tips-generate-ollama` | Generate dynamic shell tips via Ollama             |
+| `tips-refresh`         | Force-regenerate Ollama tips: `tips-refresh [dir]` |
+| `update-system`        | System package manager updates                     |
 
 ## Dependencies
 
-| Dependency | Required | Purpose |
-|---|---|---|
+| Dependency                               | Required    | Purpose                                        |
+| ---------------------------------------- | ----------- | ---------------------------------------------- |
 | [alx](https://github.com/monkeymonk/alx) | Recommended | Alias management (drop-in `alias` replacement) |
-| [cdx](https://github.com/monkeymonk/cdx) | Optional | Directory navigation hooks |
-| [Ollama](https://ollama.com) | Optional | Local LLM (enables `ai/` module) |
+| [cdx](https://github.com/monkeymonk/cdx) | Optional    | Directory navigation hooks                     |
+| [Ollama](https://ollama.com)             | Optional    | Local LLM (enables `ai/` module)               |
 
 ### Install alx
 

@@ -1,93 +1,514 @@
 #!/usr/bin/env sh
 # Print project context for the given directory (or cwd).
-# Detects tech stack, project markers, git info, directory structure.
+# Detects tech stack, project markers, git info, directory structure,
+# metadata, frameworks, runtimes, monorepo info, commands, deps,
+# ORM/database, entry points, and AI context files.
 # Output: plain text, one fact per line. Machine- and LLM-friendly.
 #
 # Usage: project-context [directory]
 
-set -e
+# Source core/lib.sh for has_cmd
+. "${0%/*}/../core/lib.sh" 2>/dev/null || true
+
+# Ensure has_cmd is available
+if ! command -v has_cmd >/dev/null 2>&1; then
+    has_cmd() { command -v "$1" >/dev/null 2>&1; }
+fi
 
 dir="${1:-$PWD}"
 dir="$(cd "$dir" && pwd)"
 
-echo "directory: $dir"
-echo "basename: $(basename "$dir")"
+# --- helpers ---
 
-# --- project markers ---
-for f in \
-    package.json composer.json Cargo.toml go.mod pyproject.toml \
-    requirements.txt setup.py setup.cfg Pipfile \
-    Gemfile build.gradle build.gradle.kts pom.xml \
-    Makefile CMakeLists.txt meson.build \
-    flake.nix shell.nix default.nix \
-    deno.json bun.lockb \
-    pubspec.yaml mix.exs rebar.config \
-    .sln .csproj
-do
-    [ -f "$dir/$f" ] && echo "file: $f"
-done
-
-# --- container / infra ---
-for f in \
-    Dockerfile docker-compose.yml docker-compose.yaml \
-    compose.yml compose.yaml \
-    Vagrantfile Procfile \
-    terraform.tf main.tf \
-    pulumi.yaml serverless.yml \
-    k8s/ chart/ helm/
-do
-    case "$f" in
-        */) [ -d "$dir/$f" ] && echo "dir: $f" ;;
-        *)  [ -f "$dir/$f" ] && echo "file: $f" ;;
-    esac
-done
-
-# --- config / tooling ---
-for f in \
-    .eslintrc.js .eslintrc.json .eslintrc.yml eslint.config.js eslint.config.mjs \
-    .prettierrc .prettierrc.json prettier.config.js \
-    tsconfig.json jsconfig.json \
-    .editorconfig .envrc .tool-versions .mise.toml \
-    .github/workflows .gitlab-ci.yml .circleci \
-    justfile Taskfile.yml \
-    vitest.config.ts jest.config.js jest.config.ts \
-    playwright.config.ts cypress.config.ts \
-    .env .env.example
-do
-    case "$f" in
-        */) [ -d "$dir/$f" ] && echo "dir: $f" ;;
-        *)  [ -f "$dir/$f" ] && echo "file: $f" ;;
-    esac
-done
-
-# --- key directories ---
-for d in \
-    src lib app components pages api routes \
-    cmd pkg internal \
-    tests spec __tests__ test \
-    docs scripts migrations \
-    public static assets dist build out
-do
-    [ -d "$dir/$d" ] && echo "dir: $d/"
-done
-
-# --- git info ---
-if [ -d "$dir/.git" ] || git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
-    echo "vcs: git"
-    branch=$(git -C "$dir" branch --show-current 2>/dev/null)
-    [ -n "$branch" ] && echo "branch: $branch"
-
-    # top file extensions by count
-    exts=$(git -C "$dir" ls-files 2>/dev/null \
-        | grep '\.' \
-        | sed 's/.*\.//' \
-        | sort | uniq -c | sort -rn \
-        | head -5 \
-        | awk '{printf "%s(%d) ", $2, $1}')
-    [ -n "$exts" ] && echo "extensions: $exts"
-
-    # dirty state
-    if ! git -C "$dir" diff --quiet 2>/dev/null; then
-        echo "git-dirty: yes"
+_pc_json_field() {
+    # _pc_json_field file key — extract top-level JSON string field
+    _jf_file="$1" _jf_key="$2"
+    if has_cmd jq; then
+        jq -r ".[\"${_jf_key}\"] // empty" "$_jf_file" 2>/dev/null
+    else
+        sed -n 's/^[[:space:]]*"'"$_jf_key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_jf_file" 2>/dev/null | head -1
     fi
-fi
+}
+
+_pc_toml_field() {
+    # _pc_toml_field file key [section] — extract TOML field (sed-based)
+    _tf_file="$1" _tf_key="$2" _tf_section="${3:-}"
+    if [ -n "$_tf_section" ]; then
+        sed -n "/^\\[${_tf_section}\\]/,/^\\[/{s/^[[:space:]]*${_tf_key}[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\\1/p;}" "$_tf_file" 2>/dev/null | head -1
+    else
+        sed -n "s/^[[:space:]]*${_tf_key}[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\\1/p" "$_tf_file" 2>/dev/null | head -1
+    fi
+}
+
+_pc_has_dep() {
+    # _pc_has_dep name — check if dependency exists in any manifest
+    _dep="$1"
+    if [ -f "$dir/package.json" ]; then
+        grep -q "\"${_dep}\"" "$dir/package.json" 2>/dev/null && return 0
+    fi
+    if [ -f "$dir/requirements.txt" ]; then
+        grep -qi "^${_dep}[=>< !]\\|^${_dep}\$" "$dir/requirements.txt" 2>/dev/null && return 0
+    fi
+    if [ -f "$dir/Cargo.toml" ]; then
+        grep -q "^${_dep}[[:space:]]*=" "$dir/Cargo.toml" 2>/dev/null && return 0
+    fi
+    if [ -f "$dir/go.mod" ]; then
+        grep -q "${_dep}" "$dir/go.mod" 2>/dev/null && return 0
+    fi
+    if [ -f "$dir/Gemfile" ]; then
+        grep -q "['\"']${_dep}['\"']" "$dir/Gemfile" 2>/dev/null && return 0
+    fi
+    if [ -f "$dir/composer.json" ]; then
+        grep -q "\"${_dep}\"" "$dir/composer.json" 2>/dev/null && return 0
+    fi
+    if [ -f "$dir/pyproject.toml" ]; then
+        grep -qi "${_dep}" "$dir/pyproject.toml" 2>/dev/null && return 0
+    fi
+    return 1
+}
+
+# --- sections ---
+
+_pc_identity() {
+    echo "directory: $dir"
+    echo "basename: $(basename "$dir")"
+}
+
+_pc_metadata() {
+    # Parse name/version/description from first matching manifest
+    if [ -f "$dir/package.json" ]; then
+        _v=$(_pc_json_field "$dir/package.json" name)
+        [ -n "$_v" ] && echo "name: $_v"
+        _v=$(_pc_json_field "$dir/package.json" version)
+        [ -n "$_v" ] && echo "version: $_v"
+        _v=$(_pc_json_field "$dir/package.json" description)
+        [ -n "$_v" ] && echo "description: $_v"
+    elif [ -f "$dir/pyproject.toml" ]; then
+        _v=$(_pc_toml_field "$dir/pyproject.toml" name "project")
+        [ -z "$_v" ] && _v=$(_pc_toml_field "$dir/pyproject.toml" name "tool.poetry")
+        [ -n "$_v" ] && echo "name: $_v"
+        _v=$(_pc_toml_field "$dir/pyproject.toml" version "project")
+        [ -z "$_v" ] && _v=$(_pc_toml_field "$dir/pyproject.toml" version "tool.poetry")
+        [ -n "$_v" ] && echo "version: $_v"
+        _v=$(_pc_toml_field "$dir/pyproject.toml" description "project")
+        [ -z "$_v" ] && _v=$(_pc_toml_field "$dir/pyproject.toml" description "tool.poetry")
+        [ -n "$_v" ] && echo "description: $_v"
+    elif [ -f "$dir/Cargo.toml" ]; then
+        _v=$(_pc_toml_field "$dir/Cargo.toml" name "package")
+        [ -n "$_v" ] && echo "name: $_v"
+        _v=$(_pc_toml_field "$dir/Cargo.toml" version "package")
+        [ -n "$_v" ] && echo "version: $_v"
+        _v=$(_pc_toml_field "$dir/Cargo.toml" description "package")
+        [ -n "$_v" ] && echo "description: $_v"
+    elif [ -f "$dir/go.mod" ]; then
+        _v=$(sed -n 's/^module[[:space:]]\+//p' "$dir/go.mod" 2>/dev/null | head -1)
+        [ -n "$_v" ] && echo "name: $_v"
+    elif [ -f "$dir/composer.json" ]; then
+        _v=$(_pc_json_field "$dir/composer.json" name)
+        [ -n "$_v" ] && echo "name: $_v"
+        _v=$(_pc_json_field "$dir/composer.json" description)
+        [ -n "$_v" ] && echo "description: $_v"
+    fi
+}
+
+_pc_markers() {
+    # Project markers (file detection)
+    for f in \
+        package.json composer.json Cargo.toml go.mod pyproject.toml \
+        requirements.txt setup.py setup.cfg Pipfile \
+        Gemfile build.gradle build.gradle.kts pom.xml \
+        Makefile CMakeLists.txt meson.build \
+        flake.nix shell.nix default.nix \
+        deno.json bun.lockb \
+        pubspec.yaml mix.exs rebar.config \
+        .sln .csproj
+    do
+        [ -f "$dir/$f" ] && echo "file: $f"
+    done
+
+    # Container / infra
+    for f in \
+        Dockerfile docker-compose.yml docker-compose.yaml \
+        compose.yml compose.yaml \
+        Vagrantfile Procfile \
+        terraform.tf main.tf \
+        pulumi.yaml serverless.yml \
+        k8s/ chart/ helm/
+    do
+        case "$f" in
+            */) [ -d "$dir/$f" ] && echo "dir: $f" ;;
+            *)  [ -f "$dir/$f" ] && echo "file: $f" ;;
+        esac
+    done
+
+    # Config / tooling
+    for f in \
+        .eslintrc.js .eslintrc.json .eslintrc.yml eslint.config.js eslint.config.mjs \
+        .prettierrc .prettierrc.json prettier.config.js \
+        tsconfig.json jsconfig.json \
+        .editorconfig .envrc .tool-versions .mise.toml \
+        .github/workflows .gitlab-ci.yml .circleci \
+        justfile Taskfile.yml \
+        vitest.config.ts jest.config.js jest.config.ts \
+        playwright.config.ts cypress.config.ts \
+        .env .env.example
+    do
+        case "$f" in
+            */) [ -d "$dir/$f" ] && echo "dir: $f" ;;
+            *)  [ -f "$dir/$f" ] && echo "file: $f" ;;
+        esac
+    done
+}
+
+_pc_frameworks() {
+    # JS frameworks
+    for _fw in next nuxt remix svelte @sveltejs/kit react vue @angular/core express fastify @nestjs/core astro; do
+        _pc_has_dep "$_fw" && echo "framework: $_fw"
+    done
+    # Python frameworks
+    for _fw in django flask fastapi starlette streamlit; do
+        _pc_has_dep "$_fw" && echo "framework: $_fw"
+    done
+    # Ruby
+    for _fw in rails sinatra; do
+        _pc_has_dep "$_fw" && echo "framework: $_fw"
+    done
+    # PHP
+    for _fw in laravel symfony; do
+        _pc_has_dep "$_fw" && echo "framework: $_fw"
+    done
+    # Rust
+    for _fw in actix-web axum rocket bevy tauri; do
+        _pc_has_dep "$_fw" && echo "framework: $_fw"
+    done
+    # Go
+    for _fw in gin echo fiber; do
+        _pc_has_dep "$_fw" && echo "framework: $_fw"
+    done
+}
+
+_pc_runtime_versions() {
+    for _rf in .node-version .nvmrc .python-version .ruby-version .go-version .java-version; do
+        if [ -f "$dir/$_rf" ]; then
+            _rv=$(head -1 "$dir/$_rf" 2>/dev/null | tr -d '[:space:]')
+            _rn=$(echo "$_rf" | sed 's/^\.\(.*\)-version$/\1/;s/^\.nvmrc$/node/')
+            [ -n "$_rv" ] && echo "runtime: $_rn $_rv"
+        fi
+    done
+
+    # .tool-versions (asdf format: toolname version)
+    if [ -f "$dir/.tool-versions" ]; then
+        while IFS= read -r _line; do
+            case "$_line" in
+                '#'*|'') continue ;;
+            esac
+            _tn=$(echo "$_line" | awk '{print $1}')
+            _tv=$(echo "$_line" | awk '{print $2}')
+            [ -n "$_tn" ] && [ -n "$_tv" ] && echo "runtime: $_tn $_tv"
+        done < "$dir/.tool-versions"
+    fi
+
+    # .mise.toml [tools] section
+    if [ -f "$dir/.mise.toml" ]; then
+        sed -n '/^\[tools\]/,/^\[/{/^\[tools\]/d;/^\[/d;/^$/d;/^#/d;p;}' "$dir/.mise.toml" 2>/dev/null | while IFS= read -r _line; do
+            _tn=$(echo "$_line" | sed 's/[[:space:]]*=.*//')
+            _tv=$(echo "$_line" | sed 's/.*=[[:space:]]*//;s/"//g;s/'"'"'//g')
+            [ -n "$_tn" ] && [ -n "$_tv" ] && echo "runtime: $_tn $_tv"
+        done
+    fi
+
+    # package.json engines (jq only — too complex for sed fallback)
+    if [ -f "$dir/package.json" ] && has_cmd jq; then
+        jq -r '.engines // {} | to_entries[] | "runtime: \(.key) \(.value)"' "$dir/package.json" 2>/dev/null
+    fi
+}
+
+_pc_structure() {
+    for d in \
+        src lib app components pages api routes \
+        cmd pkg internal \
+        tests spec __tests__ test \
+        docs scripts migrations \
+        public static assets dist build out
+    do
+        [ -d "$dir/$d" ] && echo "dir: $d/"
+    done
+}
+
+_pc_monorepo() {
+    # npm workspaces
+    if [ -f "$dir/package.json" ]; then
+        if has_cmd jq; then
+            _ws=$(jq -r '.workspaces // empty | if type == "array" then .[] else .packages[]? // empty end' "$dir/package.json" 2>/dev/null)
+        else
+            _ws=$(grep -o '"workspaces"' "$dir/package.json" 2>/dev/null)
+        fi
+        [ -n "$_ws" ] && echo "monorepo: npm-workspaces"
+    fi
+
+    # pnpm workspaces
+    [ -f "$dir/pnpm-workspace.yaml" ] && echo "monorepo: pnpm-workspaces"
+
+    # lerna
+    [ -f "$dir/lerna.json" ] && echo "monorepo: lerna"
+
+    # Cargo workspace
+    if [ -f "$dir/Cargo.toml" ]; then
+        grep -q '^\[workspace\]' "$dir/Cargo.toml" 2>/dev/null && echo "monorepo: cargo-workspace"
+    fi
+
+    # nx
+    [ -f "$dir/nx.json" ] && echo "monorepo: nx"
+
+    # turborepo
+    [ -f "$dir/turbo.json" ] && echo "monorepo: turborepo"
+
+    # List workspace package names (jq only, npm/pnpm)
+    if [ -f "$dir/package.json" ] && has_cmd jq; then
+        _ws_globs=$(jq -r '.workspaces // empty | if type == "array" then .[] else .packages[]? // empty end' "$dir/package.json" 2>/dev/null)
+        if [ -n "$_ws_globs" ]; then
+            echo "$_ws_globs" | while IFS= read -r _glob; do
+                # Expand glob to find package.json files in workspace dirs
+                for _wpkg in "$dir"/$_glob/package.json; do
+                    [ -f "$_wpkg" ] || continue
+                    _wn=$(jq -r '.name // empty' "$_wpkg" 2>/dev/null)
+                    [ -n "$_wn" ] && echo "workspace: $_wn"
+                done
+            done
+        fi
+    fi
+}
+
+_pc_commands() {
+    # package.json scripts
+    if [ -f "$dir/package.json" ]; then
+        if has_cmd jq; then
+            _sc=$(jq -r '.scripts // {} | keys[]' "$dir/package.json" 2>/dev/null | tr '\n' ' ')
+        else
+            _sc=$(sed -n '/"scripts"/,/\}/{ s/.*"\([^"]*\)"[[:space:]]*:.*/\1/p; }' "$dir/package.json" 2>/dev/null | grep -v '^scripts$' | tr '\n' ' ')
+        fi
+        _sc=$(echo "$_sc" | sed 's/[[:space:]]*$//')
+        [ -n "$_sc" ] && echo "scripts: $_sc"
+    fi
+
+    # composer.json scripts
+    if [ -f "$dir/composer.json" ]; then
+        if has_cmd jq; then
+            _sc=$(jq -r '.scripts // {} | keys[]' "$dir/composer.json" 2>/dev/null | grep -v '^@' | tr '\n' ' ')
+        else
+            _sc=$(sed -n '/"scripts"/,/\}/{ s/.*"\([^"]*\)"[[:space:]]*:.*/\1/p; }' "$dir/composer.json" 2>/dev/null | grep -v '^scripts$' | grep -v '^@' | tr '\n' ' ')
+        fi
+        _sc=$(echo "$_sc" | sed 's/[[:space:]]*$//')
+        [ -n "$_sc" ] && echo "composer-scripts: $_sc"
+    fi
+
+    # pyproject.toml scripts (poetry / pdm / setuptools)
+    if [ -f "$dir/pyproject.toml" ]; then
+        _sc=$(sed -n '/^\[tool\.poetry\.scripts\]/,/^\[/{/^\[/d;/^$/d;/^#/d;p;}' "$dir/pyproject.toml" 2>/dev/null \
+            | sed 's/[[:space:]]*=.*//' | tr '\n' ' ')
+        [ -z "$(echo "$_sc" | tr -d '[:space:]')" ] && \
+            _sc=$(sed -n '/^\[project\.scripts\]/,/^\[/{/^\[/d;/^$/d;/^#/d;p;}' "$dir/pyproject.toml" 2>/dev/null \
+                | sed 's/[[:space:]]*=.*//' | tr '\n' ' ')
+        _sc=$(echo "$_sc" | sed 's/[[:space:]]*$//')
+        [ -n "$_sc" ] && echo "python-scripts: $_sc"
+    fi
+
+    # Gemfile — rake tasks (fast: parse Rakefile top-level task names only)
+    if [ -f "$dir/Rakefile" ]; then
+        _rt=$(grep -E '^task[[:space:]]' "$dir/Rakefile" 2>/dev/null \
+            | sed "s/.*task[[:space:]][[:space:]]*[:\"']\([a-zA-Z0-9_]*\).*/\1/" | tr '\n' ' ')
+        _rt=$(echo "$_rt" | sed 's/[[:space:]]*$//')
+        [ -n "$_rt" ] && echo "rake-tasks: $_rt"
+    fi
+
+    # Makefile targets
+    if [ -f "$dir/Makefile" ]; then
+        _mt=$(grep -E '^[a-zA-Z][a-zA-Z0-9_-]*:' "$dir/Makefile" 2>/dev/null | sed 's/:.*//' | grep -v '^_' | tr '\n' ' ')
+        _mt=$(echo "$_mt" | sed 's/[[:space:]]*$//')
+        [ -n "$_mt" ] && echo "make-targets: $_mt"
+    fi
+
+    # justfile recipes
+    if [ -f "$dir/justfile" ]; then
+        _jr=$(grep -E '^[a-zA-Z][a-zA-Z0-9_-]*:' "$dir/justfile" 2>/dev/null | sed 's/:.*//' | tr '\n' ' ')
+        _jr=$(echo "$_jr" | sed 's/[[:space:]]*$//')
+        [ -n "$_jr" ] && echo "just-recipes: $_jr"
+    fi
+
+    # Taskfile.yml tasks
+    if [ -f "$dir/Taskfile.yml" ]; then
+        _tt=$(grep -E '^[[:space:]]+[a-zA-Z][a-zA-Z0-9_-]*:' "$dir/Taskfile.yml" 2>/dev/null | sed 's/:.*//' | tr -d ' ' | tr '\n' ' ')
+        _tt=$(echo "$_tt" | sed 's/[[:space:]]*$//')
+        [ -n "$_tt" ] && echo "taskfile-tasks: $_tt"
+    fi
+}
+
+_pc_deps() {
+    # package.json
+    if [ -f "$dir/package.json" ]; then
+        if has_cmd jq; then
+            _dc=$(jq -r '.dependencies // {} | length' "$dir/package.json" 2>/dev/null)
+            _ddc=$(jq -r '.devDependencies // {} | length' "$dir/package.json" 2>/dev/null)
+        else
+            _dc=$(sed -n '/"dependencies"/,/\}/{/"/p;}' "$dir/package.json" 2>/dev/null | grep -c '"' 2>/dev/null || echo 0)
+            _dc=$(( _dc / 2 ))
+            _ddc=$(sed -n '/"devDependencies"/,/\}/{/"/p;}' "$dir/package.json" 2>/dev/null | grep -c '"' 2>/dev/null || echo 0)
+            _ddc=$(( _ddc / 2 ))
+        fi
+        [ "$_dc" -gt 0 ] 2>/dev/null && echo "deps: $_dc"
+        [ "$_ddc" -gt 0 ] 2>/dev/null && echo "dev-deps: $_ddc"
+    fi
+
+    # requirements.txt
+    if [ -f "$dir/requirements.txt" ]; then
+        _dc=$(grep -cvE '^[[:space:]]*#|^[[:space:]]*$' "$dir/requirements.txt" 2>/dev/null || echo 0)
+        [ "$_dc" -gt 0 ] 2>/dev/null && echo "deps: $_dc"
+    fi
+
+    # Cargo.toml
+    if [ -f "$dir/Cargo.toml" ]; then
+        _dc=$(sed -n '/^\[dependencies\]/,/^\[/{/^\[/d;/^$/d;/^#/d;p;}' "$dir/Cargo.toml" 2>/dev/null | grep -c . 2>/dev/null || echo 0)
+        _ddc=$(sed -n '/^\[dev-dependencies\]/,/^\[/{/^\[/d;/^$/d;/^#/d;p;}' "$dir/Cargo.toml" 2>/dev/null | grep -c . 2>/dev/null || echo 0)
+        [ "$_dc" -gt 0 ] 2>/dev/null && echo "deps: $_dc"
+        [ "$_ddc" -gt 0 ] 2>/dev/null && echo "dev-deps: $_ddc"
+    fi
+
+    # go.mod
+    if [ -f "$dir/go.mod" ]; then
+        _dc=$(sed -n '/^require/,/)/{ /^\t/p; }' "$dir/go.mod" 2>/dev/null | grep -c . 2>/dev/null || echo 0)
+        [ "$_dc" -gt 0 ] 2>/dev/null && echo "deps: $_dc"
+    fi
+}
+
+_pc_orm() {
+    _orm_seen=""
+
+    # Directory-based detection
+    if [ -d "$dir/prisma" ]; then
+        echo "orm: prisma"; _orm_seen="$_orm_seen prisma"
+    fi
+    [ -d "$dir/alembic" ] && { echo "orm: alembic"; _orm_seen="$_orm_seen alembic"; }
+    [ -d "$dir/migrations" ] && echo "database-dir: migrations/"
+
+    # Config file detection
+    for _of in drizzle.config.ts drizzle.config.js drizzle.config.mjs; do
+        [ -f "$dir/$_of" ] && { echo "orm: drizzle"; _orm_seen="$_orm_seen drizzle"; break; }
+    done
+    for _of in knexfile.js knexfile.ts; do
+        [ -f "$dir/$_of" ] && { echo "orm: knex"; _orm_seen="$_orm_seen knex"; break; }
+    done
+    for _of in ormconfig.js ormconfig.ts ormconfig.json; do
+        [ -f "$dir/$_of" ] && { echo "orm: typeorm"; _orm_seen="$_orm_seen typeorm"; break; }
+    done
+
+    # Dep-based detection (skip if already found via file/dir)
+    for _od in sequelize typeorm mongoose sqlalchemy prisma drizzle; do
+        case "$_orm_seen" in
+            *" $_od"*) continue ;;
+        esac
+        case "$_od" in
+            drizzle) _pc_has_dep drizzle-orm && echo "orm: drizzle" ;;
+            *) _pc_has_dep "$_od" && echo "orm: $_od" ;;
+        esac
+    done
+}
+
+_pc_entry_points() {
+    # package.json main/bin
+    if [ -f "$dir/package.json" ]; then
+        _ep=$(_pc_json_field "$dir/package.json" main)
+        [ -n "$_ep" ] && echo "entry: $_ep"
+        if has_cmd jq; then
+            _bin=$(jq -r '.bin // empty | if type == "string" then . else to_entries[].value end' "$dir/package.json" 2>/dev/null)
+            [ -n "$_bin" ] && echo "$_bin" | while IFS= read -r _b; do
+                [ -n "$_b" ] && echo "entry: $_b"
+            done
+        fi
+    fi
+
+    # Go
+    [ -f "$dir/main.go" ] && echo "entry: main.go"
+    for _gf in "$dir"/cmd/*/main.go; do
+        [ -f "$_gf" ] || continue
+        _rel=$(echo "$_gf" | sed "s|^$dir/||")
+        echo "entry: $_rel"
+    done
+
+    # Rust
+    [ -f "$dir/src/main.rs" ] && echo "entry: src/main.rs"
+    [ -f "$dir/src/lib.rs" ] && echo "entry: src/lib.rs"
+
+    # Python
+    for _pf in manage.py app.py wsgi.py asgi.py main.py; do
+        [ -f "$dir/$_pf" ] && echo "entry: $_pf"
+    done
+
+    # Web
+    [ -f "$dir/index.html" ] && echo "entry: index.html"
+}
+
+_pc_git() {
+    if [ -d "$dir/.git" ] || git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+        echo "vcs: git"
+        _branch=$(git -C "$dir" branch --show-current 2>/dev/null)
+        [ -n "$_branch" ] && echo "branch: $_branch"
+
+        # remote (credential-stripped)
+        _remote=$(git -C "$dir" remote get-url origin 2>/dev/null | sed 's|://[^@]*@|://|')
+        [ -n "$_remote" ] && echo "remote: $_remote"
+
+        # last commit date
+        _lcd=$(git -C "$dir" log -1 --format='%cs' 2>/dev/null)
+        [ -n "$_lcd" ] && echo "last-commit: $_lcd"
+
+        # commit count
+        _cc=$(git -C "$dir" rev-list --count HEAD 2>/dev/null)
+        [ -n "$_cc" ] && echo "commits: $_cc"
+
+        # top file extensions by count
+        _exts=$(git -C "$dir" ls-files 2>/dev/null \
+            | grep '\.' \
+            | sed 's/.*\.//' \
+            | sort | uniq -c | sort -rn \
+            | head -5 \
+            | awk '{printf "%s(%d) ", $2, $1}')
+        [ -n "$_exts" ] && echo "extensions: $_exts"
+
+        # dirty state
+        if ! git -C "$dir" diff --quiet 2>/dev/null; then
+            echo "git-dirty: yes"
+        fi
+    fi
+}
+
+_pc_ai_context() {
+    for _af in \
+        CLAUDE.md AGENTS.md GEMINI.md COPILOT.md \
+        .github/copilot-instructions.md \
+        .cursorrules .cursorignore \
+        .clinerules .windsurfrules
+    do
+        [ -f "$dir/$_af" ] && echo "ai-context: $_af"
+    done
+    for _ad in .claude .gemini; do
+        [ -d "$dir/$_ad" ] && echo "ai-context: $_ad/"
+    done
+}
+
+# --- main ---
+
+_pc_identity
+_pc_metadata
+_pc_markers
+_pc_frameworks
+_pc_runtime_versions
+_pc_structure
+_pc_monorepo
+_pc_commands
+_pc_deps
+_pc_orm
+_pc_entry_points
+_pc_git
+_pc_ai_context
+
+exit 0
