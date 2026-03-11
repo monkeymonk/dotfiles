@@ -15,7 +15,7 @@ runtime_plugin_fzf() {
 	require_cmd fzf || return 0
 
 	# Zsh-specific wrapper (only if not already defined as a function)
-	if [ -n "${ZSH_VERSION-}" ] && [ -n "${ZSH-}" ]; then
+	if [ "${SHELL_FAMILY-}" = "zsh" ]; then
 		if ! type fzf 2>/dev/null | grep -q 'function'; then
 			fzf() {
 				if [ "$1" = "--zsh" ] && [ -d "$HOME/.fzf/shell" ]; then
@@ -37,18 +37,16 @@ runtime_plugin_fzf() {
 	if [ -n "${SHELL_FAMILY-}" ]; then
 		_runtime_fzf_sourced=0
 
-		if [ -f "$HOME/.fzf/shell/key-bindings.${SHELL_FAMILY}" ]; then
-			. "$HOME/.fzf/shell/key-bindings.${SHELL_FAMILY}"
+		if safe_source "$HOME/.fzf/shell/key-bindings.${SHELL_FAMILY}"; then
 			_runtime_fzf_sourced=1
 		fi
 
-		if [ -f "$HOME/.fzf/shell/completion.${SHELL_FAMILY}" ]; then
-			. "$HOME/.fzf/shell/completion.${SHELL_FAMILY}"
+		if safe_source "$HOME/.fzf/shell/completion.${SHELL_FAMILY}"; then
 			_runtime_fzf_sourced=1
 		fi
 
-		if [ "$_runtime_fzf_sourced" -eq 0 ] && [ -f "$HOME/.fzf.${SHELL_FAMILY}" ]; then
-			. "$HOME/.fzf.${SHELL_FAMILY}"
+		if [ "$_runtime_fzf_sourced" -eq 0 ]; then
+			safe_source "$HOME/.fzf.${SHELL_FAMILY}" || true
 		fi
 
 		unset _runtime_fzf_sourced

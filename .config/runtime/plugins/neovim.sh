@@ -20,9 +20,9 @@ runtime_plugin_neovim() {
 
 runtime_neovim_aliases() {
     guard_double_load RUNTIME_NEOVIM_ALIASES_LOADED || return 0
-    runtime_alias v "nvim" --desc "Neovim editor" --tags "nvim,editor"
-    runtime_alias vim "nvim" --desc "Neovim editor" --tags "nvim,editor"
-    runtime_alias vl "nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
+    alias v="nvim" --desc "Neovim editor" --tags "nvim,editor"
+    alias vim="nvim" --desc "Neovim editor" --tags "nvim,editor"
+    alias vl="nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
 }
 
 hook_register setup runtime_plugin_neovim

@@ -89,7 +89,7 @@ fi
 
 # Load secrets (alphabetical). Errors must be visible.
 if [ -d "$RUNTIME_ROOT/secrets" ]; then
-    if [ -n "${ZSH_VERSION-}" ]; then
+    if [ "${SHELL_FAMILY-}" = "zsh" ]; then
         setopt LOCAL_OPTIONS NULL_GLOB
     fi
     for _f in "$RUNTIME_ROOT"/secrets/*.env; do
@@ -107,11 +107,6 @@ if [ -d "$RUNTIME_ROOT/scripts" ]; then
     path_prepend "$RUNTIME_ROOT/scripts"
 fi
 
-# Export aliases via alx.
-if command -v alx >/dev/null 2>&1; then
-    eval "$(alx export --shell)"
-fi
-
 # Source cdx if installed.
 if [ -f "$HOME/.local/share/cdx/cdx.sh" ]; then
     . "$HOME/.local/share/cdx/cdx.sh"
@@ -126,7 +121,7 @@ path_dedupe
 
 _runtime_reset_state() {
     # Clear hook registry so plugins re-register cleanly.
-    if [ -n "${ZSH_VERSION-}" ]; then
+    if [ "${SHELL_FAMILY-}" = "zsh" ]; then
         setopt LOCAL_OPTIONS SH_WORD_SPLIT
     fi
     for _phase in $_HOOKS_PHASES; do
@@ -162,6 +157,6 @@ runtime_reload() {
     esac
 }
 
-runtime_alias reload 'runtime_reload' --desc "Reload shell config (soft|hard)" --tags "shell,runtime"
+alias reload='runtime_reload' --desc "Reload shell config (soft|hard)" --tags "shell,runtime"
 
 unset _runtime_src _runtime_dir
