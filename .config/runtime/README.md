@@ -56,7 +56,7 @@ The `core/` layer provides safe primitives only:
 | `path.sh`     | `path_prepend`, `path_append`, `path_remove`, `path_dedupe`                                                                | Safe PATH manipulation                                    |
 | `prompt.sh`   | `confirm`, `choose_one`, `choose_multi`                                                                                    | Interactive prompts (fzf-aware)                           |
 | `system.sh`   | `is_mac`, `is_linux`                                                                                                       | OS detection helpers                                      |
-| `utils.sh`    | `has_cmd`, `has_file`, `has_dir`, `require_cmd`, `die`, `try_or_warn`, `safe_source`, `guard_double_load`, `runtime_alias` | General utilities                                         |
+| `utils.sh`    | `has_cmd`, `has_file`, `has_dir`, `require_cmd`, `die`, `try_or_warn`, `safe_source`, `guard_double_load`                  | General utilities                                         |
 | `lazy.sh`     | `lazy_load`                                                                                                                | Deferred command initialization                           |
 | `registry.sh` | `registry_init`, `registry_add`, `registry_add_lazy`, `registry_resolve`, `registry_get`, `registry_dump`                  | Tagged key-value registry with lazy evaluation            |
 | `context.sh`  | `runtime_context`, `runtime_is_offline`, `ctx_set`, `ctx_set_lazy`                                                         | OS and machine context detection                          |
@@ -286,7 +286,7 @@ Create `plugins/myplugin.sh`:
 _myplugin_setup() {
     require_cmd mytool || return 0
     guard_double_load RUNTIME_MYPLUGIN_LOADED || return 0
-    runtime_alias myalias 'mytool --flag' --desc "..." --tags "..."
+    alias myalias='mytool --flag' --desc "..." --tags "..."
 }
 hook_register setup _myplugin_setup
 ```

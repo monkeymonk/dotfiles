@@ -4,6 +4,9 @@
 # alias definition (from any plugin, config, or rc file) is captured
 # in the alx registry while still creating the real shell alias.
 #
+# Accepts optional --desc and --tags flags (stripped before builtin alias):
+#   alias gs='git status' --desc "Git status" --tags "git,status"
+#
 # Plain `alias` (no args) and `alias -p` work unchanged.
 
 runtime_plugin_alx() {
@@ -11,10 +14,13 @@ runtime_plugin_alx() {
         path_prepend "$HOME/.local/share/alx/bin"
     fi
 
-    command -v alx >/dev/null 2>&1 || return 0
+    # Global so the alias() shim can see it after this function returns.
+    _RUNTIME_HAS_ALX=0
+    command -v alx >/dev/null 2>&1 && _RUNTIME_HAS_ALX=1
 
-    # Override alias builtin to persist definitions in alx registry.
-    # Handles multiple definitions: alias a='foo' b='bar'
+    # Override alias builtin to accept --desc/--tags metadata.
+    # When alx is available, registers in alx registry.
+    # When alx is absent, strips metadata and falls through to builtin alias.
     # Passes flags (-p, -g, etc.) and bare lookups straight to builtin.
     alias() {
         if [ $# -eq 0 ]; then
@@ -25,18 +31,35 @@ runtime_plugin_alx() {
             builtin alias "$@"
             return
         fi
-        local arg name cmd
-        for arg in "$@"; do
-            if [ "${arg#*=}" != "$arg" ]; then
-                name="${arg%%=*}" cmd="${arg#*=}"
-                alx add "$name" "$cmd" --force 2>/dev/null
-            fi
+
+        # First pass: extract metadata, collect assignment args.
+        local _alx_desc="" _alx_tags="" _name="" _cmd=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --desc) _alx_desc="$2"; shift 2 ;;
+                --tags) _alx_tags="$2"; shift 2 ;;
+                *)
+                    if [ "${1#*=}" != "$1" ]; then
+                        _name="${1%%=*}" _cmd="${1#*=}"
+                    fi
+                    builtin alias "$1"
+                    shift
+                    ;;
+            esac
         done
-        builtin alias "$@"
+
+        # Register in alx after metadata is fully parsed.
+        if [ -n "$_name" ] && [ "${_RUNTIME_HAS_ALX:-0}" -eq 1 ]; then
+            alx add "$_name" "$_cmd" --force \
+                ${_alx_desc:+--desc "$_alx_desc"} \
+                ${_alx_tags:+--tags "$_alx_tags"} 2>/dev/null
+        fi
     }
 
-    runtime_alias falx 'eval "$(alx list | fzf --delimiter=$'\''\t'\'' --with-nth=1,2,3 | cut -f1)"' \
-        --desc "Fuzzy search aliases" --tags "alias,fzf"
+    if [ "$_RUNTIME_HAS_ALX" -eq 1 ]; then
+        alias falx='eval "$(alx list | fzf --delimiter=$'\''\t'\'' --with-nth=1,2,3 | cut -f1)"' \
+            --desc "Fuzzy search aliases" --tags "alias,fzf"
+    fi
 }
 
 # Sweep: import any aliases defined before the shim was active

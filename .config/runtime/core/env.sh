@@ -1,4 +1,5 @@
 # Safe environment defaults (do not override user-defined values).
+: "${BROWSER:=firefox}"
 
 : "${EDITOR:=vim}"
 : "${VISUAL:=$EDITOR}"

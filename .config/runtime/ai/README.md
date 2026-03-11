@@ -8,7 +8,7 @@ Shell-integrated LLM tools powered by [Ollama](https://ollama.com). Loaded autom
 ai/
 ├── env.sh                    # Model vars, host config (declarative)
 ├── helpers.sh                # All _llm_* function implementations
-├── aliases.sh                # runtime_alias llm-* registrations
+├── aliases.sh                # llm-* alias registrations
 ├── data/
 │   └── tips.txt              # Static tips pool for shell idle display
 └── integrations/

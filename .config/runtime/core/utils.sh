@@ -51,14 +51,3 @@ require_cmd() {
     fi
     return 0
 }
-
-runtime_alias() {
-    # runtime_alias <name> <command> [--desc "..."] [--tags "..."]
-    # Uses alx if available, falls back to plain alias.
-    if command -v alx >/dev/null 2>&1; then
-        # Keep registry in sync with runtime definitions.
-        alx add "$@" --force
-    else
-        alias "$1=$2"
-    fi
-}

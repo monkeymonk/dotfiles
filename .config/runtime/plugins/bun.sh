@@ -9,7 +9,7 @@ runtime_plugin_bun() {
 
     # bun completions
     if [ -s "$BUN_INSTALL/_bun" ]; then
-      source "$BUN_INSTALL/_bun"
+      safe_source "$BUN_INSTALL/_bun"
     fi
   fi
 }
