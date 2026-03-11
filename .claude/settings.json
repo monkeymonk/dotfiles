@@ -4,6 +4,29 @@
     "commit": "",
     "pr": ""
   },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "idle_prompt|permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Waiting for input'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Task completed'"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(claude mcp --help:*)",
@@ -40,7 +63,9 @@
   },
   "enabledPlugins": {
     "superpowers@superpowers-marketplace": true,
-    "rust-analyzer-lsp@claude-plugins-official": false,
-    "php-lsp@claude-plugins-official": false
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "php-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "frontend-design@claude-code-plugins": true
   }
 }
