@@ -1,0 +1,81 @@
+# AI tooling — paths, symlinks, ollama integration.
+#
+# Responsibilities:
+#   1. PATH additions for tool-specific bin dirs
+#   2. Explicit symlink map for AI CLIs in non-standard locations
+#   3. Ollama env, helpers, and aliases
+
+# --- 1. PATH additions -------------------------------------------------
+
+_ai_register_paths() {
+    local _dir
+    for _dir in \
+        "$HOME/.opencode/bin" \
+        "$HOME/.cache/lm-studio/bin" \
+    ; do
+        [ -d "$_dir" ] && path_prepend "$_dir"
+    done
+}
+
+# --- 2. Symlink map -----------------------------------------------------
+# Format: source -> destination (symlink created in ~/.local/bin)
+# Add new tools here. Source supports globs for nvm-style versioned paths.
+
+_AI_SYMLINK_BIN="$HOME/.local/bin"
+
+# _ai_resolve: return last existing executable match (globs expanded via eval)
+_ai_resolve() {
+    eval "set -- $1" 2>/dev/null
+    _last=""
+    for _candidate do
+        [ -x "$_candidate" ] && _last="$_candidate"
+    done
+    [ -n "$_last" ] && printf '%s' "$_last" && return 0
+    return 1
+}
+
+_ai_ensure_symlinks() {
+    [ -d "$_AI_SYMLINK_BIN" ] || mkdir -p "$_AI_SYMLINK_BIN"
+
+    # tool_name  source_path (globs ok — last match wins for version sort)
+    set -- \
+        claude    "$HOME/.local/share/claude/versions/*" \
+        gemini    "$HOME/.nvm/versions/node/*/bin/gemini" \
+        codex     "$HOME/.nvm/versions/node/*/bin/codex" \
+        opencode  "$HOME/.opencode/bin/opencode" \
+        mcp-hub   "$HOME/.nvm/versions/node/*/bin/mcp-hub"
+
+    while [ $# -ge 2 ]; do
+        _name="$1"; _pattern="$2"; shift 2
+        has_cmd "$_name" && continue
+        [ -L "$_AI_SYMLINK_BIN/$_name" ] && continue
+        _src=$(_ai_resolve "$_pattern") || continue
+        ln -s "$_src" "$_AI_SYMLINK_BIN/$_name"
+        info "ai: symlinked $_name -> $_src"
+    done
+
+    unset _name _pattern _src _candidate
+}
+
+# --- 3. Ollama integration -----------------------------------------------
+
+_ai_setup_ollama() {
+    require_cmd ollama || return 0
+    export HAS_OLLAMA=1
+    safe_source "${RUNTIME_ROOT}/ai/env.sh"
+    safe_source "${RUNTIME_ROOT}/ai/helpers.sh"
+    command -v alx >/dev/null 2>&1 && {
+        safe_source "${RUNTIME_ROOT}/ai/aliases.sh"
+        runtime_ai_aliases
+    }
+}
+
+# --- Entry point ----------------------------------------------------------
+
+runtime_plugin_ai() {
+    _ai_register_paths
+    _ai_ensure_symlinks
+    _ai_setup_ollama
+}
+
+hook_register setup runtime_plugin_ai
