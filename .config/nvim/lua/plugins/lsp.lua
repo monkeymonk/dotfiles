@@ -46,6 +46,7 @@ return {
   -- https://github.com/maan2003/lsp_lines.nvim
   {
     "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
+    event = "LspAttach",
     config = function()
       vim.diagnostic.config({
         virtual_text = false,

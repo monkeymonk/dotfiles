@@ -21,17 +21,26 @@ return {
       vim.api.nvim_create_user_command("ReloadDashboard", ReloadDashboard, { nargs = 0 })
       -- vim.defer_fn(ReloadDashboard, 3000)
 
-      local timer = vim.loop.new_timer()
+      local timer = nil
 
       -- Set key mappings only when in alpha buffer
       vim.api.nvim_create_augroup("AlphaMappings", { clear = true })
       vim.api.nvim_create_autocmd("FileType", {
         callback = function()
+          -- Create a fresh timer each time alpha is entered
+          if timer then
+            timer:stop()
+            timer:close()
+          end
+          timer = vim.loop.new_timer()
+
           -- Start the timer to call ReloadDashboard every x seconds
           vim.defer_fn(function()
-            timer:start(0, 7000, function()
-              ReloadDashboard()
-            end)
+            if timer then
+              timer:start(0, 7000, function()
+                ReloadDashboard()
+              end)
+            end
           end, 4000)
 
           -- Set key mappings in the alpha buffer

@@ -1,12 +1,13 @@
 return {
   -- @see https://medium.com/@magnebjarte/how-to-display-images-in-neovim-on-mac-a-step-by-step-guide-4bbef53d2d4d
-  {
-    "vhyrro/luarocks.nvim",
-    priority = 1001,
-    opts = {
-      rocks = { "magick" },
-    },
-  },
+  -- Disabled: image.nvim is commented out, no need for luarocks overhead
+  -- {
+  --   "vhyrro/luarocks.nvim",
+  --   priority = 1001,
+  --   opts = {
+  --     rocks = { "magick" },
+  --   },
+  -- },
   -- {
   --   "3rd/image.nvim",
   --   dependencies = { "luarocks.nvim" },

@@ -35,6 +35,15 @@ _ai_resolve() {
 }
 
 _ai_ensure_symlinks() {
+    # Skip if stamp is fresh (< 1 day old).
+    local _stamp="${XDG_CACHE_HOME:-$HOME/.cache}/runtime/ai-symlinks.stamp"
+    if [ -f "$_stamp" ]; then
+        local _age_ok=0
+        # find returns 0 if file matches (modified within 1 day)
+        find "$_stamp" -mmin -1440 -print 2>/dev/null | grep -q . && _age_ok=1
+        [ "$_age_ok" -eq 1 ] && return 0
+    fi
+
     [ -d "$_AI_SYMLINK_BIN" ] || mkdir -p "$_AI_SYMLINK_BIN"
 
     # tool_name  source_path (globs ok — last match wins for version sort)
@@ -55,6 +64,8 @@ _ai_ensure_symlinks() {
     done
 
     unset _name _pattern _src _candidate
+    mkdir -p "$(dirname "$_stamp")" 2>/dev/null
+    touch "$_stamp"
 }
 
 # --- 3. Ollama integration -----------------------------------------------

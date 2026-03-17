@@ -1,5 +1,8 @@
 local stubs = require("config.php_stubs")
-stubs.ensure_php_stubs()
+-- Defer stub installation to avoid blocking startup
+vim.defer_fn(function()
+  stubs.ensure_php_stubs()
+end, 2000)
 
 return {
   -- PHP (phpcbf) auto format plugin for nvim

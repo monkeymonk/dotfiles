@@ -300,6 +300,7 @@ return {
   -- https://github.com/milanglacier/minuet-ai.nvim
   {
     "milanglacier/minuet-ai.nvim",
+    event = "InsertEnter",
     config = function()
       require("minuet").setup({
         provider = "openai_fim_compatible",

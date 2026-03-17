@@ -8,6 +8,9 @@
 #   alias gs='git status' --desc "Git status" --tags "git,status"
 #
 # Plain `alias` (no args) and `alias -p` work unchanged.
+#
+# Performance: metadata is buffered in memory and flushed to alx in a
+# single background process at the interactive phase — no per-alias forks.
 
 runtime_plugin_alx() {
     if [ -d "$HOME/.local/share/alx/bin" ]; then
@@ -18,8 +21,11 @@ runtime_plugin_alx() {
     _RUNTIME_HAS_ALX=0
     command -v alx >/dev/null 2>&1 && _RUNTIME_HAS_ALX=1
 
+    # Buffer for deferred alx registration (tab-separated: name\tcmd\tdesc\ttags).
+    _ALX_DEFERRED=""
+
     # Override alias builtin to accept --desc/--tags metadata.
-    # When alx is available, registers in alx registry.
+    # When alx is available, buffers metadata for batch registration.
     # When alx is absent, strips metadata and falls through to builtin alias.
     # Passes flags (-p, -g, etc.) and bare lookups straight to builtin.
     alias() {
@@ -48,11 +54,11 @@ runtime_plugin_alx() {
             esac
         done
 
-        # Register in alx after metadata is fully parsed.
-        if [ -n "$_name" ] && [ "${_RUNTIME_HAS_ALX:-0}" -eq 1 ]; then
-            alx add "$_name" "$_cmd" --force \
-                ${_alx_desc:+--desc "$_alx_desc"} \
-                ${_alx_tags:+--tags "$_alx_tags"} 2>/dev/null
+        # Buffer metadata for batch flush (only when we have desc/tags to register).
+        if [ -n "$_name" ] && [ "${_RUNTIME_HAS_ALX:-0}" -eq 1 ] && \
+           { [ -n "$_alx_desc" ] || [ -n "$_alx_tags" ]; }; then
+            _ALX_DEFERRED="${_ALX_DEFERRED}${_name}	${_cmd}	${_alx_desc}	${_alx_tags}
+"
         fi
     }
 
@@ -62,12 +68,25 @@ runtime_plugin_alx() {
     fi
 }
 
-# Sweep: import any aliases defined before the shim was active
-# (oh-my-zsh, other rc files, external tools, etc.)
-_alx_import_existing() {
+# Flush buffered metadata + import bare aliases in one background process.
+_alx_flush_and_import() {
     command -v alx >/dev/null 2>&1 || return 0
-    builtin alias | alx import - 2>/dev/null
+    local _buf="$_ALX_DEFERRED"
+    _ALX_DEFERRED=""
+    (
+        # First: import all current shell aliases (captures bare ones without metadata).
+        builtin alias | alx import - --force 2>/dev/null
+        # Then: overlay buffered entries that have desc/tags metadata.
+        if [ -n "$_buf" ]; then
+            printf '%s' "$_buf" | while IFS='	' read -r _n _c _d _t; do
+                [ -n "$_n" ] || continue
+                alx add "$_n" "$_c" --force \
+                    ${_d:+--desc "$_d"} \
+                    ${_t:+--tags "$_t"} 2>/dev/null
+            done
+        fi
+    ) &!
 }
 
 hook_register bootstrap runtime_plugin_alx
-hook_register interactive _alx_import_existing
+hook_register interactive _alx_flush_and_import

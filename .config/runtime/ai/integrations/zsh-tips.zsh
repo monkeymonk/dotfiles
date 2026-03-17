@@ -153,7 +153,15 @@ _zsh_tip_timer_fd=""
 _zsh_tip_handler() {
   local dummy
   read -ru $_zsh_tip_timer_fd dummy 2>/dev/null || { zle -F "$_zsh_tip_timer_fd"; return; }
+  # Drain any queued ticks (e.g. accumulated while a full-screen app held the terminal)
+  while read -ru $_zsh_tip_timer_fd -t 0 dummy 2>/dev/null; do :; done
   [[ -z "$BUFFER" ]] || return
+  # Skip when tmux pane/window is not active (user switched tabs)
+  if [[ -n "${TMUX-}" ]]; then
+    local active
+    active=$(tmux display-message -p -t "$TMUX_PANE" '#{&&:#{pane_active},#{window_active}}' 2>/dev/null)
+    [[ "$active" == "1" ]] || return
+  fi
   # Don't interfere if user was recently active (e.g. navigating history)
   local elapsed=$(( SECONDS - _zsh_tip_last_activity ))
   (( elapsed < 2 )) && return

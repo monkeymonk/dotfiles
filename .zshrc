@@ -104,13 +104,6 @@ plugins=(
   # colorize      - tool not installed
   # git-commit    - redundant with git plugin
   # git-extras    - tool not installed
-  # npm           - lazy loaded via nvm wrapper
-  # nvm           - conflicts with lazy loading
-  # pip           - conflicts with lazy loading
-  # pipenv        - tool not installed
-  # pyenv         - conflicts with lazy loading
-  # python        - conflicts with lazy loading
-  # starship      - already initialized in shells/zsh/init.zsh
 )
 
 source $ZSH/oh-my-zsh.sh
