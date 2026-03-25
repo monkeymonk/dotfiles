@@ -8,13 +8,38 @@ local required_stubs = {
   "php-stubs/acf-pro-stubs:^6.0",
 }
 
-local function run_cmd(cmd, cwd)
+local function run_cmd(cmd, cwd, on_done)
   local Job = require("plenary.job")
-  return Job:new({
+  local job = Job:new({
     command = cmd[1],
     args = vim.list_slice(cmd, 2),
     cwd = cwd or stub_path,
-  }):sync()
+    on_exit = function(j, code)
+      if code ~= 0 then
+        vim.schedule(function()
+          vim.notify("php_stubs: command failed: " .. cmd[1], vim.log.levels.WARN)
+        end)
+      end
+      if on_done then
+        on_done()
+      end
+    end,
+  })
+  job:start()
+end
+
+local function install_remaining_stubs(from_index)
+  if from_index > #required_stubs then
+    return
+  end
+  local pkg = required_stubs[from_index]:match("^([^:]+)")
+  if vim.fn.isdirectory(vendor_path .. "/" .. pkg) == 0 then
+    run_cmd({ composer, "require", "--dev", required_stubs[from_index] }, nil, function()
+      install_remaining_stubs(from_index + 1)
+    end)
+  else
+    install_remaining_stubs(from_index + 1)
+  end
 end
 
 local function ensure_php_stubs()
@@ -36,15 +61,11 @@ local function ensure_php_stubs()
       "--name=stubs/php",
       "--require-dev=" .. required_stubs[1],
       "-n",
-    })
-  end
-
-  -- Install other stubs if not yet installed
-  for i = 2, #required_stubs do
-    local pkg = required_stubs[i]:match("^([^:]+)")
-    if vim.fn.isdirectory(vendor_path .. "/" .. pkg) == 0 then
-      run_cmd({ composer, "require", "--dev", required_stubs[i] })
-    end
+    }, nil, function()
+      install_remaining_stubs(2)
+    end)
+  else
+    install_remaining_stubs(2)
   end
 end
 

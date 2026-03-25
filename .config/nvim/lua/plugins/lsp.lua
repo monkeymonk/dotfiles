@@ -48,10 +48,18 @@ return {
     "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
     event = "LspAttach",
     config = function()
-      vim.diagnostic.config({
-        virtual_text = false,
-      })
       require("lsp_lines").setup()
+      -- Start disabled to avoid lag; toggle with <leader>ul
+      require("lsp_lines").toggle()
     end,
+    keys = {
+      {
+        "<leader>ul",
+        function()
+          require("lsp_lines").toggle()
+        end,
+        desc = "Toggle LSP Lines",
+      },
+    },
   },
 }

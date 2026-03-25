@@ -300,7 +300,10 @@ return {
   -- https://github.com/milanglacier/minuet-ai.nvim
   {
     "milanglacier/minuet-ai.nvim",
-    event = "InsertEnter",
+    cmd = { "MinuetToggle", "MinuetChangeProvider" },
+    keys = {
+      { "<leader>aM", "<cmd>MinuetToggle<cr>", desc = "Toggle Minuet AI completion" },
+    },
     config = function()
       require("minuet").setup({
         provider = "openai_fim_compatible",

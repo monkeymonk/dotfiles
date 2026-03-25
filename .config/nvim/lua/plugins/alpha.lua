@@ -38,7 +38,7 @@ return {
           vim.defer_fn(function()
             if timer then
               timer:start(0, 7000, function()
-                ReloadDashboard()
+                vim.schedule(ReloadDashboard)
               end)
             end
           end, 4000)

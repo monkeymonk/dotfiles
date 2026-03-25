@@ -34,7 +34,7 @@ autocmd("FileType", {
 
 -- Strip trailing whitespace from all files
 autocmd("BufWritePre", {
-  command = "%s/s+$//e",
+  command = [[%s/\s\+$//e]],
   desc = "Strip trailing whitespace from all files",
   group = "buffer",
   pattern = "*",

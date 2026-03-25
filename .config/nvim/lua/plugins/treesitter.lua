@@ -16,7 +16,6 @@ return {
         "http",
         "json",
         "lua",
-        "norg",
         "php",
         "phpdoc",
         "rust",

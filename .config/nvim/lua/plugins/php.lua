@@ -66,6 +66,7 @@ return {
         --       },
         -- phpcs = { mason = false }, -- Disable phpcs as we use phpactor for PHP linting
         phpcs = false,
+        intelephense = false,
         phpactor = {
           filetypes = { "php", "blade" },
           init_options = {
