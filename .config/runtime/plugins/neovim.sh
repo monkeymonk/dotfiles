@@ -1,6 +1,18 @@
 # Neovim integration (with SSH fallback to vim).
+# Uses bob (neovim version manager) when available.
+
+_neovim_bob_setup() {
+    has_cmd bob || return 1
+    local bob_nvim_dir="${HOME}/.local/share/bob/nvim-bin"
+    if [ ! -x "${bob_nvim_dir}/nvim" ]; then
+        bob install latest 2>/dev/null
+        bob use latest 2>/dev/null
+    fi
+    [ -d "$bob_nvim_dir" ] && path_prepend "$bob_nvim_dir"
+}
 
 runtime_plugin_neovim() {
+    _neovim_bob_setup
     require_cmd nvim || return 0
 
     if [ -n "${SSH_CONNECTION-}" ]; then
@@ -23,6 +35,10 @@ runtime_neovim_aliases() {
     alias v="nvim" --desc "Neovim editor" --tags "nvim,editor"
     alias vim="nvim" --desc "Neovim editor" --tags "nvim,editor"
     alias vl="nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
+
+    # working on v0.12 config
+    alias nv='NVIM_APPNAME=nvim-next nvim'
+    alias nvc='NVIM_APPNAME=nvim-next nvim ~/.config/nvim-next'
 }
 
 hook_register setup runtime_plugin_neovim
