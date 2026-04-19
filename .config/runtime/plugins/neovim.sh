@@ -35,10 +35,6 @@ runtime_neovim_aliases() {
     alias v="nvim" --desc "Neovim editor" --tags "nvim,editor"
     alias vim="nvim" --desc "Neovim editor" --tags "nvim,editor"
     alias vl="nvim +'lua require(\"persistence\").load()'" --desc "Neovim last session" --tags "nvim,editor,session"
-
-    # working on v0.12 config
-    alias nv='NVIM_APPNAME=nvim-next nvim'
-    alias nvc='NVIM_APPNAME=nvim-next nvim ~/.config/nvim-next'
 }
 
 hook_register setup runtime_plugin_neovim
