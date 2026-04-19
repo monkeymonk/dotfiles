@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Load a tmuxp session from ~/.tmuxp/ using fzf
-CONFIG=$(ls -1 ~/.tmuxp/*.yaml 2>/dev/null | xargs -I{} basename {} .yaml | fzf --prompt="Load session: " --height=40% --reverse)
+CONFIG=$(ls -1 ~/.tmuxp/*.yaml 2>/dev/null | xargs -I{} basename {} .yaml | fzf --prompt="Load session: " --height=100% --reverse)
 
 [ -z "$CONFIG" ] && exit 0
 

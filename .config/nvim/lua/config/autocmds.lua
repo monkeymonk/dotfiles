@@ -1,75 +1,110 @@
--- Autocmds are automatically loaded on the VeryLazy event
--- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
-local command = require("utils.command")
-local autocmd = command.autocmd
+local augroup = vim.api.nvim_create_augroup
+local autocmd = vim.api.nvim_create_autocmd
 
--- Aliases
-vim.cmd(string.format("command! %s %s", "Q", "qa"))
+local group_general = augroup("user_general", { clear = true })
+local group_numbers = augroup("user_numbers", { clear = true })
+local group_markdown = augroup("user_markdown", { clear = true })
+local group_terminal = augroup("user_terminal", { clear = true })
+local group_php = augroup("user_php", { clear = true })
 
--- Disable the concealing in some file formats
--- The default conceallevel is 3 in LazyVim
+vim.api.nvim_create_user_command("Q", "qa", {})
+
 autocmd("FileType", {
-  callback = function()
-    vim.wo.conceallevel = 0
-  end,
-  pattern = { "json", "jsonc", "markdown" },
+	group = group_general,
+	pattern = { "json", "jsonc", "markdown" },
+	callback = function()
+		vim.opt_local.conceallevel = 0
+	end,
 })
 
--- Spell check markdown files
-autocmd({ "BufRead", "BufNewFile" }, {
-  command = "setlocal spell",
-  desc = "Spell check markdown files",
-  group = "buffer",
-  pattern = { "*.md", "*.txt" },
-})
-autocmd("FileType", {
-  callback = function()
-    vim.opt.spell = true
-    vim.opt.spelllang = { "en_us" }
-  end,
-  desc = "Enable spell checking in markdown files",
-  group = "buffer",
-  pattern = "*.md",
+autocmd("BufReadPost", {
+	group = group_general,
+	callback = function(args)
+		local mark = vim.api.nvim_buf_get_mark(args.buf, '"')
+		local lcount = vim.api.nvim_buf_line_count(args.buf)
+		if mark[1] > 0 and mark[1] <= lcount then
+			pcall(vim.api.nvim_win_set_cursor, 0, mark)
+		end
+	end,
 })
 
--- Strip trailing whitespace from all files
 autocmd("BufWritePre", {
-  command = [[%s/\s\+$//e]],
-  desc = "Strip trailing whitespace from all files",
-  group = "buffer",
-  pattern = "*",
+	group = group_general,
+	callback = function(args)
+		if vim.bo[args.buf].binary then
+			return
+		end
+
+		local excluded = {
+			diff = true,
+			gitcommit = true,
+			markdown = true,
+		}
+
+		if excluded[vim.bo[args.buf].filetype] then
+			return
+		end
+
+		local view = vim.fn.winsaveview()
+		vim.cmd([[keepjumps keeppatterns %s/\s\+$//e]])
+		vim.fn.winrestview(view)
+	end,
 })
 
--- Turn relative number on in normal mode
-autocmd({ "BufEnter", "FocusGained", "InsertLeave", "CmdlineLeave", "WinEnter" }, {
-  callback = function()
-    if vim.o.nu and vim.api.nvim_get_mode().mode ~= "i" then
-      vim.opt.relativenumber = true
-    end
-  end,
-  group = "linenumber",
-  pattern = "*",
+autocmd({ "BufEnter", "FocusGained", "InsertLeave", "WinEnter" }, {
+	group = group_numbers,
+	callback = function()
+		if vim.wo.number and vim.bo.buftype == "" then
+			vim.wo.relativenumber = true
+		end
+	end,
 })
 
--- Turn relative number off in insert mode or when window loses focus
-autocmd({ "BufLeave", "FocusLost", "InsertEnter", "CmdlineEnter", "WinLeave" }, {
-  callback = function()
-    if vim.o.nu then
-      vim.opt.relativenumber = false
-      vim.cmd("redraw")
-    end
-  end,
-  group = "linenumber",
-  pattern = "*",
+autocmd({ "BufLeave", "FocusLost", "InsertEnter", "WinLeave" }, {
+	group = group_numbers,
+	callback = function()
+		if vim.wo.number then
+			vim.wo.relativenumber = false
+		end
+	end,
 })
 
--- Start git messages in insert mode
 autocmd("FileType", {
-  command = "startinsert | 1",
-  desc = "Start git messages in insert mode",
-  group = "buffer",
-  pattern = { "gitcommit", "gitrebase" },
+	group = group_markdown,
+	pattern = { "markdown", "text", "gitcommit" },
+	callback = function()
+		vim.opt_local.wrap = true
+		vim.opt_local.linebreak = true
+		vim.opt_local.spell = true
+		vim.opt_local.spelllang = { "en_us" }
+		vim.opt_local.conceallevel = 0
+	end,
 })
 
--- make $ part of the keyword for php.
-vim.api.nvim_exec([[ autocmd FileType php set iskeyword+=$ ]], false)
+autocmd("FileType", {
+	group = group_markdown,
+	pattern = { "gitcommit", "gitrebase" },
+	callback = function()
+		vim.cmd("startinsert")
+	end,
+})
+
+autocmd("TermOpen", {
+	group = group_terminal,
+	callback = function()
+		vim.opt_local.number = false
+		vim.opt_local.relativenumber = false
+		vim.opt_local.signcolumn = "no"
+	end,
+})
+
+autocmd("FileType", {
+	group = group_php,
+	pattern = "php",
+	callback = function()
+		vim.opt_local.iskeyword:append("$")
+		vim.opt_local.tabstop = 4
+		vim.opt_local.shiftwidth = 4
+		vim.opt_local.softtabstop = 4
+	end,
+})

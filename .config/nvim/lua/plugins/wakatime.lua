@@ -1,6 +1,11 @@
--- Vim plugin for automatic time tracking and metrics generated from your programming activity.
--- https://github.com/wakatime/vim-wakatime
 return {
-  "wakatime/vim-wakatime",
-  event = "BufReadPost", -- Load after first buffer is read (still tracks accurately)
+	name = "wakatime",
+	src = "https://github.com/wakatime/vim-wakatime",
+	lazy = true,
+
+	install = {
+		notes = {
+			"Run :WakaTimeApiKey to set your API key on first use.",
+		},
+	},
 }

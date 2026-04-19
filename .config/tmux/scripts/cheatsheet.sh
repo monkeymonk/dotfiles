@@ -122,11 +122,11 @@ row "Auto-save"       "every 15 min"    "Reload config" "prefix + r"
 row "Auto-restore"    "on tmux start"   "Kill server"   "prefix + K"
 rrow                                    "Screensaver"   "prefix + Escape"
 blank
-lhdr "TPM"
-lsep
-lrow "Install plugins" "prefix + I"
-lrow "Update plugins"  "prefix + U"
-lrow "Remove unused"   "prefix + Alt-u"
+hdr "Move Window to Split" "TPM"
+sep
+row "Mark source pane"  "prefix + m"  "Install plugins" "prefix + I"
+row "Join from window"  "prefix + J"  "Update plugins"  "prefix + U"
+row "Break pane to win" "prefix + !"  "Remove unused"   "prefix + Alt-u"
 echo ""
 printf "%36s${D}${OVR}Press any key to close${R}\n" ""
 

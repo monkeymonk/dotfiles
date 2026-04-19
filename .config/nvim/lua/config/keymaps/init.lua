@@ -1,0 +1,5 @@
+require("config.keymaps.core")
+require("config.keymaps.buffers")
+require("config.keymaps.windows")
+require("config.keymaps.navigation")
+require("config.keymaps.ui")
