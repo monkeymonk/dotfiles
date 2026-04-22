@@ -1,9 +1,10 @@
-# AI tooling — paths, symlinks, ollama integration.
+# AI tooling — paths, symlinks, backend-agnostic helpers.
 #
 # Responsibilities:
 #   1. PATH additions for tool-specific bin dirs
 #   2. Explicit symlink map for AI CLIs in non-standard locations
-#   3. Ollama env, helpers, and aliases
+#   3. AI env, helpers, and aliases — sourced when any backend
+#      (ollama / llama-server / llama-swap) is present
 
 # --- 1. PATH additions -------------------------------------------------
 
@@ -49,10 +50,10 @@ _ai_ensure_symlinks() {
     # tool_name  source_path (globs ok — last match wins for version sort)
     set -- \
         claude    "$HOME/.local/share/claude/versions/*" \
-        gemini    "$HOME/.nvm/versions/node/*/bin/gemini" \
-        codex     "$HOME/.nvm/versions/node/*/bin/codex" \
+        gemini    "$HOME/.local/share/mise/installs/node/*/bin/gemini" \
+        codex     "$HOME/.local/share/mise/installs/node/*/bin/codex" \
         opencode  "$HOME/.opencode/bin/opencode" \
-        mcp-hub   "$HOME/.nvm/versions/node/*/bin/mcp-hub"
+        mcp-hub   "$HOME/.local/share/mise/installs/node/*/bin/mcp-hub"
 
     while [ $# -ge 2 ]; do
         _name="$1"; _pattern="$2"; shift 2
@@ -68,17 +69,20 @@ _ai_ensure_symlinks() {
     touch "$_stamp"
 }
 
-# --- 3. Ollama integration -----------------------------------------------
+# --- 3. Backend-agnostic helper setup ------------------------------------
 
-_ai_setup_ollama() {
-    require_cmd ollama || return 0
-    export HAS_OLLAMA=1
-    safe_source "${RUNTIME_ROOT}/ai/env.sh"
-    safe_source "${RUNTIME_ROOT}/ai/helpers.sh"
-    command -v alx >/dev/null 2>&1 && {
-        safe_source "${RUNTIME_ROOT}/ai/aliases.sh"
-        runtime_ai_aliases
-    }
+_ai_setup() {
+    # Source env + helpers if any backend is installed. The helpers
+    # auto-dispatch between llama.cpp/llama-swap and ollama at call time.
+    if has_cmd ollama || has_cmd llama-server || has_cmd llama-swap; then
+        safe_source "${RUNTIME_ROOT}/ai/env.sh"
+        safe_source "${RUNTIME_ROOT}/ai/helpers.sh"
+        has_cmd ollama && export HAS_OLLAMA=1
+        if command -v alx >/dev/null 2>&1; then
+            safe_source "${RUNTIME_ROOT}/ai/aliases.sh"
+            runtime_ai_aliases
+        fi
+    fi
 }
 
 # --- Entry point ----------------------------------------------------------
@@ -86,7 +90,7 @@ _ai_setup_ollama() {
 runtime_plugin_ai() {
     _ai_register_paths
     _ai_ensure_symlinks
-    _ai_setup_ollama
+    _ai_setup
 }
 
 hook_register setup runtime_plugin_ai

@@ -44,42 +44,6 @@ ctx_set RUNTIME_HOST "$RUNTIME_HOST" system
 ctx_set RUNTIME_DISTRO "$RUNTIME_DISTRO" system
 ctx_set SHELL_FAMILY "$SHELL_FAMILY" session
 
-# Context classification.
-# Priority order:
-#   1. Explicit env: RUNTIME_MACHINE_TYPE or RUNTIME_CONTEXT
-#   2. Dotfile: $RUNTIME_ROOT/context (contains "work" or "home")
-#   3. Hostname pattern match (word-boundary anchored, least specific)
-RUNTIME_IS_WORK=0
-RUNTIME_IS_HOME=0
-
-case "${RUNTIME_MACHINE_TYPE-}${RUNTIME_CONTEXT-}" in
-    *work*) RUNTIME_IS_WORK=1 ;;
-    *home*) RUNTIME_IS_HOME=1 ;;
-esac
-
-if [ "$RUNTIME_IS_WORK" -eq 0 ] && [ "$RUNTIME_IS_HOME" -eq 0 ]; then
-    _ctx_file="${RUNTIME_ROOT}/context"
-    if [ -f "$_ctx_file" ]; then
-        read -r _ctx_val < "$_ctx_file"
-        case "${_ctx_val-}" in
-            work) RUNTIME_IS_WORK=1 ;;
-            home) RUNTIME_IS_HOME=1 ;;
-        esac
-        unset _ctx_val
-    fi
-    unset _ctx_file
-fi
-
-if [ "$RUNTIME_IS_WORK" -eq 0 ] && [ "$RUNTIME_IS_HOME" -eq 0 ]; then
-    case "$RUNTIME_HOST" in
-        work|work-*|*-work) RUNTIME_IS_WORK=1 ;;
-        home|home-*|*-home) RUNTIME_IS_HOME=1 ;;
-    esac
-fi
-
-ctx_set RUNTIME_IS_WORK "$RUNTIME_IS_WORK" system
-ctx_set RUNTIME_IS_HOME "$RUNTIME_IS_HOME" system
-
 # CI detection.
 RUNTIME_IS_CI=0
 if [ "${CI-}" = "true" ] || [ -n "${GITHUB_ACTIONS-}" ] || [ -n "${GITLAB_CI-}" ] || \

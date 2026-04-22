@@ -1,9 +1,15 @@
 # Git integration.
 
+_runtime_resolve_git_version() {
+    RUNTIME_GIT_VERSION=$(git --version 2>/dev/null | awk '{print $3}')
+    export RUNTIME_GIT_VERSION
+}
+
 runtime_plugin_git() {
     require_cmd git || return 0
 
     export GIT_PAGER="${GIT_PAGER:-less}"
+    ctx_set_lazy RUNTIME_GIT_VERSION _runtime_resolve_git_version plugin
 
     runtime_git_aliases() {
         alias gs='git status' --desc "Git status" --tags "git,status"

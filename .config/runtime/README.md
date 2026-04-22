@@ -9,7 +9,6 @@ runtime/
 ├── bootstrap.sh          # Single entry point
 ├── core/                 # Primitives (no tool-specific logic)
 ├── config/               # Declarative preferences
-│   └── machine/          # Host-specific overrides
 ├── plugins/              # Tool integrations (hook-based)
 ├── ai/                   # Local LLM tooling (Ollama)
 │   ├── data/             # Static tip pool
@@ -29,20 +28,21 @@ runtime/
 5. Runs `bootstrap` hooks
 6. Loads `core/context.sh`
 7. Runs `context` hooks
-8. Loads config modules (`defaults.sh`, `exports.sh`, `paths.sh`, `context.sh`, `aliases.sh`)
+8. Loads config modules (`config.sh`, `paths.sh`, `aliases.sh`)
 9. Runs `setup` hooks
-10. Loads machine overrides
-11. Loads secrets (`secrets/*.env`)
-12. Runs `post_secrets` hooks
-13. Prepends `scripts/` to `PATH`
-14. Exports aliases via `alx`
-15. Sources `cdx` if installed
-16. Runs `interactive` hooks
-17. Deduplicates `PATH`
+10. Loads secrets (`secrets/*.env`)
+11. Runs `post_secrets` hooks
+12. Prepends `scripts/` to `PATH`
+13. Exports aliases via `alx`
+14. Sources `cdx` if installed
+15. Runs `interactive` hooks
+16. Deduplicates `PATH`
 
 Load order is strict:
 
-`core → plugins → [bootstrap] → context → [context] → config → [setup] → machine → secrets → [post_secrets] → scripts → alx/cdx → [interactive]`
+`core → plugins → [bootstrap] → context → [context] → config → [setup] → secrets → [post_secrets] → scripts → alx/cdx → [interactive]`
+
+Per-machine values (`BROWSER`, `TERMINAL`, etc.) should be `export`ed in your shell rc **before** sourcing `bootstrap.sh` — `core/env.sh` uses `${VAR:=default}` so pre-existing exports win.
 
 ## Core (Primitives)
 
@@ -75,8 +75,6 @@ No tool-specific logic belongs here.
 | `RUNTIME_HOST`         | `hostname -s`                                             |
 | `RUNTIME_DISTRO`       | `/etc/os-release` ID field                                |
 | `SHELL_FAMILY`         | `zsh` \| `bash` \| `sh`                                   |
-| `RUNTIME_IS_WORK`      | Machine classification (see below)                        |
-| `RUNTIME_IS_HOME`      | Machine classification (see below)                        |
 | `RUNTIME_IS_CI`        | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `TRAVIS`, `CIRCLECI` |
 | `RUNTIME_IS_CONTAINER` | `/.dockerenv`, `DOCKER_CONTAINER`, `/proc/1/cgroup`       |
 | `RUNTIME_SESSION_TYPE` | `x11` \| `wayland` \| `tty` \| `mir`                      |
@@ -84,22 +82,13 @@ No tool-specific logic belongs here.
 | `RUNTIME_IS_SSH`       | `SSH_CLIENT` or `SSH_TTY` present                         |
 | `RUNTIME_IS_OFFLINE`   | Lazy probe via `runtime_is_offline` (1s ping timeout)     |
 
-Machine classification priority:
-
-1. `RUNTIME_MACHINE_TYPE` or `RUNTIME_CONTEXT` env vars
-2. `$RUNTIME_ROOT/context` dotfile containing `work` or `home`
-3. Hostname pattern fallback (anchored: `work`, `work-*`, `*-work`)
-
 ## Config (Declarative)
 
 `config/` expresses preferences only:
 
-- `defaults.sh`: user defaults (no conditionals)
-- `exports.sh`: pure environment exports (locale, `LESS`, `XDG_*` — no logic)
+- `config.sh`: user defaults, locale/pager exports, XDG dirs, and context-derived values (`CLI_OPEN_CMD`, `CLI_PKG_MGR`)
 - `paths.sh`: base PATH entries (system, user, toolchain)
-- `context.sh`: context-derived exports (`CLI_OPEN_CMD`, `CLI_PKG_MGR`)
 - `aliases.sh`: 60+ shell aliases (git, fs, network, process, power)
-- `machine/*.sh`: machine-specific overrides loaded from context
 
 ## Secrets
 

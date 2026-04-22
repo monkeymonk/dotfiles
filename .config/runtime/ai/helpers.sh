@@ -1,601 +1,614 @@
-# AI/LLM helper functions. Sourced by plugins/ollama.sh after ollama is confirmed present.
-# Uses OLLAMA_MODEL as default, plus specialized vars:
-#   OLLAMA_MODEL_CODE, OLLAMA_MODEL_REASON, OLLAMA_MODEL_FAST,
-#   OLLAMA_MODEL_OCR, OLLAMA_MODEL_VISION, OLLAMA_MODEL_EMBED,
-#   OLLAMA_MODEL_THINK, OLLAMA_MODEL_FLASH
+# AI/LLM helper functions — backend-agnostic (ollama or llama.cpp).
+#
+# Sourced by plugins/ai.sh after ai/env.sh. All callers route through
+# _llm_run <role> "<prompt>" — roles resolve to concrete model IDs via
+# the AI_MODEL_* (llama) or OLLAMA_MODEL_* (ollama) env vars.
+#
+# Add a new helper by writing a one-liner that invokes _llm_run with the
+# appropriate role and prompt. Do NOT call `ollama` or `curl $LLAMA_HOST`
+# directly from helpers — that was the old pattern and it leaks backend
+# details everywhere.
 
-guard_double_load AI_HELPERS_LOADED || return 0
+# Simple re-source guard.
+[ "${_AI_HELPERS_LOADED:-0}" = 1 ] && return 0
+_AI_HELPERS_LOADED=1
 
-# Validate file arg, pipe content to ollama with a prompt
-_llm_file_prompt() {
-    local _usage _prompt _file
-    _usage=$1
-    _prompt=$2
-    _file=$3
-    [ -n "$_file" ] || { echo "Usage: $_usage <file>"; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    cat "$_file" | ollama run "$OLLAMA_MODEL" "$_prompt"
+# ─────────────────────────────────────────────────────────────────────────
+# Backend dispatch
+# ─────────────────────────────────────────────────────────────────────────
+
+# Pick a backend. Respects $AI_BACKEND if explicitly set to llama|ollama;
+# otherwise prefers llama-swap (if the endpoint answers) then ollama.
+_llm_backend() {
+    case "$AI_BACKEND" in
+        llama|ollama) printf '%s\n' "$AI_BACKEND"; return ;;
+    esac
+    if command -v llama-swap >/dev/null 2>&1 \
+            && curl -sf -m 1 "http://${LLAMA_HOST:-127.0.0.1:8080}/v1/models" >/dev/null 2>&1; then
+        printf 'llama\n'
+    elif command -v ollama >/dev/null 2>&1; then
+        printf 'ollama\n'
+    else
+        printf 'none\n'
+    fi
 }
 
+# Ensure a backend is reachable; auto-start llama-swap if missing.
+# Returns 0 when a backend is ready, non-zero otherwise.
+_llm_ensure_backend() {
+    [ "$(_llm_backend)" != "none" ] && return 0
+    [ "$AI_BACKEND" = "ollama" ] && return 1
+    [ "$AI_AUTOSTART" = "0" ] && return 1
+    command -v llama-swap >/dev/null 2>&1 || return 1
+    if [ ! -f "$LLAMA_SWAP_CONFIG" ]; then
+        printf 'llm: LLAMA_SWAP_CONFIG not found: %s\n' "$LLAMA_SWAP_CONFIG" >&2
+        return 1
+    fi
+
+    local _log="${XDG_STATE_HOME:-$HOME/.local/state}/llama-swap.log"
+    mkdir -p "$(dirname "$_log")"
+    printf 'llm: starting llama-swap on %s (logs: %s)\n' "$LLAMA_HOST" "$_log" >&2
+    nohup llama-swap -config "$LLAMA_SWAP_CONFIG" -listen "$LLAMA_HOST" -watch-config \
+        >"$_log" 2>&1 &
+    disown 2>/dev/null || true
+
+    # Poll /v1/models until ready or timeout (~10 s; the proxy starts fast).
+    local _i=0
+    while [ "$_i" -lt 20 ]; do
+        curl -sf -m 1 "http://${LLAMA_HOST}/v1/models" >/dev/null 2>&1 && return 0
+        sleep 0.5
+        _i=$((_i + 1))
+    done
+    printf 'llm: llama-swap failed to come up within 10s — check %s\n' "$_log" >&2
+    return 1
+}
+
+# Run curl + jq, printing a readable error if the server returns non-JSON.
+# Args: <url> <payload> [jq-filter]
+_llm_call_json() {
+    local _url="$1" _payload="$2" _filter="${3:-.}"
+    local _response _status
+    _response=$(curl -sS "$_url" -H 'Content-Type: application/json' -d "$_payload" 2>&1)
+    _status=$?
+    if [ "$_status" -ne 0 ]; then
+        printf 'llm: curl failed (%d):\n%s\n' "$_status" "$_response" >&2
+        return "$_status"
+    fi
+    if ! printf '%s' "$_response" | jq -e . >/dev/null 2>&1; then
+        printf 'llm: server returned non-JSON:\n%s\n' "$_response" >&2
+        return 1
+    fi
+    printf '%s' "$_response" | jq -r "$_filter"
+}
+
+# role → concrete model id. Backend-agnostic: each role maps to a single
+# AI_MODEL_* env var, applied identically to llama-swap and ollama.
+_llm_model() {
+    local _role="${1:-default}"
+    case "$_role" in
+        default) printf '%s\n' "${AI_MODEL_DEFAULT:-default}" ;;
+        code)    printf '%s\n' "${AI_MODEL_CODE:-code}" ;;
+        reason)  printf '%s\n' "${AI_MODEL_REASON:-reason}" ;;
+        fast)    printf '%s\n' "${AI_MODEL_FAST:-fast}" ;;
+        embed)   printf '%s\n' "${AI_MODEL_EMBED:-embed}" ;;
+        vision)  printf '%s\n' "${AI_MODEL_VISION:-vision}" ;;
+        ocr)     printf '%s\n' "${AI_MODEL_OCR:-ocr}" ;;
+        *)       printf '%s\n' "$_role" ;;  # pass-through (treat as literal model id)
+    esac
+}
+
+# _llm_run <role> "<prompt>"
+# Reads optional stdin as context, appended after two newlines.
+# Prints the assistant's response to stdout.
+_llm_run() {
+    local _role="${1:-default}"; shift
+    local _prompt="$*"
+    local _stdin="" _backend _model _content _payload
+
+    if [ ! -t 0 ]; then _stdin=$(cat); fi
+
+    _llm_ensure_backend || return 1
+
+    _backend=$(_llm_backend)
+    _model=$(_llm_model "$_role")
+
+    case "$_backend" in
+        llama)
+            if [ -n "$_stdin" ]; then
+                _content="${_prompt}"$'\n\n'"${_stdin}"
+            else
+                _content="$_prompt"
+            fi
+            _payload=$(jq -n --arg m "$_model" --arg c "$_content" \
+                '{model:$m, messages:[{role:"user",content:$c}], stream:false}')
+            _llm_call_json "http://${LLAMA_HOST}/v1/chat/completions" \
+                "$_payload" '.choices[0].message.content // empty'
+            ;;
+        ollama)
+            if [ -n "$_stdin" ]; then
+                printf '%s' "$_stdin" | ollama run "$_model" "$_prompt"
+            else
+                ollama run "$_model" "$_prompt"
+            fi
+            ;;
+        none)
+            printf 'llm: no AI backend available — start llama-swap (llama-swap-up) or install ollama\n' >&2
+            return 1
+            ;;
+    esac
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# File-arg helpers
+# ─────────────────────────────────────────────────────────────────────────
+
+# _llm_file <role> <file> "<prompt>"  — validate file, pipe into _llm_run.
+_llm_file() {
+    local _role="$1" _file="$2" _prompt="$3"
+    [ -n "$_file" ] || { echo "Usage: <cmd> <file>"; return 1; }
+    [ -f "$_file" ] || { echo "Error: file not found: $_file"; return 1; }
+    cat "$_file" | _llm_run "$_role" "$_prompt"
+}
+
+# _llm_nvim_md <title> <body-command>  — run <body-command>, capture its
+# output under a markdown heading, open result in nvim.
+_llm_nvim_md() {
+    local _title="$1"; shift
+    local _tmp; _tmp=$(mktemp --suffix=.md)
+    { printf '# %s\n\n' "$_title"; "$@"; } > "$_tmp"
+    nvim "$_tmp" -c "set filetype=markdown"
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Code understanding
+# ─────────────────────────────────────────────────────────────────────────
+
 _llm_explain() {
-    _llm_file_prompt "llm-explain" \
-        "Explain this code concisely, focusing on what it does and why:" "$1"
+    _llm_file default "$1" \
+        "Explain this code concisely — what it does and why:"
 }
 
 _llm_summary() {
-    if [ -z "$1" ]; then
-        echo "Usage: llm-summary <file_or_directory>"
-        return 1
-    fi
+    [ -n "$1" ] || { echo "Usage: llm-summary <file|dir>"; return 1; }
     if [ -f "$1" ]; then
-        cat "$1" | ollama run "$OLLAMA_MODEL" "Summarize this file's purpose, key components, and dependencies. Be concise."
+        _llm_file default "$1" \
+            "Summarize this file's purpose, key components, and dependencies. Be concise."
     elif [ -d "$1" ]; then
-        tree -L 2 "$1" 2>/dev/null || find "$1" -maxdepth 2 -type f | ollama run "$OLLAMA_MODEL" "Based on this file structure, describe what this directory contains and its purpose. Be concise."
+        { tree -L 2 "$1" 2>/dev/null || find "$1" -maxdepth 2 -type f; } \
+            | _llm_run default \
+                "Based on this structure, describe what this directory contains and its purpose. Be concise."
     else
-        echo "Error: Not a valid file or directory: $1"
-        return 1
+        echo "Error: not a file or directory: $1"; return 1
     fi
-}
-
-_llm_review() {
-    local diff_cmd
-    diff_cmd="git diff --staged"
-    if [ -n "$1" ]; then
-        diff_cmd="git diff $1"
-    fi
-    $diff_cmd | ollama run "$OLLAMA_MODEL_REASON" "Review this git diff. Focus on: bugs, security issues, best practices, and improvements. Be concise."
-}
-
-_llm_commit() {
-    local msg _reply
-    if ! git diff --cached --quiet; then
-        msg=$(git diff --cached | ollama run "$OLLAMA_MODEL_FAST" "Generate a concise git commit message (50 chars max) for these changes. Format: '<type>: <description>'. Types: feat, fix, docs, style, refactor, test, chore. Output ONLY the commit message, nothing else.")
-        echo "Suggested commit message:"
-        echo "$msg"
-        echo
-        printf '%s' "Use this message? (y/n) "
-        read -r _reply
-        if echo "$_reply" | grep -q '^[Yy]'; then
-            git commit -m "$msg"
-        fi
-    else
-        echo "No staged changes to commit"
-        return 1
-    fi
-}
-
-_llm_cmd() {
-    if [ -z "$1" ]; then
-        echo "Usage: llm-cmd \"<question about shell commands>\""
-        return 1
-    fi
-    ollama run "$OLLAMA_MODEL" "You are a shell command expert. Answer concisely with the command and a brief explanation. Question: $*"
-}
-
-_llm_explain_cmd() {
-    local cmd
-    cmd="${*:-$(cat)}"
-    if [ -z "$cmd" ]; then
-        echo "Usage: llm-explain-cmd <command>  OR  echo <command> | llm-explain-cmd"
-        return 1
-    fi
-    echo "$cmd" | ollama run "$OLLAMA_MODEL" "Explain this shell command concisely, breaking down each part:"
-}
-
-_llm_refactor() {
-    local _file="$1"
-    [ -n "$_file" ] || { echo "Usage: llm-refactor <file>"; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    cat "$_file" | ollama run "$OLLAMA_MODEL_CODE" \
-        "Suggest refactoring improvements for this code. Focus on: readability, performance, maintainability, and best practices. Be specific and concise."
-}
-
-_llm_optimize() {
-    local _file="$1"
-    [ -n "$_file" ] || { echo "Usage: llm-optimize <file>"; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    cat "$_file" | ollama run "$OLLAMA_MODEL_CODE" \
-        "Suggest performance optimizations for this code. Focus on algorithmic improvements, memory usage, and execution speed. Provide specific code suggestions."
-}
-
-_llm_test() {
-    local _file="$1"
-    [ -n "$_file" ] || { echo "Usage: llm-test <file>"; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    cat "$_file" | ollama run "$OLLAMA_MODEL_CODE" \
-        "Generate test cases for this code. Include: edge cases, error conditions, and happy paths. Use the appropriate testing framework for the language."
-}
-
-_llm_doc() {
-    _llm_file_prompt "llm-doc" \
-        "Generate concise documentation for this code. Include: purpose, usage, parameters, return values, and examples. Use markdown format." "$1"
-}
-
-_llm_debug() {
-    if [ -z "$1" ]; then
-        echo "Usage: llm-debug \"<error message or description>\""
-        return 1
-    fi
-    ollama run "$OLLAMA_MODEL_REASON" "I'm getting this error: $*
-
-Help me debug it. Provide: 1) likely causes, 2) how to investigate, 3) potential solutions. Be concise."
-}
-
-_llm_code() {
-    local model
-    model="${1:-$OLLAMA_MODEL_CODE}"
-    echo "Starting coding session with $model..."
-    echo "Tips: Paste code directly, ask specific questions, type /bye to exit"
-    ollama run "$model" "You are a coding assistant. Provide concise, practical code solutions. Include explanations only when necessary. Prefer code examples over lengthy descriptions."
-}
-
-_llm_explain_edit() {
-    local tmpfile
-    if [ -z "$1" ]; then
-        echo "Usage: llm-explain-edit <file>"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-    tmpfile=$(mktemp --suffix=.md)
-    {
-        echo "# Code Explanation: $1"
-        echo ""
-        cat "$1" | ollama run "$OLLAMA_MODEL" "Explain this code in detail. Include: purpose, logic flow, dependencies, and potential improvements."
-        echo ""
-        echo "---"
-        echo "## Original Code"
-        echo '```'
-        cat "$1"
-        echo '```'
-    } > "$tmpfile"
-    nvim "$tmpfile" -c "set filetype=markdown"
-}
-
-_llm_review_edit() {
-    local diff_cmd title tmpfile
-    diff_cmd="git diff --staged"
-    title="Staged Changes"
-    if [ -n "$1" ]; then
-        diff_cmd="git diff $1"
-        title="Changes vs $1"
-    fi
-    tmpfile=$(mktemp --suffix=.md)
-    {
-        echo "# Code Review: $title"
-        echo ""
-        $diff_cmd | ollama run "$OLLAMA_MODEL_REASON" "Review this git diff. Provide: 1) Summary of changes, 2) Potential issues (bugs, security, performance), 3) Suggestions for improvement. Be detailed and specific."
-        echo ""
-        echo "---"
-        echo "## Diff"
-        echo '```diff'
-        $diff_cmd
-        echo '```'
-    } > "$tmpfile"
-    nvim "$tmpfile" -c "set filetype=markdown"
-}
-
-_llm_refactor_edit() {
-    local tmpfile
-    if [ -z "$1" ]; then
-        echo "Usage: llm-refactor-edit <file>"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-    tmpfile=$(mktemp --suffix=.md)
-    cat "$1" | ollama run "$OLLAMA_MODEL_CODE" "Provide detailed refactoring suggestions for this code. Include: 1) Current issues/smells, 2) Proposed refactorings with code examples, 3) Benefits of each change." > "$tmpfile"
-    nvim -O "$1" "$tmpfile"
-}
-
-_llm_test_edit() {
-    local dir filename name ext test_file
-    if [ -z "$1" ]; then
-        echo "Usage: llm-test-edit <file>"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-
-    dir=$(dirname "$1")
-    filename=$(basename "$1")
-    name="${filename%.*}"
-    ext="${filename##*.}"
-    test_file=""
-
-    case "$ext" in
-        js|ts|jsx|tsx) test_file="$dir/$name.test.$ext" ;;
-        py) test_file="$dir/test_$name.$ext" ;;
-        go) test_file="$dir/${name}_test.$ext" ;;
-        *) test_file="$dir/$name.test.$ext" ;;
-    esac
-
-    echo "Generating tests for $1..."
-    cat "$1" | ollama run "$OLLAMA_MODEL_CODE" "Generate comprehensive tests for this code. Use the appropriate testing framework for the language. Include: setup, test cases for happy paths, edge cases, error conditions, and cleanup." > "$test_file"
-
-    echo "Tests generated: $test_file"
-    nvim -O "$1" "$test_file"
-}
-
-_llm_doc_edit() {
-    local doc_file
-    if [ -z "$1" ]; then
-        echo "Usage: llm-doc-edit <file>"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-    doc_file="$(dirname "$1")/$(basename "$1" | sed 's/\.[^.]*$//').md"
-
-    echo "Generating documentation for $1..."
-    cat "$1" | ollama run "$OLLAMA_MODEL" "Generate comprehensive documentation for this code. Use markdown format. Include: overview, API reference, usage examples, configuration options, and notes about edge cases or gotchas." > "$doc_file"
-
-    echo "Documentation generated: $doc_file"
-    nvim -O "$1" "$doc_file"
-}
-
-_llm_fix() {
-    local error_context tmpfile
-    if [ -z "$1" ]; then
-        echo "Usage: llm-fix <file> [error_message]"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-
-    error_context="${2:-last error in this file}"
-    tmpfile=$(mktemp --suffix=.md)
-
-    {
-        echo "# Quick Fix Analysis: $1"
-        echo ""
-        echo "## Error Context"
-        echo "$error_context"
-        echo ""
-        echo "## Analysis & Solution"
-        cat "$1" | ollama run "$OLLAMA_MODEL_REASON" "This code has an error: $error_context
-
-Provide: 1) Root cause analysis, 2) Exact fix (show code changes), 3) Why this fixes it. Be concise and actionable."
-    } > "$tmpfile"
-
-    nvim -O "$1" "$tmpfile"
-}
-
-_llm_optimize_edit() {
-    local ext tmpfile
-    if [ -z "$1" ]; then
-        echo "Usage: llm-optimize-edit <file>"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-
-    ext="${1##*.}"
-    tmpfile=$(mktemp --suffix=".$ext")
-
-    echo "Generating optimized version of $1..."
-    cat "$1" | ollama run "$OLLAMA_MODEL_CODE" "Optimize this code for performance. Output ONLY the optimized code, no explanations. Preserve all functionality while improving: algorithmic complexity, memory usage, and execution speed." > "$tmpfile"
-
-    echo "Optimized version: $tmpfile"
-    nvim -d "$1" "$tmpfile"
-}
-
-_llm_convert() {
-    local instruction input
-    if [ -z "$1" ]; then
-        echo "Usage: <input> | llm-convert \"<conversion instruction>\""
-        echo "Example: cat script.sh | llm-convert \"convert to Python\""
-        return 1
-    fi
-
-    instruction="$*"
-    input=$(cat)
-
-    if [ -z "$input" ]; then
-        echo "Error: No input provided"
-        return 1
-    fi
-
-    echo "$input" | ollama run "$OLLAMA_MODEL_CODE" "Task: $instruction
-
-Input code:
-$input
-
-Output ONLY the converted code, no explanations or markdown formatting."
-}
-
-_llm_implement() {
-    local feature context tmpfile
-    if [ -z "$1" ]; then
-        echo "Usage: llm-implement \"<feature description>\""
-        return 1
-    fi
-
-    feature="$*"
-    context=""
-
-    if [ -f "package.json" ]; then
-        context="Project uses: $(grep -o '\"[^\"]*\"' package.json | head -5 | tr '\n' ' ')"
-    elif [ -f "requirements.txt" ]; then
-        context="Python project with: $(head -5 requirements.txt | tr '\n' ' ')"
-    elif [ -f "go.mod" ]; then
-        context="Go project: $(head -1 go.mod)"
-    fi
-
-    tmpfile=$(mktemp --suffix=.md)
-    {
-        echo "# Feature Implementation: $feature"
-        echo ""
-        echo "Context: $context"
-        echo ""
-        ollama run "$OLLAMA_MODEL_REASON" "Feature request: $feature
-
-Project context: $context
-
-Provide:
-1. Implementation plan (step-by-step)
-2. Required files and their purposes
-3. Code examples for each file
-4. Configuration changes needed
-5. Testing approach
-
-Be thorough but concise."
-    } > "$tmpfile"
-
-    nvim "$tmpfile" -c "set filetype=markdown"
-}
-
-_llm_security() {
-    local tmpfile
-    if [ -z "$1" ]; then
-        echo "Usage: llm-security <file>"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: File not found: $1"
-        return 1
-    fi
-
-    tmpfile=$(mktemp --suffix=.md)
-    {
-        echo "# Security Analysis: $1"
-        echo ""
-        cat "$1" | ollama run "$OLLAMA_MODEL_REASON" "Perform a security audit of this code. Check for:
-- SQL injection vulnerabilities
-- XSS vulnerabilities
-- Command injection
-- Path traversal
-- Authentication/authorization issues
-- Cryptographic weaknesses
-- Input validation problems
-- Sensitive data exposure
-
-For each issue found, provide: severity, location, explanation, and fix."
-        echo ""
-        echo "---"
-        echo "## Original Code"
-        echo '```'
-        cat "$1"
-        echo '```'
-    } > "$tmpfile"
-
-    nvim "$tmpfile" -c "set filetype=markdown"
-}
-
-_llm_api_client() {
-    local spec_file language output_file
-    if [ -z "$1" ] || [ -z "$2" ]; then
-        echo "Usage: llm-api-client <spec_file> <target_language>"
-        echo "Example: llm-api-client api.yaml typescript"
-        return 1
-    fi
-    if [ ! -f "$1" ]; then
-        echo "Error: Spec file not found: $1"
-        return 1
-    fi
-
-    spec_file="$1"
-    language="$2"
-    output_file="api-client.${language}"
-
-    echo "Generating $language API client from $spec_file..."
-    cat "$spec_file" | ollama run "$OLLAMA_MODEL_CODE" "Generate a complete API client in $language for this OpenAPI/Swagger specification. Include:
-- Type definitions
-- Error handling
-- Request/response interceptors
-- Authentication support
-- All endpoint methods
-
-Output clean, production-ready code." > "$output_file"
-
-    echo "API client generated: $output_file"
-    nvim "$output_file"
 }
 
 _llm_arch() {
-    local target_dir tmpfile
-    target_dir="${1:-.}"
-
-    if [ ! -d "$target_dir" ]; then
-        echo "Error: Directory not found: $target_dir"
-        return 1
-    fi
-
-    tmpfile=$(mktemp --suffix=.md)
-
-    {
-        echo "# Architecture Analysis: $target_dir"
-        echo ""
-        echo "## Project Structure"
-        echo '```'
-        tree -L 3 -I 'node_modules|venv|__pycache__|.git|dist|build' "$target_dir" 2>/dev/null || find "$target_dir" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | head -50
-        echo '```'
-        echo ""
-    } > "$tmpfile"
-
-    (tree -L 3 -I 'node_modules|venv|__pycache__|.git|dist|build' "$target_dir" 2>/dev/null || find "$target_dir" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | head -50) | ollama run "$OLLAMA_MODEL" "Based on this project structure, provide:
-1. Architecture pattern used (MVC, microservices, layered, etc.)
+    local _dir="${1:-.}"
+    [ -d "$_dir" ] || { echo "Error: directory not found: $_dir"; return 1; }
+    { tree -L 3 -I 'node_modules|venv|__pycache__|.git|dist|build' "$_dir" 2>/dev/null \
+        || find "$_dir" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' | head -50; } \
+        | _llm_run default "Based on this project structure, provide:
+1. Architecture pattern (MVC, layered, microservices, etc.)
 2. Technology stack
 3. Key components and their roles
 4. Data flow
 5. Potential improvements or concerns
-
-Be concise and insightful." >> "$tmpfile"
-
-    nvim "$tmpfile" -c "set filetype=markdown"
+Be concise and insightful."
 }
 
-## ---------------------------------------------------------------------------
-## Vision, OCR, Embedding, and specialized model helpers
-## ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────
+# Git integration
+# ─────────────────────────────────────────────────────────────────────────
 
-_llm_ocr() {
-    local _file
-    _file="$1"
-    [ -n "$_file" ] || { echo "Usage: llm-ocr <image_file>"; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    local _b64
-    _b64=$(base64 -w0 "$_file")
-    printf '%s' "$_b64" | ollama run "$OLLAMA_MODEL_OCR" "Extract all text from this image. Return only the extracted text, preserving layout where possible."
+_llm_review() {
+    local _diff="git diff --staged"
+    [ -n "$1" ] && _diff="git diff $1"
+    $_diff | _llm_run reason \
+        "Review this git diff. Focus on: bugs, security issues, best practices, improvements. Be concise."
 }
 
-_llm_vision() {
-    local _file _prompt
-    _file="$1"
-    _prompt="${2:-Describe this image in detail. Include objects, text, layout, and any relevant observations.}"
-    [ -n "$_file" ] || { echo "Usage: llm-vision <image_file> [prompt]"; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    local _b64
-    _b64=$(base64 -w0 "$_file")
-    printf '%s' "$_b64" | ollama run "$OLLAMA_MODEL_VISION" "$_prompt"
+_llm_commit() {
+    if git diff --cached --quiet; then
+        echo "No staged changes to commit"; return 1
+    fi
+    local _msg _reply
+    _msg=$(git diff --cached | _llm_run fast \
+        "Generate a concise git commit message (50 chars max). Format: '<type>: <description>'. Types: feat, fix, docs, style, refactor, test, chore. Output ONLY the commit message, nothing else.")
+    echo "Suggested commit message:"
+    echo "$_msg"
+    echo
+    printf 'Use this message? (y/n) '
+    read -r _reply
+    case "$_reply" in [Yy]*) git commit -m "$_msg" ;; esac
 }
+
+# ─────────────────────────────────────────────────────────────────────────
+# Shell assistance
+# ─────────────────────────────────────────────────────────────────────────
+
+_llm_cmd() {
+    [ -n "$1" ] || { echo "Usage: llm-cmd \"<question>\""; return 1; }
+    _llm_run default \
+        "You are a shell command expert. Answer concisely with the command and a brief explanation. Question: $*"
+}
+
+_llm_explain_cmd() {
+    local _cmd
+    _cmd="${*:-$(cat)}"
+    [ -n "$_cmd" ] || { echo "Usage: llm-explain-cmd <command>  OR  echo <cmd> | llm-explain-cmd"; return 1; }
+    printf '%s\n' "$_cmd" | _llm_run default \
+        "Explain this shell command concisely, breaking down each part:"
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Code quality — refactor / optimize / security / tests / docs
+# ─────────────────────────────────────────────────────────────────────────
+
+_llm_refactor() {
+    _llm_file code "$1" \
+        "Suggest refactoring improvements — readability, performance, maintainability, best practices. Be specific and concise."
+}
+
+_llm_optimize() {
+    _llm_file code "$1" \
+        "Suggest performance optimizations — algorithmic, memory, execution speed. Provide specific code suggestions."
+}
+
+_llm_test() {
+    _llm_file code "$1" \
+        "Generate test cases covering happy paths, edge cases, error conditions. Use the appropriate testing framework for the language."
+}
+
+_llm_doc() {
+    _llm_file default "$1" \
+        "Generate concise documentation — purpose, usage, parameters, return values, examples. Use markdown."
+}
+
+_llm_security() {
+    local _file="$1"
+    [ -n "$_file" ] || { echo "Usage: llm-security <file>"; return 1; }
+    [ -f "$_file" ] || { echo "Error: file not found: $_file"; return 1; }
+    _llm_nvim_md "Security Analysis: $_file" sh -c "
+        cat '$_file' | _llm_run reason 'Perform a security audit. Check for:
+- SQL/command/path injection
+- XSS
+- Auth/authz issues
+- Cryptographic weaknesses
+- Input validation
+- Sensitive data exposure
+For each issue: severity, location, explanation, fix.'
+        echo; echo '---'; echo '## Original Code'; echo '\`\`\`'; cat '$_file'; echo '\`\`\`'
+    "
+}
+
+_llm_debug() {
+    [ -n "$1" ] || { echo "Usage: llm-debug \"<error>\""; return 1; }
+    _llm_run reason "I'm getting this error: $*
+
+Help me debug. Provide: 1) likely causes, 2) how to investigate, 3) potential solutions. Be concise."
+}
+
+_llm_fix() {
+    local _file="$1" _ctx="${2:-last error in this file}"
+    [ -n "$_file" ] || { echo "Usage: llm-fix <file> [error]"; return 1; }
+    [ -f "$_file" ] || { echo "Error: file not found: $_file"; return 1; }
+    _llm_nvim_md "Quick Fix: $_file" sh -c "
+        printf '## Error Context\n%s\n\n## Analysis & Solution\n' '$_ctx'
+        cat '$_file' | _llm_run reason 'This code has an error: $_ctx
+
+Provide: 1) Root cause, 2) Exact fix (show code changes), 3) Why this fixes it. Be concise and actionable.'
+    "
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Development flow — convert / implement / api-client
+# ─────────────────────────────────────────────────────────────────────────
+
+_llm_convert() {
+    [ -n "$1" ] || { echo "Usage: <input> | llm-convert \"<instruction>\""; return 1; }
+    local _instr="$*" _input
+    _input=$(cat)
+    [ -n "$_input" ] || { echo "Error: no input"; return 1; }
+    printf '%s' "$_input" | _llm_run code "Task: $_instr
+
+Output ONLY the converted code, no explanations or markdown."
+}
+
+_llm_implement() {
+    [ -n "$1" ] || { echo "Usage: llm-implement \"<feature>\""; return 1; }
+    local _feature="$*" _context=""
+    if   [ -f package.json     ]; then _context="Project uses: $(grep -o '"[^"]*"' package.json | head -5 | tr '\n' ' ')"
+    elif [ -f requirements.txt ]; then _context="Python project with: $(head -5 requirements.txt | tr '\n' ' ')"
+    elif [ -f go.mod           ]; then _context="Go project: $(head -1 go.mod)"
+    fi
+    _llm_nvim_md "Feature: $_feature" sh -c "
+        printf 'Context: %s\n\n' '$_context'
+        _llm_run reason 'Feature request: $_feature
+
+Project context: $_context
+
+Provide: 1) Step-by-step plan, 2) Required files and purpose, 3) Code examples, 4) Config changes, 5) Testing approach. Thorough but concise.'
+    "
+}
+
+_llm_api_client() {
+    [ -n "$1" ] && [ -n "$2" ] || { echo "Usage: llm-api-client <spec> <language>"; return 1; }
+    [ -f "$1" ] || { echo "Error: spec not found: $1"; return 1; }
+    local _out="api-client.$2"
+    echo "Generating $2 API client from $1..."
+    _llm_file code "$1" "Generate a complete $2 API client for this OpenAPI spec. Include: type definitions, error handling, request/response interceptors, authentication, all endpoint methods. Clean, production-ready code." > "$_out"
+    echo "Written: $_out"
+    nvim "$_out"
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Interactive
+# ─────────────────────────────────────────────────────────────────────────
+
+_llm_code() {
+    local _model="${1:-$AI_MODEL_CODE}"
+    if command -v ollama >/dev/null 2>&1 && [ "$(_llm_backend)" = "ollama" ]; then
+        echo "Starting ollama coding session with $_model (type /bye to exit)..."
+        ollama run "$_model" "You are a coding assistant. Provide concise, practical code solutions. Prefer code over prose."
+    else
+        echo "Interactive mode only supported on the ollama backend."
+        echo "For llama.cpp, use llm-cmd / llm-explain / llm-refactor one-shot commands,"
+        echo "or point opencode at http://${LLAMA_HOST}/v1 for a proper REPL."
+        return 1
+    fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Edit-in-nvim variants (same content, open result in Neovim)
+# ─────────────────────────────────────────────────────────────────────────
+
+_llm_explain_edit() {
+    local _f="$1"
+    [ -f "$_f" ] || { echo "Usage: llm-explain-edit <file>"; return 1; }
+    _llm_nvim_md "Code Explanation: $_f" sh -c "
+        cat '$_f' | _llm_run default 'Explain this code in detail — purpose, logic, dependencies, potential improvements.'
+        echo; echo '---'; echo '## Original Code'; echo '\`\`\`'; cat '$_f'; echo '\`\`\`'
+    "
+}
+
+_llm_review_edit() {
+    local _diff="git diff --staged" _title="Staged Changes"
+    [ -n "$1" ] && { _diff="git diff $1"; _title="Changes vs $1"; }
+    _llm_nvim_md "Code Review: $_title" sh -c "
+        $_diff | _llm_run reason 'Review this git diff. Provide: 1) Summary, 2) Issues (bugs, security, performance), 3) Suggestions. Detailed and specific.'
+        echo; echo '---'; echo '## Diff'; echo '\`\`\`diff'; $_diff; echo '\`\`\`'
+    "
+}
+
+_llm_refactor_edit() {
+    local _f="$1"
+    [ -f "$_f" ] || { echo "Usage: llm-refactor-edit <file>"; return 1; }
+    local _tmp; _tmp=$(mktemp --suffix=.md)
+    cat "$_f" | _llm_run code \
+        "Refactoring suggestions. 1) Current issues/smells, 2) Proposed refactorings with code, 3) Benefits." > "$_tmp"
+    nvim -O "$_f" "$_tmp"
+}
+
+_llm_test_edit() {
+    local _f="$1"
+    [ -f "$_f" ] || { echo "Usage: llm-test-edit <file>"; return 1; }
+    local _dir _name _ext _test
+    _dir=$(dirname "$_f"); _name=$(basename "$_f" | sed 's/\.[^.]*$//'); _ext="${_f##*.}"
+    case "$_ext" in
+        js|ts|jsx|tsx) _test="$_dir/$_name.test.$_ext" ;;
+        py)            _test="$_dir/test_$_name.$_ext" ;;
+        go)            _test="$_dir/${_name}_test.$_ext" ;;
+        *)             _test="$_dir/$_name.test.$_ext" ;;
+    esac
+    echo "Generating tests for $_f..."
+    cat "$_f" | _llm_run code \
+        "Generate comprehensive tests: setup, happy paths, edge cases, error conditions, cleanup. Use the language's standard test framework." > "$_test"
+    echo "Written: $_test"
+    nvim -O "$_f" "$_test"
+}
+
+_llm_doc_edit() {
+    local _f="$1"
+    [ -f "$_f" ] || { echo "Usage: llm-doc-edit <file>"; return 1; }
+    local _doc="$(dirname "$_f")/$(basename "$_f" | sed 's/\.[^.]*$//').md"
+    echo "Generating docs for $_f..."
+    cat "$_f" | _llm_run default \
+        "Generate comprehensive markdown docs: overview, API reference, usage examples, configuration, edge cases." > "$_doc"
+    echo "Written: $_doc"
+    nvim -O "$_f" "$_doc"
+}
+
+_llm_optimize_edit() {
+    local _f="$1"
+    [ -f "$_f" ] || { echo "Usage: llm-optimize-edit <file>"; return 1; }
+    local _tmp; _tmp=$(mktemp --suffix=".${_f##*.}")
+    echo "Generating optimized version of $_f..."
+    cat "$_f" | _llm_run code \
+        "Optimize this code for performance. Output ONLY the optimized code. Preserve functionality; improve complexity, memory, speed." > "$_tmp"
+    nvim -d "$_f" "$_tmp"
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Embeddings
+# ─────────────────────────────────────────────────────────────────────────
 
 _llm_embed() {
     local _input
-    if [ -n "$1" ] && [ -f "$1" ]; then
-        _input=$(cat "$1")
-    elif [ -n "$1" ]; then
-        _input="$*"
-    else
-        _input=$(cat)
-    fi
+    if   [ -n "$1" ] && [ -f "$1" ]; then _input=$(cat "$1")
+    elif [ -n "$1" ];                then _input="$*"
+    else                                  _input=$(cat); fi
     [ -n "$_input" ] || { echo "Usage: llm-embed <text|file>  OR  echo text | llm-embed"; return 1; }
-    curl -sf "http://${OLLAMA_HOST}/api/embed" \
-        -d "$(printf '{"model":"%s","input":"%s"}' "$OLLAMA_MODEL_EMBED" "$(echo "$_input" | sed 's/"/\\"/g; s/$/\\n/' | tr -d '\n')")"
+
+    _llm_ensure_backend || return 1
+
+    local _backend _model _payload
+    _backend=$(_llm_backend)
+    _model=$(_llm_model embed)
+    _payload=$(jq -n --arg m "$_model" --arg i "$_input" '{model:$m, input:$i}')
+    case "$_backend" in
+        llama)  _llm_call_json "http://${LLAMA_HOST}/v1/embeddings" "$_payload" '.' ;;
+        ollama) _llm_call_json "http://${OLLAMA_HOST}/api/embed"    "$_payload" '.' ;;
+        *) echo "llm: no AI backend available" >&2; return 1 ;;
+    esac
 }
 
+# ─────────────────────────────────────────────────────────────────────────
+# Vision / OCR — works on whichever backend is active, provided the chosen
+# model (AI_MODEL_VISION / AI_MODEL_OCR) supports image input. On llama.cpp
+# this means the llama-swap alias points at a multimodal GGUF + mmproj;
+# on ollama it means a vision-capable tag (llama3.2-vision, glm-ocr, …).
+# ─────────────────────────────────────────────────────────────────────────
+
+# Guess an image mime type from the file extension.
+_llm_image_mime() {
+    case "$1" in
+        *.png|*.PNG)               printf 'image/png\n' ;;
+        *.jpg|*.jpeg|*.JPG|*.JPEG) printf 'image/jpeg\n' ;;
+        *.gif|*.GIF)               printf 'image/gif\n' ;;
+        *.webp|*.WEBP)             printf 'image/webp\n' ;;
+        *.bmp|*.BMP)               printf 'image/bmp\n' ;;
+        *)                         printf 'application/octet-stream\n' ;;
+    esac
+}
+
+# _llm_image <role> <image> "<prompt>"
+# Send an image + prompt through the active backend. Prints response.
+_llm_image() {
+    local _role="$1" _image="$2" _prompt="$3"
+    [ -f "$_image" ] || { echo "Error: image not found: $_image"; return 1; }
+
+    _llm_ensure_backend || return 1
+
+    local _backend _model
+    _backend=$(_llm_backend)
+    _model=$(_llm_model "$_role")
+
+    case "$_backend" in
+        ollama)
+            # ollama accepts raw base64 as extra arg to `ollama run`.
+            base64 -w0 "$_image" | ollama run "$_model" "$_prompt"
+            ;;
+        llama)
+            # OpenAI-compat vision: content is an array of text + image_url parts.
+            local _mime _b64 _url _payload
+            _mime=$(_llm_image_mime "$_image")
+            _b64=$(base64 -w0 "$_image")
+            _url="data:${_mime};base64,${_b64}"
+            _payload=$(jq -n --arg m "$_model" --arg t "$_prompt" --arg u "$_url" \
+                '{model:$m, messages:[{role:"user",content:[{type:"text",text:$t},{type:"image_url",image_url:{url:$u}}]}], stream:false}')
+            _llm_call_json "http://${LLAMA_HOST}/v1/chat/completions" \
+                "$_payload" '.choices[0].message.content // empty'
+            ;;
+        none)
+            echo "llm: no AI backend available" >&2
+            return 1
+            ;;
+    esac
+}
+
+_llm_ocr() {
+    [ -f "$1" ] || { echo "Usage: llm-ocr <image>"; return 1; }
+    _llm_image ocr "$1" \
+        "Extract all text from this image. Return only the extracted text, preserving layout where possible."
+}
+
+_llm_vision() {
+    [ -f "$1" ] || { echo "Usage: llm-vision <image> [prompt]"; return 1; }
+    local _prompt="${2:-Describe this image in detail. Include objects, text, layout, and relevant observations.}"
+    _llm_image vision "$1" "$_prompt"
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Flash / think — direct role shortcuts
+# ─────────────────────────────────────────────────────────────────────────
+
 _llm_think() {
-    if [ -z "$1" ]; then
-        echo "Usage: llm-think \"<question or problem>\""
-        return 1
-    fi
-    ollama run "$OLLAMA_MODEL_THINK" "$*"
+    [ -n "$1" ] || { echo "Usage: llm-think \"<question>\""; return 1; }
+    _llm_run reason "$*"
 }
 
 _llm_flash() {
-    if [ -z "$1" ]; then
-        echo "Usage: llm-flash \"<prompt>\"  OR  <input> | llm-flash \"<prompt>\""
-        return 1
-    fi
-    local _stdin=""
+    [ -n "$1" ] || { echo "Usage: llm-flash \"<prompt>\"  OR  <input> | llm-flash \"<prompt>\""; return 1; }
     if [ ! -t 0 ]; then
-        _stdin=$(cat)
-    fi
-    if [ -n "$_stdin" ]; then
-        echo "$_stdin" | ollama run "$OLLAMA_MODEL_FLASH" "$*"
+        _llm_run fast "$*"
     else
-        ollama run "$OLLAMA_MODEL_FLASH" "$*"
+        printf '' | _llm_run fast "$*"
     fi
 }
 
 _llm_flash_file() {
-    local _file="$1" _prompt="$2"
-    [ -n "$_file" ] || { echo "Usage: llm-flash-file <file> \"<prompt>\""; return 1; }
-    [ -f "$_file" ] || { echo "Error: File not found: $_file"; return 1; }
-    [ -n "$_prompt" ] || _prompt="Analyze this file and provide key insights. Be concise."
-    cat "$_file" | ollama run "$OLLAMA_MODEL_FLASH" "$_prompt"
+    local _f="$1" _p="${2:-Analyze this file and provide key insights. Be concise.}"
+    _llm_file fast "$_f" "$_p"
 }
 
+# ─────────────────────────────────────────────────────────────────────────
+# Help
+# ─────────────────────────────────────────────────────────────────────────
+
 _llm_help() {
+    local _b; _b=$(_llm_backend)
     cat <<EOF
-Ollama Integration Commands
-============================
+LLM helpers — backend: $_b
+===================================
 
-Code Understanding:
-  llm-explain <file>              - Explain code
-  llm-explain-edit <file>         - Explain code and open in Neovim
-  llm-summary <path>              - Summarize file or directory
-  llm-arch [dir]                  - Analyze project architecture
+Code understanding
+  llm-explain <file>           explain code concisely
+  llm-explain-edit <file>      explain + open in Neovim
+  llm-summary <file|dir>       summarize file or directory
+  llm-arch [dir]               architecture analysis
 
-Git Integration:
-  llm-review [ref]                - Review git changes
-  llm-review-edit [ref]           - Review and open in Neovim
-  llm-commit                      - Generate commit message
+Git
+  llm-review [ref]             review git changes
+  llm-review-edit [ref]        review + open in Neovim
+  llm-commit                   suggest + apply commit message
 
-Shell Assistance:
-  llm-cmd "question"              - Ask how to do something
-  llm-explain-cmd <command>       - Explain a command
+Shell
+  llm-cmd "<question>"         how do I do X
+  llm-explain-cmd <command>    explain a command
 
-Code Quality:
-  llm-refactor <file>             - Get refactoring suggestions
-  llm-refactor-edit <file>        - Refactor with side-by-side view
-  llm-optimize <file>             - Get optimization suggestions
-  llm-optimize-edit <file>        - Optimize with diff view
-  llm-security <file>             - Security audit
+Code quality
+  llm-refactor <file>          refactoring suggestions
+  llm-refactor-edit <file>     refactor + side-by-side
+  llm-optimize <file>          perf suggestions
+  llm-optimize-edit <file>     optimize + diff view
+  llm-security <file>          security audit
+  llm-test <file>              generate tests
+  llm-test-edit <file>         tests + split view
+  llm-doc <file>               generate docs
+  llm-doc-edit <file>          docs + split view
 
-Testing & Documentation:
-  llm-test <file>                 - Generate tests
-  llm-test-edit <file>            - Generate tests in split view
-  llm-doc <file>                  - Generate documentation
-  llm-doc-edit <file>             - Generate docs in split view
+Problem solving
+  llm-debug "<error>"          debugging help
+  llm-fix <file> [error]       root cause + fix
 
-Problem Solving:
-  llm-debug "error"               - Help debug an error
-  llm-fix <file> [error]          - Quick fix analysis
+Development
+  llm-implement "<feature>"    implementation plan
+  llm-convert "<instruction>"  convert code (pipe input)
+  llm-api-client <spec> <lang> generate API client from OpenAPI
+  llm-code [model]             interactive session (ollama only)
 
-Development:
-  llm-implement "feature"         - Plan feature implementation
-  llm-convert "instruction"       - Convert code (pipe input)
-  llm-api-client <spec> <lang>    - Generate API client
+Vision & embeddings
+  llm-ocr <image>              OCR (backend must expose AI_MODEL_OCR)
+  llm-vision <image> [prompt]  image analysis (backend must expose AI_MODEL_VISION)
+  llm-embed <text|file>        text embedding
 
-Vision & OCR:
-  llm-ocr <image>                 - Extract text from image (glm-ocr)
-  llm-vision <image> [prompt]     - Analyze/describe image (llama3.2-vision)
+Shortcuts
+  llm-think "<q>"              reasoning model (role: reason)
+  llm-flash "<p>"              fast model (role: fast)
+  llm-flash-file <f> "<p>"     fast model on a file
 
-Embedding:
-  llm-embed <text|file>           - Generate embeddings (nomic-embed-text)
+Roles → models
+  default  : $(_llm_model default)
+  code     : $(_llm_model code)
+  reason   : $(_llm_model reason)
+  fast     : $(_llm_model fast)
+  embed    : $(_llm_model embed)
+  vision   : $(_llm_model vision)
+  ocr      : $(_llm_model ocr)
 
-Fast & Reasoning:
-  llm-think "question"            - Quick reasoning (lfm2.5-thinking)
-  llm-flash "prompt"              - Fast general task (glm-4.7-flash)
-  llm-flash-file <file> "prompt"  - Fast file analysis (glm-4.7-flash)
-
-Interactive:
-  llm-code [model]                - Start coding session
-
-Configuration:
-  OLLAMA_MODEL          - Default model          (current: $OLLAMA_MODEL)
-  OLLAMA_MODEL_CODE     - Code generation model   (current: $OLLAMA_MODEL_CODE)
-  OLLAMA_MODEL_REASON   - Reasoning model          (current: $OLLAMA_MODEL_REASON)
-  OLLAMA_MODEL_FAST     - Fast/light model         (current: $OLLAMA_MODEL_FAST)
-  OLLAMA_MODEL_OCR      - OCR model                (current: $OLLAMA_MODEL_OCR)
-  OLLAMA_MODEL_VISION   - Vision model             (current: $OLLAMA_MODEL_VISION)
-  OLLAMA_MODEL_EMBED    - Embedding model          (current: $OLLAMA_MODEL_EMBED)
-  OLLAMA_MODEL_THINK    - Thinking/reasoning model (current: $OLLAMA_MODEL_THINK)
-  OLLAMA_MODEL_FLASH    - Flash/fast general model (current: $OLLAMA_MODEL_FLASH)
-  OLLAMA_HOST           - API endpoint             (current: $OLLAMA_HOST)
-
+Environment
+  AI_BACKEND      : ${AI_BACKEND} (auto|llama|ollama)
+  LLAMA_HOST      : ${LLAMA_HOST:-unset}
+  OLLAMA_HOST     : ${OLLAMA_HOST:-unset}
 EOF
 }

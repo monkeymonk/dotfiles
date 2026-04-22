@@ -68,24 +68,14 @@ hook_run context
 
 # Load config modules.
 for _f in \
-    "$RUNTIME_ROOT/config/defaults.sh" \
-    "$RUNTIME_ROOT/config/exports.sh" \
+    "$RUNTIME_ROOT/config/config.sh" \
     "$RUNTIME_ROOT/config/paths.sh" \
-    "$RUNTIME_ROOT/config/context.sh" \
     "$RUNTIME_ROOT/config/aliases.sh"
 do
     [ -f "$_f" ] && . "$_f"
 done
 unset _f
 hook_run setup
-
-# Load machine overrides based on context.
-if [ "${RUNTIME_IS_WORK-}" = "1" ] && [ -f "$RUNTIME_ROOT/config/machine/work.sh" ]; then
-    . "$RUNTIME_ROOT/config/machine/work.sh"
-fi
-if [ "${RUNTIME_IS_HOME-}" = "1" ] && [ -f "$RUNTIME_ROOT/config/machine/home.sh" ]; then
-    . "$RUNTIME_ROOT/config/machine/home.sh"
-fi
 
 # Load secrets (alphabetical). Errors must be visible.
 if [ -d "$RUNTIME_ROOT/secrets" ]; then
