@@ -1,0 +1,10 @@
+[mgr]
+prepend_keymap = [
+  { on = "!",          run = 'shell "$SHELL" --block', desc = "Open shell here" },
+  { on = [ "g", "." ], run = "hidden toggle",          desc = "Toggle hidden files" },
+  { on = [ "g", "r" ], run = "refresh",                desc = "Refresh" },
+  { on = "<C-f>",      run = "search fd",              desc = "Search files by name" },
+  { on = "<C-g>",      run = "search rg",              desc = "Search file contents" },
+  { on = "E",          run = "open --interactive",     desc = "Open with..." },
+  { on = "O",          run = "open",                   desc = "Open normally" }
+]
