@@ -1,17 +1,20 @@
 #!/usr/bin/env sh
-# Force-regenerate Ollama tips for a directory.
+# Force-regenerate dynamic tips for a directory.
 # Usage: tips-refresh [directory]
 #
 # Clears the cache entry and runs the generator in foreground,
 # so you can see the result immediately. The zsh-tips plugin
 # picks up the new cache automatically on next rotation.
+#
+# Backend is picked by ai/helpers.sh :: _llm_backend — ollama or
+# llama.cpp, whichever is available.
 
 set -e
 
 dir="${1:-$PWD}"
 dir="$(cd "$dir" && pwd)"
 
-command -v tips-generate-ollama >/dev/null 2>&1 || { echo "error: tips-generate-ollama not found" >&2; exit 1; }
+command -v tips-generate >/dev/null 2>&1 || { echo "error: tips-generate not found" >&2; exit 1; }
 
 # --- clear existing cache ---
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/runtime/cache-run"
@@ -27,7 +30,7 @@ rm -f "$cache_dir/$hash"
 # --- regenerate ---
 echo "Generating tips for $dir ..."
 _start=$(date +%s)
-output=$(tips-generate-ollama "$dir")
+output=$(tips-generate "$dir")
 _elapsed=$(( $(date +%s) - _start ))
 
 if [ -z "$output" ]; then

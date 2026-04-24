@@ -11,7 +11,7 @@ ZSH_TIPS_APPLY_KEY="${ZSH_TIPS_APPLY_KEY:-\ek}"  # Alt+k to apply tip to edit li
 # Generator must: take dir as $1, output tips to stdout, exit 0 on success
 : "${ZSH_TIPS_DYNAMIC:=1}"
 : "${ZSH_TIPS_DYNAMIC_TTL:=3600}"
-: "${ZSH_TIPS_GENERATOR:=tips-generate-ollama}"
+: "${ZSH_TIPS_GENERATOR:=tips-generate}"
 
 # Debug: ZSH_TIPS_DEBUG=1 to log generation details to ~/.cache/runtime/tips-debug.log
 : "${ZSH_TIPS_DEBUG:=0}"

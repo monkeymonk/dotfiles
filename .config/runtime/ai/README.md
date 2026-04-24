@@ -145,7 +145,7 @@ Any command set via `ZSH_TIPS_GENERATOR` must follow:
 | **Exit**         | `0` = success, non-zero = skip                         |
 | **Dependencies** | Generator checks its own (no checks in `zsh-tips.zsh`) |
 
-Default generator: `tips-generate-ollama` (uses Ollama via `project-context` + `curl` + `jq`).
+Default generator: `tips-generate` (backend-agnostic — dispatches to ollama or llama.cpp through `ai/helpers.sh :: _llm_run`, whichever is reachable).
 
 Dynamic tips only generate for project directories (detected by `is-project-dir`). A directory is considered a project if it contains a git repo, package manifests, build files, or AI agent context files (CLAUDE.md, AGENTS.md, etc.).
 
@@ -155,8 +155,8 @@ Dynamic tips only generate for project directories (detected by `is-project-dir`
 | ------------------------ | ---------------------- | ----------------------------- |
 | `ZSH_TIPS_DYNAMIC`       | `1`                    | Enable/disable dynamic tips   |
 | `ZSH_TIPS_DYNAMIC_TTL`   | `3600`                 | Cache TTL in seconds          |
-| `ZSH_TIPS_GENERATOR`     | `tips-generate-ollama` | Generator command             |
-| `ZSH_TIPS_DYNAMIC_MODEL` | `$OLLAMA_MODEL_FLASH`  | Model (Ollama generator only) |
+| `ZSH_TIPS_GENERATOR`     | `tips-generate`        | Generator command             |
+| `ZSH_TIPS_DYNAMIC_MODEL` | `$AI_MODEL_FAST`       | Model override (bypasses role mapping) |
 | `ZSH_TIPS_DEBUG`         | `0`                    | Enable debug logging          |
 
 ### Custom Generator Example

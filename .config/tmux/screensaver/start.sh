@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Screensaver wrapper — randomly picks a screensaver command.
 
-PBC_BIN="$HOME/works/tools/pbc/target/release/pbc"
+PBC_BIN="$HOME/.local/bin/pbc"
 # GOL_BIN="$HOME/works/tools/gol/target/release/gol"
 
 # Build command pool: "fg:cmd" runs foreground, "bg:cmd" runs background+keypress dismiss

@@ -77,7 +77,6 @@ _ai_setup() {
     if has_cmd ollama || has_cmd llama-server || has_cmd llama-swap; then
         safe_source "${RUNTIME_ROOT}/ai/env.sh"
         safe_source "${RUNTIME_ROOT}/ai/helpers.sh"
-        has_cmd ollama && export HAS_OLLAMA=1
         if command -v alx >/dev/null 2>&1; then
             safe_source "${RUNTIME_ROOT}/ai/aliases.sh"
             runtime_ai_aliases

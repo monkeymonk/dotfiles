@@ -41,7 +41,16 @@ runtime_plugin_llama() {
     fi
 
     # --- 4. Shared defaults ---------------------------------------------
-    export LLAMA_MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/.local/share/llama.cpp/models}"
+    # Prefer /data/models when present (typical layout on this host); fall
+    # back to the XDG-style default otherwise.
+    if [ -z "$LLAMA_MODELS_DIR" ]; then
+        if [ -d /data/models ]; then
+            LLAMA_MODELS_DIR=/data/models
+        else
+            LLAMA_MODELS_DIR="$HOME/.local/share/llama.cpp/models"
+        fi
+    fi
+    export LLAMA_MODELS_DIR
     export LLAMA_HOST="${LLAMA_HOST:-127.0.0.1:8080}"
 
     # --- 5. llama-swap wiring -------------------------------------------

@@ -50,7 +50,7 @@ The `core/` layer provides safe primitives only:
 
 | Module        | Functions                                                                                                                  | Purpose                                                   |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `env.sh`      | —                                                                                                                          | Safe defaults for `EDITOR`, `PAGER`, `XDG_*`              |
+| `env.sh`      | —                                                                                                                          | Safe defaults for `BROWSER`, `EDITOR`, `VISUAL`, `PAGER`, `XDG_*` |
 | `log.sh`      | `info`, `success`, `warn`, `error`                                                                                         | TTY-only colorized logging                                |
 | `hooks.sh`    | `hook_register`, `hook_run`, `hook_list`                                                                                   | Phase-based hook registry                                 |
 | `path.sh`     | `path_prepend`, `path_append`, `path_remove`, `path_dedupe`                                                                | Safe PATH manipulation                                    |
@@ -99,10 +99,11 @@ alphabetical. Errors are visible in the shell.
 
 `plugins/` contains tool-specific configuration. Each plugin must:
 
-- Guard with `require_cmd` for tool integrations
+- Gate with `has_cmd` (silent) or `require_cmd` (warns when missing); the convention is `has_cmd` for optional tools
 - Register hook functions instead of executing work at load time
 - Avoid heavy commands at startup
 - Use `path_prepend`/`path_append` for tool-specific PATH when needed
+- Optionally contribute to the context registry via `ctx_set_lazy <VAR> <resolver_fn> plugin`
 
 Plugins are loaded before context/config; use hooks to run code at the right phase.
 To disable a plugin, rename it to `.name.sh` (dotfiles are ignored by the loader).
@@ -113,32 +114,34 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 
 ### Available Plugins
 
-| Plugin         | Tool                                             | Hook Phase             |
-| -------------- | ------------------------------------------------ | ---------------------- |
-| `alx.sh`       | Alias management (alx)                           | bootstrap, interactive |
-| `bun.sh`       | Bun runtime                                      | setup                  |
-| `cdx.sh`       | Directory navigation (cdx)                       | interactive            |
-| `composer.sh`  | PHP Composer                                     | setup                  |
-| `deno.sh`      | Deno runtime                                     | setup                  |
-| `docker.sh`    | Docker                                           | setup                  |
-| `uv.sh`        | UV Python package manager                        | setup                  |
-| `eza.sh`       | Modern ls replacement                            | setup                  |
-| `fzf.sh`       | Fuzzy finder (fd integration)                    | setup                  |
-| `ghcup.sh`     | Haskell (GHCup)                                  | setup                  |
-| `git.sh`       | Git aliases                                      | setup                  |
-| `go.sh`        | Go lang                                          | setup                  |
-| `lm-studio.sh` | LM Studio                                        | setup                  |
-| `neovim.sh`    | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback) | setup                  |
-| `node.sh`      | Node.js                                          | setup                  |
-| `nvm.sh`       | Node version manager (lazy)                      | setup                  |
-| `ollama.sh`    | Ollama LLM (loads ai/ module)                    | setup                  |
-| `opencode.sh`  | VS Code                                          | setup                  |
-| `pnpm.sh`      | PNPM package manager                             | setup                  |
-| `rust.sh`      | Rust / Cargo                                     | setup                  |
-| `shell.sh`     | Shell-specific config                            | interactive            |
-| `starship.sh`  | Starship prompt                                  | interactive            |
-| `tmux.sh`      | Tmux (auto-attach)                               | interactive            |
-| `zsh.sh`       | Zsh-specific config                              | interactive            |
+| Plugin           | Tool                                                      | Hook Phase             |
+| ---------------- | --------------------------------------------------------- | ---------------------- |
+| `agentbox.sh`    | AgentBox — AI tools in isolated Docker containers         | setup                  |
+| `ai.sh`          | Local LLM tooling (paths, symlinks, backend-agnostic)     | setup                  |
+| `alx.sh`         | Alias management (alx)                                    | bootstrap, interactive |
+| `bun.sh`         | Bun runtime                                               | setup                  |
+| `cdx.sh`         | Directory navigation (cdx)                                | interactive            |
+| `composer.sh`    | PHP Composer                                              | setup                  |
+| `deno.sh`        | Deno runtime                                              | setup                  |
+| `docker.sh`      | Docker (contributes `RUNTIME_DOCKER_RUNNING`)             | setup                  |
+| `eza.sh`         | Modern `ls` replacement                                   | setup                  |
+| `fzf.sh`         | Fuzzy finder (fd integration)                             | setup                  |
+| `ghcup.sh`       | Haskell (GHCup)                                           | setup                  |
+| `git.sh`         | Git aliases (contributes `RUNTIME_GIT_VERSION`)           | setup                  |
+| `go.sh`          | Go lang                                                   | setup                  |
+| `huggingface.sh` | Hugging Face Hub CLI (`HF_HOME`, auth)                    | setup                  |
+| `llama.sh`       | llama.cpp (`llama-cli`, `llama-server`, `llama-swap`)     | setup                  |
+| `mise.sh`        | mise — polyglot version manager                           | setup                  |
+| `neovim.sh`      | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback)          | setup                  |
+| `node.sh`        | Node.js (contributes `RUNTIME_NODE_VERSION`)              | setup                  |
+| `open.sh`        | Cross-platform `open` shim (Linux fallback via xdg-open)  | setup                  |
+| `pnpm.sh`        | PNPM package manager                                      | setup                  |
+| `rust.sh`        | Rust / Cargo                                              | setup                  |
+| `shell.sh`       | Shell-specific interactive config                         | interactive            |
+| `starship.sh`    | Starship prompt                                           | interactive            |
+| `tmux.sh`        | Tmux (auto-attach)                                        | interactive            |
+| `uv.sh`          | UV Python package manager                                 | setup                  |
+| `zsh.sh`         | Zsh-specific interactive config                           | interactive            |
 
 ### Hook Phases
 
@@ -152,41 +155,55 @@ Register a hook with:
 hook_register <phase> <function_name>
 ```
 
-## AI Tooling (Ollama Integration)
+## AI Tooling (Local LLMs)
 
-The `ai/` module is loaded via `plugins/ollama.sh` when `ollama` is on PATH. Provides 30+ LLM helper commands.
+The `ai/` module provides backend-agnostic `llm-*` helpers that dispatch between **llama.cpp / llama-swap** and **Ollama** at call time. Loaded by `plugins/ai.sh` when any of `ollama`, `llama-server`, or `llama-swap` is on PATH. `plugins/llama.sh` handles llama.cpp-specific detection (GPU backend, `LLAMA_HOST`, `LLAMA_MODELS_DIR`, `llama-swap` wiring).
 
-### Model Configuration
+### Backend Selection
 
-| Variable              | Default                   | Purpose             |
-| --------------------- | ------------------------- | ------------------- |
-| `OLLAMA_MODEL`        | `qwen2.5-coder:7b`        | General / default   |
-| `OLLAMA_MODEL_CODE`   | `qwen3-coder:30b`         | Code generation     |
-| `OLLAMA_MODEL_REASON` | `qwen3.5:35b`             | Reviews / reasoning |
-| `OLLAMA_MODEL_FAST`   | `qwen3.5:9b-q4_K_M`       | Quick tasks         |
-| `OLLAMA_MODEL_OCR`    | `glm-ocr:latest`          | OCR                 |
-| `OLLAMA_MODEL_VISION` | `llama3.2-vision:11b`     | Image analysis      |
-| `OLLAMA_MODEL_EMBED`  | `nomic-embed-text:latest` | Embeddings          |
-| `OLLAMA_MODEL_THINK`  | `lfm2.5-thinking:latest`  | Deep thinking       |
-| `OLLAMA_MODEL_FLASH`  | `glm-4.7-flash:latest`    | Flash inference     |
+| Variable        | Default | Purpose                                                         |
+| --------------- | ------- | --------------------------------------------------------------- |
+| `AI_BACKEND`    | `auto`  | `auto` (llama-swap if up, else ollama) / `llama` / `ollama`     |
+| `AI_AUTOSTART`  | `1`     | Auto-start llama-swap in the background on first use (0 = off)  |
+| `LLAMA_HOST`    | `127.0.0.1:8080`  | llama.cpp / llama-swap OpenAI-compat endpoint         |
+| `OLLAMA_HOST`   | `127.0.0.1:11434` | Ollama endpoint                                       |
+
+`plugins/llama.sh` also exports `LLAMA_GPU_BACKEND` (detected: `metal`/`cuda`/`rocm`/`vulkan`/`cpu`) and `LLAMA_MODELS_DIR` (`~/.local/share/llama.cpp/models`).
+
+### Role → Model Mapping
+
+A single `AI_MODEL_*` namespace is used for both backends. Values are either llama-swap aliases (from `~/.config/llama-swap/config.yaml`) or Ollama tags (e.g. `qwen2.5-coder:7b`), depending on the active backend.
+
+| Variable            | Default    | Purpose                                |
+| ------------------- | ---------- | -------------------------------------- |
+| `AI_MODEL_DEFAULT`  | `default`  | General-purpose                        |
+| `AI_MODEL_CODE`     | `code`     | Heavy code generation / refactor       |
+| `AI_MODEL_REASON`   | `reason`   | Reviews, debug, security audits        |
+| `AI_MODEL_FAST`     | `fast`     | Commit messages, short explanations    |
+| `AI_MODEL_EMBED`    | `embed`    | Embeddings                             |
+| `AI_MODEL_VISION`   | `vision`   | Image analysis (backend must support)  |
+| `AI_MODEL_OCR`      | `ocr`      | OCR (backend must support)             |
 
 ### Commands
 
-- **Code:** `llm-explain`, `llm-summary`, `llm-arch`, `llm-refactor`, `llm-optimize`, `llm-security`, `llm-test`, `llm-doc`, `llm-convert`
-- **Git:** `llm-review`, `llm-commit`
+- **Code understanding:** `llm-explain`, `llm-explain-edit`, `llm-summary`, `llm-arch`
+- **Git:** `llm-review`, `llm-review-edit`, `llm-commit`
 - **Shell:** `llm-cmd`, `llm-explain-cmd`
-- **Debug:** `llm-debug`, `llm-fix`, `llm-implement`
-- **Vision:** `llm-ocr`, `llm-vision`
-- **Embedding:** `llm-embed`
+- **Code quality:** `llm-refactor`, `llm-refactor-edit`, `llm-optimize`, `llm-optimize-edit`, `llm-security`
+- **Testing / docs:** `llm-test`, `llm-test-edit`, `llm-doc`, `llm-doc-edit`
+- **Debug / development:** `llm-debug`, `llm-fix`, `llm-implement`, `llm-convert`, `llm-api-client`, `llm-code`
+- **Vision / embed:** `llm-ocr`, `llm-vision`, `llm-embed`
 - **Inference:** `llm-think`, `llm-flash`, `llm-flash-file`
 - **Meta:** `llm-help`
+
+The `*-edit` variants open the result in Neovim (often in a split). Aliases are only registered when `alx` is present.
 
 ### Dynamic Shell Tips (zsh)
 
 When idle for 8 seconds, displays contextual tips:
 
 - Static pool from `ai/data/tips.txt`
-- Dynamic tips generated via `tips-generate-ollama` (Ollama-powered, project-aware)
+- Dynamic tips generated via `tips-generate` (project-aware, uses whichever LLM backend is live — ollama or llama.cpp)
 - Only triggers for project directories (detected by `is-project-dir`)
 - 70/30 weight favoring dynamic tips
 - Force refresh with `tips-refresh [dir]`
@@ -208,22 +225,25 @@ Scripts can bootstrap logging and utils via `core/lib.sh`:
 | `benchurl`             | URL benchmark timing                               |
 | `cache-run`            | Caching wrapper with configurable TTL              |
 | `clipboard`            | Copy: `stdin \| clipboard`; Paste: `clipboard get` |
-| `diagnose-zle`         | ZLE diagnostics                                    |
 | `is-project-dir`       | Check if a directory is a project root (exit 0/1)  |
 | `project-context`      | Extract project metadata                           |
 | `recent`               | Show recently modified files                       |
 | `serve`                | Simple HTTP server                                 |
-| `tips-generate-ollama` | Generate dynamic shell tips via Ollama             |
-| `tips-refresh`         | Force-regenerate Ollama tips: `tips-refresh [dir]` |
+| `tips-generate`        | Generate dynamic shell tips (ollama or llama.cpp)  |
+| `tips-refresh`         | Force-regenerate dynamic tips: `tips-refresh [dir]`|
 | `update-system`        | System package manager updates                     |
 
 ## Dependencies
 
-| Dependency                               | Required    | Purpose                                        |
-| ---------------------------------------- | ----------- | ---------------------------------------------- |
-| [alx](https://github.com/monkeymonk/alx) | Recommended | Alias management (drop-in `alias` replacement) |
-| [cdx](https://github.com/monkeymonk/cdx) | Optional    | Directory navigation hooks                     |
-| [Ollama](https://ollama.com)             | Optional    | Local LLM (enables `ai/` module)               |
+| Dependency                                             | Required    | Purpose                                                    |
+| ------------------------------------------------------ | ----------- | ---------------------------------------------------------- |
+| [alx](https://github.com/monkeymonk/alx)               | Recommended | Alias management (drop-in `alias` replacement)             |
+| [cdx](https://github.com/monkeymonk/cdx)               | Optional    | Directory navigation hooks                                 |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp)     | Optional    | Local LLM inference (preferred backend via `llama-server`) |
+| [llama-swap](https://github.com/mostlygeek/llama-swap) | Optional    | Model-router proxy in front of llama.cpp                   |
+| [Ollama](https://ollama.com)                           | Optional    | Alternate LLM backend                                      |
+
+Any one of llama.cpp / llama-swap / Ollama is enough to activate the `ai/` module.
 
 ### Install alx
 
@@ -262,20 +282,36 @@ runtime_reload hard
 Introspection:
 
 ```sh
-runtime_status       # Show RUNTIME_ROOT, context, and hooks
-runtime_context      # Show context registry (--scope, --resolve)
-hook_list [phase]    # List registered hooks
+runtime_status                   # Show RUNTIME_ROOT, context, and hooks
+runtime_context                  # Show full context registry (resolves lazy entries)
+runtime_context --scope system   # system | session | plugin — filter by source tag
+hook_list [phase]                # List registered hooks
 ```
 
 ## Adding a Plugin
 
-Create `plugins/myplugin.sh`:
+Create `plugins/myplugin.sh`. Convention: hook target is `runtime_plugin_<name>`, gated by `has_cmd` (silent). Use `require_cmd` only when a missing tool should warn.
 
 ```sh
-_myplugin_setup() {
-    require_cmd mytool || return 0
-    guard_double_load RUNTIME_MYPLUGIN_LOADED || return 0
+runtime_plugin_myplugin() {
+    has_cmd mytool || return 0
     alias myalias='mytool --flag' --desc "..." --tags "..."
 }
-hook_register setup _myplugin_setup
+hook_register setup runtime_plugin_myplugin
 ```
+
+To contribute to the context registry, define a resolver and register it lazily:
+
+```sh
+_runtime_resolve_myplugin_version() {
+    RUNTIME_MYPLUGIN_VERSION=$(mytool --version 2>/dev/null)
+    export RUNTIME_MYPLUGIN_VERSION
+}
+
+runtime_plugin_myplugin() {
+    has_cmd mytool || return 0
+    ctx_set_lazy RUNTIME_MYPLUGIN_VERSION _runtime_resolve_myplugin_version plugin
+}
+```
+
+Use `guard_double_load RUNTIME_MYPLUGIN_LOADED || return 0` only when the plugin has side effects that must not repeat on soft reload (path exports, function overrides).

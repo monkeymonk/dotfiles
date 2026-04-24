@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+# Backend-agnostic tip generator for zsh-tips.zsh.
+# Works with either ollama or llama.cpp (via llama-server / llama-swap),
+# auto-dispatched through ai/helpers.sh :: _llm_run.
+#
+# Contract: takes directory path as $1, outputs tips to stdout (one per line).
+
+set -e
+
+. "${0%/*}/../core/lib.sh"
+
+_dir="${1:-.}"
+
+require_cmd project-context || exit 1
+require_cmd is-project-dir || exit 1
+require_cmd jq || exit 1
+
+is-project-dir "$_dir" || exit 1
+
+# Load the AI layer so _llm_run is available. env.sh supplies
+# LLAMA_HOST / OLLAMA_HOST defaults; helpers.sh owns backend dispatch.
+safe_source "$_RUNTIME_LIB_ROOT/ai/env.sh" || exit 1
+safe_source "$_RUNTIME_LIB_ROOT/ai/helpers.sh" || exit 1
+
+# Model override: ZSH_TIPS_DYNAMIC_MODEL wins (back-compat). Otherwise use
+# whatever AI_MODEL_FAST resolves to for the active backend.
+if [ -n "$ZSH_TIPS_DYNAMIC_MODEL" ]; then
+    AI_MODEL_FAST="$ZSH_TIPS_DYNAMIC_MODEL"
+fi
+
+# Bail early if no backend is reachable — don't print a half-generated cache.
+[ "$(_llm_backend)" = "none" ] && exit 1
+
+ctx=$(project-context "$_dir")
+[ -n "$ctx" ] || exit 1
+
+prompt="You are a terminal tip generator. Output ONLY plain tip lines. STRICT RULES:
+- One tip per line
+- No numbering (no 1. 2. 3.)
+- No bullets (no - or *)
+- No prefixes, labels, or headers
+- No blank lines between tips
+- No markdown formatting
+- No explanations or preamble
+- Each tip under 100 characters
+- 8-12 tips total
+
+Tips must be specific to this project — reference actual tools, commands, scripts, and files from the context below. Prefer actionable shell commands over general advice."
+
+printf '%s' "$ctx" | _llm_run fast "$prompt" \
+  | sed 's/^[[:space:]]*[0-9]\{1,2\}[.)]\{1,2\}[[:space:]]*//' \
+  | sed 's/^[[:space:]]*[-*•][[:space:]]*//' \
+  | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+  | grep -v '^$'

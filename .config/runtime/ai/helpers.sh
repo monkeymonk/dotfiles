@@ -1,13 +1,16 @@
 # AI/LLM helper functions — backend-agnostic (ollama or llama.cpp).
 #
-# Sourced by plugins/ai.sh after ai/env.sh. All callers route through
-# _llm_run <role> "<prompt>" — roles resolve to concrete model IDs via
-# the AI_MODEL_* (llama) or OLLAMA_MODEL_* (ollama) env vars.
+# Sourced by plugins/ai.sh after ai/env.sh. All text callers route through
+# _llm_run <role> "<prompt>" and image callers through _llm_image — roles
+# resolve to concrete model IDs via the AI_MODEL_* env vars (same namespace
+# for both backends).
 #
-# Add a new helper by writing a one-liner that invokes _llm_run with the
-# appropriate role and prompt. Do NOT call `ollama` or `curl $LLAMA_HOST`
-# directly from helpers — that was the old pattern and it leaks backend
-# details everywhere.
+# Add a new helper by writing a one-liner that invokes _llm_run (or
+# _llm_file / _llm_image) with the appropriate role and prompt. Do NOT
+# call `ollama` or `curl $LLAMA_HOST` directly from helpers — that leaks
+# backend details everywhere. The only exceptions are _llm_run and
+# _llm_image themselves (they own the dispatch) and _llm_code (interactive
+# session, ollama-only by design).
 
 # Simple re-source guard.
 [ "${_AI_HELPERS_LOADED:-0}" = 1 ] && return 0
@@ -150,13 +153,25 @@ _llm_file() {
     cat "$_file" | _llm_run "$_role" "$_prompt"
 }
 
-# _llm_nvim_md <title> <body-command>  — run <body-command>, capture its
-# output under a markdown heading, open result in nvim.
+# _llm_nvim_md <title>  — read markdown body from stdin, write it under a
+# top-level heading, open result in Neovim. Callers compose the body in the
+# parent shell so shell functions (_llm_run, etc.) stay reachable.
 _llm_nvim_md() {
-    local _title="$1"; shift
+    local _title="$1"
     local _tmp; _tmp=$(mktemp --suffix=.md)
-    { printf '# %s\n\n' "$_title"; "$@"; } > "$_tmp"
+    { printf '# %s\n\n' "$_title"; cat; } > "$_tmp"
     nvim "$_tmp" -c "set filetype=markdown"
+}
+
+# _llm_edit_split <role> "<prompt>" <file> <outfile> [nvim-flag]
+# Run the prompt over <file>, write the response to <outfile>, open both in
+# nvim. Default split is -O (vertical); pass -d for diff view or -O/-o as
+# needed.
+_llm_edit_split() {
+    local _role="$1" _prompt="$2" _file="$3" _out="$4" _flag="${5:--O}"
+    [ -f "$_file" ] || { echo "Error: file not found: $_file"; return 1; }
+    cat "$_file" | _llm_run "$_role" "$_prompt" > "$_out"
+    nvim "$_flag" "$_file" "$_out"
 }
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -268,8 +283,8 @@ _llm_security() {
     local _file="$1"
     [ -n "$_file" ] || { echo "Usage: llm-security <file>"; return 1; }
     [ -f "$_file" ] || { echo "Error: file not found: $_file"; return 1; }
-    _llm_nvim_md "Security Analysis: $_file" sh -c "
-        cat '$_file' | _llm_run reason 'Perform a security audit. Check for:
+    {
+        cat "$_file" | _llm_run reason 'Perform a security audit. Check for:
 - SQL/command/path injection
 - XSS
 - Auth/authz issues
@@ -277,8 +292,10 @@ _llm_security() {
 - Input validation
 - Sensitive data exposure
 For each issue: severity, location, explanation, fix.'
-        echo; echo '---'; echo '## Original Code'; echo '\`\`\`'; cat '$_file'; echo '\`\`\`'
-    "
+        printf '\n---\n## Original Code\n```\n'
+        cat "$_file"
+        printf '\n```\n'
+    } | _llm_nvim_md "Security Analysis: $_file"
 }
 
 _llm_debug() {
@@ -292,12 +309,12 @@ _llm_fix() {
     local _file="$1" _ctx="${2:-last error in this file}"
     [ -n "$_file" ] || { echo "Usage: llm-fix <file> [error]"; return 1; }
     [ -f "$_file" ] || { echo "Error: file not found: $_file"; return 1; }
-    _llm_nvim_md "Quick Fix: $_file" sh -c "
-        printf '## Error Context\n%s\n\n## Analysis & Solution\n' '$_ctx'
-        cat '$_file' | _llm_run reason 'This code has an error: $_ctx
+    {
+        printf '## Error Context\n%s\n\n## Analysis & Solution\n' "$_ctx"
+        cat "$_file" | _llm_run reason "This code has an error: $_ctx
 
-Provide: 1) Root cause, 2) Exact fix (show code changes), 3) Why this fixes it. Be concise and actionable.'
-    "
+Provide: 1) Root cause, 2) Exact fix (show code changes), 3) Why this fixes it. Be concise and actionable."
+    } | _llm_nvim_md "Quick Fix: $_file"
 }
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -321,14 +338,14 @@ _llm_implement() {
     elif [ -f requirements.txt ]; then _context="Python project with: $(head -5 requirements.txt | tr '\n' ' ')"
     elif [ -f go.mod           ]; then _context="Go project: $(head -1 go.mod)"
     fi
-    _llm_nvim_md "Feature: $_feature" sh -c "
-        printf 'Context: %s\n\n' '$_context'
-        _llm_run reason 'Feature request: $_feature
+    {
+        printf 'Context: %s\n\n' "$_context"
+        _llm_run reason "Feature request: $_feature
 
 Project context: $_context
 
-Provide: 1) Step-by-step plan, 2) Required files and purpose, 3) Code examples, 4) Config changes, 5) Testing approach. Thorough but concise.'
-    "
+Provide: 1) Step-by-step plan, 2) Required files and purpose, 3) Code examples, 4) Config changes, 5) Testing approach. Thorough but concise."
+    } | _llm_nvim_md "Feature: $_feature"
 }
 
 _llm_api_client() {
@@ -365,67 +382,70 @@ _llm_code() {
 _llm_explain_edit() {
     local _f="$1"
     [ -f "$_f" ] || { echo "Usage: llm-explain-edit <file>"; return 1; }
-    _llm_nvim_md "Code Explanation: $_f" sh -c "
-        cat '$_f' | _llm_run default 'Explain this code in detail — purpose, logic, dependencies, potential improvements.'
-        echo; echo '---'; echo '## Original Code'; echo '\`\`\`'; cat '$_f'; echo '\`\`\`'
-    "
+    {
+        cat "$_f" | _llm_run default 'Explain this code in detail — purpose, logic, dependencies, potential improvements.'
+        printf '\n---\n## Original Code\n```\n'
+        cat "$_f"
+        printf '\n```\n'
+    } | _llm_nvim_md "Code Explanation: $_f"
 }
 
 _llm_review_edit() {
-    local _diff="git diff --staged" _title="Staged Changes"
-    [ -n "$1" ] && { _diff="git diff $1"; _title="Changes vs $1"; }
-    _llm_nvim_md "Code Review: $_title" sh -c "
-        $_diff | _llm_run reason 'Review this git diff. Provide: 1) Summary, 2) Issues (bugs, security, performance), 3) Suggestions. Detailed and specific.'
-        echo; echo '---'; echo '## Diff'; echo '\`\`\`diff'; $_diff; echo '\`\`\`'
-    "
+    local _ref="${1-}" _title="Staged Changes" _diff_out
+    [ -n "$_ref" ] && _title="Changes vs $_ref"
+    if [ -n "$_ref" ]; then
+        _diff_out=$(git diff "$_ref")
+    else
+        _diff_out=$(git diff --staged)
+    fi
+    {
+        printf '%s\n' "$_diff_out" | _llm_run reason 'Review this git diff. Provide: 1) Summary, 2) Issues (bugs, security, performance), 3) Suggestions. Detailed and specific.'
+        printf '\n---\n## Diff\n```diff\n%s\n```\n' "$_diff_out"
+    } | _llm_nvim_md "Code Review: $_title"
 }
 
 _llm_refactor_edit() {
-    local _f="$1"
-    [ -f "$_f" ] || { echo "Usage: llm-refactor-edit <file>"; return 1; }
+    [ -f "$1" ] || { echo "Usage: llm-refactor-edit <file>"; return 1; }
     local _tmp; _tmp=$(mktemp --suffix=.md)
-    cat "$_f" | _llm_run code \
-        "Refactoring suggestions. 1) Current issues/smells, 2) Proposed refactorings with code, 3) Benefits." > "$_tmp"
-    nvim -O "$_f" "$_tmp"
+    _llm_edit_split code \
+        "Refactoring suggestions. 1) Current issues/smells, 2) Proposed refactorings with code, 3) Benefits." \
+        "$1" "$_tmp"
 }
 
 _llm_test_edit() {
-    local _f="$1"
-    [ -f "$_f" ] || { echo "Usage: llm-test-edit <file>"; return 1; }
+    [ -f "$1" ] || { echo "Usage: llm-test-edit <file>"; return 1; }
     local _dir _name _ext _test
-    _dir=$(dirname "$_f"); _name=$(basename "$_f" | sed 's/\.[^.]*$//'); _ext="${_f##*.}"
+    _dir=$(dirname "$1"); _name=$(basename "$1" | sed 's/\.[^.]*$//'); _ext="${1##*.}"
     case "$_ext" in
         js|ts|jsx|tsx) _test="$_dir/$_name.test.$_ext" ;;
         py)            _test="$_dir/test_$_name.$_ext" ;;
         go)            _test="$_dir/${_name}_test.$_ext" ;;
         *)             _test="$_dir/$_name.test.$_ext" ;;
     esac
-    echo "Generating tests for $_f..."
-    cat "$_f" | _llm_run code \
-        "Generate comprehensive tests: setup, happy paths, edge cases, error conditions, cleanup. Use the language's standard test framework." > "$_test"
+    echo "Generating tests for $1..."
+    _llm_edit_split code \
+        "Generate comprehensive tests: setup, happy paths, edge cases, error conditions, cleanup. Use the language's standard test framework." \
+        "$1" "$_test"
     echo "Written: $_test"
-    nvim -O "$_f" "$_test"
 }
 
 _llm_doc_edit() {
-    local _f="$1"
-    [ -f "$_f" ] || { echo "Usage: llm-doc-edit <file>"; return 1; }
-    local _doc="$(dirname "$_f")/$(basename "$_f" | sed 's/\.[^.]*$//').md"
-    echo "Generating docs for $_f..."
-    cat "$_f" | _llm_run default \
-        "Generate comprehensive markdown docs: overview, API reference, usage examples, configuration, edge cases." > "$_doc"
+    [ -f "$1" ] || { echo "Usage: llm-doc-edit <file>"; return 1; }
+    local _doc="$(dirname "$1")/$(basename "$1" | sed 's/\.[^.]*$//').md"
+    echo "Generating docs for $1..."
+    _llm_edit_split default \
+        "Generate comprehensive markdown docs: overview, API reference, usage examples, configuration, edge cases." \
+        "$1" "$_doc"
     echo "Written: $_doc"
-    nvim -O "$_f" "$_doc"
 }
 
 _llm_optimize_edit() {
-    local _f="$1"
-    [ -f "$_f" ] || { echo "Usage: llm-optimize-edit <file>"; return 1; }
-    local _tmp; _tmp=$(mktemp --suffix=".${_f##*.}")
-    echo "Generating optimized version of $_f..."
-    cat "$_f" | _llm_run code \
-        "Optimize this code for performance. Output ONLY the optimized code. Preserve functionality; improve complexity, memory, speed." > "$_tmp"
-    nvim -d "$_f" "$_tmp"
+    [ -f "$1" ] || { echo "Usage: llm-optimize-edit <file>"; return 1; }
+    local _tmp; _tmp=$(mktemp --suffix=".${1##*.}")
+    echo "Generating optimized version of $1..."
+    _llm_edit_split code \
+        "Optimize this code for performance. Output ONLY the optimized code. Preserve functionality; improve complexity, memory, speed." \
+        "$1" "$_tmp" -d
 }
 
 # ─────────────────────────────────────────────────────────────────────────
