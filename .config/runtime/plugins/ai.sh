@@ -77,10 +77,11 @@ _ai_setup() {
     if has_cmd ollama || has_cmd llama-server || has_cmd llama-swap; then
         safe_source "${RUNTIME_ROOT}/ai/env.sh"
         safe_source "${RUNTIME_ROOT}/ai/helpers.sh"
-        if command -v alx >/dev/null 2>&1; then
-            safe_source "${RUNTIME_ROOT}/ai/aliases.sh"
-            runtime_ai_aliases
-        fi
+        # alx is optional — its alias() shim (plugins/alx.sh) strips
+        # --desc/--tags when alx is absent, so the registrations work
+        # either way.
+        safe_source "${RUNTIME_ROOT}/ai/aliases.sh"
+        runtime_ai_aliases
     fi
 }
 
