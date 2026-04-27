@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# Run yazi; on exit, print the final cwd to stdout if it changed.
+# Shell wrapper: target=$(yazi-launch "$@"); [ -n "$target" ] && cd "$target"
+
+set -eu
+
+command -v yazi >/dev/null 2>&1 || {
+    printf 'yazi-launch: yazi not installed\n' >&2
+    exit 127
+}
+
+tmp=$(mktemp -t yazi-cwd.XXXXXX)
+trap 'rm -f -- "$tmp"' EXIT INT TERM HUP
+
+yazi "$@" --cwd-file="$tmp"
+
+[ -s "$tmp" ] || exit 0
+IFS= read -r cwd < "$tmp" || exit 0
+[ -n "$cwd" ] && [ -d "$cwd" ] && [ "$cwd" != "$PWD" ] && printf '%s\n' "$cwd"
+exit 0
