@@ -1,0 +1,8 @@
+profile samsung-docked {
+    output "Samsung Electric Company C49RG9x H1AK500000" enable mode 5120x1440@119.970 position 0,0 scale 1
+    output "BOE 0x095F Unknown" disable
+}
+
+profile laptop {
+    output "BOE 0x095F Unknown" enable mode 2256x1504@59.999 position 0,0 scale 1.5
+}
