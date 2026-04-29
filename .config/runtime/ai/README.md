@@ -94,6 +94,17 @@ Loaded via `plugins/ollama.sh` (thin shim) during the `setup` hook phase.
 | `llm-flash "prompt"`             | Fast general-purpose query (accepts stdin) |
 | `llm-flash-file <file> "prompt"` | Fast file analysis                         |
 
+### Test & inspection
+
+| Command                                | Description                                          |
+| -------------------------------------- | ---------------------------------------------------- |
+| `llm-status`                           | Diag: endpoints, role map, model list, storage paths |
+| `llm-models [active\|llama\|ollama\|all]` | List models on a backend                          |
+| `llm-use [auto\|llama\|ollama]`        | Switch session backend (or print state)              |
+| `llm-with <model> "<prompt>"`          | Run a single call with explicit model id             |
+| `llm-pull <ref> [glob]`                | Ollama tag (no slash) or HF repo (slash) — auto-routed |
+| `llm-bench [role\|model]`              | Round-trip latency check                             |
+
 ### Meta
 
 | Command    | Description                                         |

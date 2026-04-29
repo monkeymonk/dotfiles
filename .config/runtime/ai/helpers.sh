@@ -562,6 +562,174 @@ _llm_flash_file() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────
+# Testing & inspection — backend-agnostic diagnostics
+# ─────────────────────────────────────────────────────────────────────────
+
+# _llm_with <model> "<prompt>" — bypass role mapping, run with explicit id.
+# Stdin is forwarded as context (same as _llm_run). Useful for ad-hoc
+# benchmarking or when comparing two models side-by-side.
+_llm_with() {
+    [ -n "$1" ] && [ -n "$2" ] || {
+        echo "Usage: llm-with <model-id-or-alias> \"<prompt>\"  (stdin forwarded as context)"
+        return 1
+    }
+    _llm_run "$@"
+}
+
+# _llm_use [auto|llama|ollama] — switch session backend, or print state.
+_llm_use() {
+    case "$1" in
+        '')
+            printf 'AI_BACKEND=%s   resolved: %s\n' \
+                "${AI_BACKEND:-auto}" "$(_llm_backend)"
+            ;;
+        auto)
+            unset AI_BACKEND
+            printf 'AI_BACKEND unset   resolved: %s\n' "$(_llm_backend)"
+            ;;
+        llama|ollama)
+            export AI_BACKEND="$1"
+            printf 'AI_BACKEND=%s   resolved: %s\n' "$1" "$(_llm_backend)"
+            ;;
+        *)
+            echo "Usage: llm-use [auto|llama|ollama]"
+            return 1
+            ;;
+    esac
+}
+
+# _llm_models [active|llama|ollama|all]
+# Print the model list from one or both backends.
+_llm_models() {
+    local _which="${1:-active}"
+    local _llama_url="http://${LLAMA_HOST:-127.0.0.1:8080}/v1/models"
+    local _ollama_url="http://${OLLAMA_HOST:-127.0.0.1:11434}/api/tags"
+
+    _print_llama() {
+        echo "llama-swap ($LLAMA_HOST):"
+        curl -sf -m 2 "$_llama_url" 2>/dev/null \
+            | jq -r '.data[].id' 2>/dev/null \
+            | sed 's/^/  /' \
+            || echo "  (unreachable)"
+    }
+    _print_ollama() {
+        echo "ollama ($OLLAMA_HOST):"
+        if curl -sf -m 2 "$_ollama_url" >/dev/null 2>&1; then
+            ollama list 2>/dev/null | tail -n +2 | awk '{print "  " $1}'
+        else
+            echo "  (unreachable)"
+        fi
+    }
+
+    case "$_which" in
+        llama)  _print_llama ;;
+        ollama) _print_ollama ;;
+        all)    _print_llama; echo; _print_ollama ;;
+        active|*)
+            case "$(_llm_backend)" in
+                llama)  _print_llama ;;
+                ollama) _print_ollama ;;
+                none)   echo "no backend reachable"; return 1 ;;
+            esac
+            ;;
+    esac
+    unset -f _print_llama _print_ollama 2>/dev/null
+}
+
+# _llm_status — full diagnostic: reachability, role map, models, storage.
+_llm_status() {
+    local _llama_ok=0 _ollama_ok=0
+    local _llama_url="http://${LLAMA_HOST:-127.0.0.1:8080}/v1/models"
+    local _ollama_url="http://${OLLAMA_HOST:-127.0.0.1:11434}/api/tags"
+
+    curl -sf -m 1 "$_llama_url"  >/dev/null 2>&1 && _llama_ok=1
+    curl -sf -m 1 "$_ollama_url" >/dev/null 2>&1 && _ollama_ok=1
+
+    printf 'AI Stack Status\n===============\n\n'
+    printf 'Backend:    AI_BACKEND=%s   resolved: %s\n\n' \
+        "${AI_BACKEND:-auto}" "$(_llm_backend)"
+
+    printf 'Endpoints:\n'
+    printf '  llama-swap @ %-22s : %s\n' "${LLAMA_HOST:-unset}" \
+        "$( [ "$_llama_ok"  = 1 ] && echo OK || echo down )"
+    printf '  ollama     @ %-22s : %s\n' "${OLLAMA_HOST:-unset}" \
+        "$( [ "$_ollama_ok" = 1 ] && echo OK || echo down )"
+    printf '\n'
+
+    printf 'Roles → models:\n'
+    local _r
+    for _r in default fast code reason embed vision ocr; do
+        printf '  %-8s : %s\n' "$_r" "$(_llm_model "$_r")"
+    done
+    printf '\n'
+
+    printf 'Models available:\n'
+    [ "$_llama_ok"  = 1 ] && { _llm_models llama;  printf '\n'; }
+    [ "$_ollama_ok" = 1 ] && { _llm_models ollama; printf '\n'; }
+    [ "$_llama_ok" = 0 ] && [ "$_ollama_ok" = 0 ] && {
+        printf '  (none reachable — start one: llama-swap-up  /  ollama-up)\n\n'
+    }
+
+    printf 'Storage:\n'
+    printf '  LLAMA_MODELS_DIR : %s\n' "${LLAMA_MODELS_DIR:-unset}"
+    printf '  OLLAMA_MODELS    : %s\n' "${OLLAMA_MODELS:-unset (default ~/.ollama/models)}"
+    printf '  HF_HOME          : %s\n' "${HF_HOME:-unset}"
+    printf '  HF_HUB_CACHE     : %s\n' "${HF_HUB_CACHE:-unset (default \$HF_HOME/hub)}"
+}
+
+# _llm_pull <ref> [glob]
+# Backend-aware model pull.
+#   ollama tag (no slash):     ollama pull <ref>
+#   HF repo (org/name):        hf download <repo> --include <glob> --local-dir $LLAMA_MODELS_DIR/<name>
+_llm_pull() {
+    [ -n "$1" ] || {
+        echo "Usage:"
+        echo "  llm-pull <ollama-tag>                  e.g. llm-pull qwen2.5-coder:7b"
+        echo "  llm-pull <org/repo> [glob]             e.g. llm-pull Qwen/Qwen2.5-Coder-3B-Instruct-GGUF '*Q4_K_M*.gguf'"
+        return 1
+    }
+    case "$1" in
+        */*)
+            has_cmd hf || { echo "Error: hf CLI not installed"; return 1; }
+            local _repo="$1" _glob="${2:-*Q4_K_M*.gguf}"
+            local _name; _name=$(printf '%s' "$_repo" \
+                | tr '[:upper:]' '[:lower:]' \
+                | sed 's|.*/||;s|-gguf$||;s|-instruct-gguf$||')
+            local _dest="${LLAMA_MODELS_DIR:-$HOME/.local/share/llama.cpp/models}/$_name"
+            mkdir -p "$_dest"
+            echo "Pulling $_repo  (glob: $_glob)  →  $_dest"
+            hf download "$_repo" --include "$_glob" --local-dir "$_dest" || return 1
+            echo
+            echo "Done. Next: add an entry to ~/.config/llama-swap/config.yaml pointing at"
+            echo "  \${models_dir}/$_name/<file>.gguf"
+            ;;
+        *)
+            has_cmd ollama || { echo "Error: ollama not installed"; return 1; }
+            ollama pull "$1"
+            ;;
+    esac
+}
+
+# _llm_bench [role-or-model]
+# Send a tiny prompt, time the round-trip, report backend / model / ms.
+_llm_bench() {
+    local _target="${1:-default}"
+    local _start _end _ms _resp _rc
+    _start=$(date +%s%3N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1000))')
+    _resp=$(_llm_run "$_target" "Reply with the single word: ok" 2>&1)
+    _rc=$?
+    _end=$(date +%s%3N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1000))')
+    _ms=$((_end - _start))
+    if [ "$_rc" = 0 ]; then
+        printf 'backend=%s  target=%s  resolved=%s  elapsed=%dms  reply=%s\n' \
+            "$(_llm_backend)" "$_target" "$(_llm_model "$_target")" "$_ms" "$_resp"
+    else
+        printf 'bench failed (target=%s, %dms): %s\n' "$_target" "$_ms" "$_resp" >&2
+        return 1
+    fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────
 # Help
 # ─────────────────────────────────────────────────────────────────────────
 
@@ -616,6 +784,14 @@ Shortcuts
   llm-think "<q>"              reasoning model (role: reason)
   llm-flash "<p>"              fast model (role: fast)
   llm-flash-file <f> "<p>"     fast model on a file
+
+Testing & inspection
+  llm-status                   reachability + role map + models + storage
+  llm-models [active|llama|ollama|all]   list models on a backend
+  llm-use [auto|llama|ollama]  switch session backend (or print state)
+  llm-with <model> "<prompt>"  one-off call, bypass role mapping
+  llm-pull <ref> [glob]        ollama tag or HF repo (auto-detected)
+  llm-bench [role|model]       quick round-trip benchmark
 
 Roles → models
   default  : $(_llm_model default)

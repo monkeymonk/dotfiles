@@ -13,6 +13,13 @@ runtime_plugin_huggingface() {
     # the location explicit and honours a user-set XDG_CACHE_HOME.
     export HF_HOME="${HF_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/huggingface}"
 
+    # Bulk model downloads go to /data/models when present (matches the
+    # llama.cpp / ollama layout under /data/models/*). Auth tokens and
+    # small metadata stay under $HF_HOME on the home filesystem.
+    if [ -z "$HF_HUB_CACHE" ] && [ -d /data/models ]; then
+        export HF_HUB_CACHE=/data/models/huggingface
+    fi
+
     # The canonical CLI is now `hf`; `huggingface-cli` still works as a
     # shim. Expose `hf` as a short alias when only the legacy binary
     # exists so downstream helpers can assume `hf <subcommand>` uniformly.

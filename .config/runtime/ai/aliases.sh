@@ -43,4 +43,11 @@ runtime_ai_aliases() {
     alias llm-flash-file='_llm_flash_file' --desc "LLM flash file" --tags "llm,fast,file"
 
     alias llm-help='_llm_help' --desc "LLM help" --tags "llm,help"
+
+    alias llm-status='_llm_status' --desc "LLM stack diagnostic" --tags "llm,status,test"
+    alias llm-models='_llm_models' --desc "List models on a backend" --tags "llm,models,test"
+    alias llm-use='_llm_use' --desc "Switch session backend" --tags "llm,backend,test"
+    alias llm-with='_llm_with' --desc "Run with explicit model id" --tags "llm,test"
+    alias llm-pull='_llm_pull' --desc "Pull a model (ollama tag or HF repo)" --tags "llm,models"
+    alias llm-bench='_llm_bench' --desc "Round-trip latency check" --tags "llm,bench,test"
 }
