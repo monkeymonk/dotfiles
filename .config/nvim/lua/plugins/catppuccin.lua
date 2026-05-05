@@ -14,10 +14,8 @@ return {
 				snacks = true,
 				treesitter = true,
 				lualine = true,
-			which_key = true,
-				mini = {
-					enabled = true,
-				},
+				which_key = true,
+				mini = { enabled = true },
 			},
 		})
 

@@ -2,6 +2,7 @@ return {
 	name = "blink",
 	src = "https://github.com/saghen/blink.cmp",
 	dependencies = {
+		"https://github.com/saghen/blink.lib",
 		"https://github.com/saghen/blink.compat",
 	},
 

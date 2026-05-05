@@ -1,7 +1,6 @@
 local opt = vim.opt
 local g = vim.g
 
--- Ensure LSP/tool binaries are on PATH
 local extra_paths = {
 	vim.fn.expand("~/.local/bin"),
 	vim.fn.expand("~/.local/share/nvim/mason/bin"),
@@ -60,7 +59,6 @@ opt.formatoptions:remove("o")
 opt.formatoptions:append("rnj")
 
 opt.exrc = true
-opt.secure = true
 
 if vim.fn.executable("rg") == 1 then
 	opt.grepprg = "rg --vimgrep --smart-case --hidden"

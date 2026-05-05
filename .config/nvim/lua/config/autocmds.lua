@@ -83,9 +83,11 @@ autocmd("FileType", {
 
 autocmd("FileType", {
 	group = group_markdown,
-	pattern = { "gitcommit", "gitrebase" },
+	pattern = "gitcommit",
 	callback = function()
-		vim.cmd("startinsert")
+		if vim.fn.line(".") == 1 and vim.fn.getline(1) == "" then
+			vim.cmd("startinsert")
+		end
 	end,
 })
 

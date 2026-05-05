@@ -3,18 +3,16 @@ return {
 	src = "https://github.com/echasnovski/mini.move",
 	event = { "BufReadPost", "BufNewFile" },
 
-	setup = function()
-		require("mini.move").setup({
-			mappings = {
-				left = "<A-Left>",
-				right = "<A-Right>",
-				down = "<A-Down>",
-				up = "<A-Up>",
-				line_left = "<A-Left>",
-				line_right = "<A-Right>",
-				line_down = "<A-Down>",
-				line_up = "<A-Up>",
-			},
-		})
-	end,
+	opts = {
+		mappings = {
+			left = "<M-h>",
+			right = "<M-l>",
+			down = "<M-j>",
+			up = "<M-k>",
+			line_left = "<M-h>",
+			line_right = "<M-l>",
+			line_down = "<M-j>",
+			line_up = "<M-k>",
+		},
+	},
 }

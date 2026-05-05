@@ -9,29 +9,39 @@ return {
 			dir = vim.fn.stdpath("state") .. "/sessions/",
 		})
 
-		-- Auto-restore prompt on startup (no file args only)
-		if vim.fn.argc() == 0 then
+		-- Auto-restore prompt on startup (no file args, no +cmd / -c / -S, no stdin)
+		local function launched_bare()
+			if vim.fn.argc() ~= 0 then
+				return false
+			end
+			for i = 2, #vim.v.argv do
+				local a = vim.v.argv[i]
+				if a == "-" or a:sub(1, 1) == "+" or a == "-c" or a == "--cmd" or a == "-S" then
+					return false
+				end
+			end
+			return true
+		end
+
+		if launched_bare() then
 			vim.api.nvim_create_autocmd("UIEnter", {
 				once = true,
 				callback = function()
 					vim.schedule(function()
 						local named = sessions.list()
-						local choices = {}
-
-						for _, name in ipairs(named) do
-							choices[#choices + 1] = name
-						end
-
 						local has_auto = vim.fn.filereadable(require("persistence").current()) == 1
-						if has_auto then
-							choices[#choices + 1] = "[last session]"
-						end
 
-						if #choices == 0 then
+						if #named == 0 and not has_auto then
 							return
 						end
 
-						choices[#choices + 1] = "[fresh start]"
+						local choices = { "[fresh start]" }
+						if has_auto then
+							choices[#choices + 1] = "[last session]"
+						end
+						for _, name in ipairs(named) do
+							choices[#choices + 1] = name
+						end
 
 						vim.ui.select(choices, {
 							prompt = "Restore session?",

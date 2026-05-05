@@ -12,15 +12,15 @@ return {
 
 	install = {
 		notes = {
-			"Scissors manages VS Code style snippets in ~/.config/nvim-next/snippets/",
-			"Lua snippets still live in ~/.config/nvim-next/luasnippets/ for advanced cases.",
+			"Scissors manages VS Code style snippets in ~/.config/nvim/snippets/.",
+			"Lua snippets still live in ~/.config/nvim/luasnippets/ for advanced cases.",
 		},
 	},
 
-	setup = function()
-		require("scissors").setup({
+	opts = function()
+		return {
 			snippetDir = vim.fs.joinpath(vim.fn.stdpath("config"), "snippets"),
-		})
+		}
 	end,
 
 	keys = function(map)

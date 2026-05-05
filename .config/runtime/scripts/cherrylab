@@ -1,0 +1,324 @@
+#!/usr/bin/env sh
+# cherrylab — manage the CherryLab docker stack and project compose files.
+#
+# Stack-only (always operate on $CHERRYLAB_DIR):
+#   up | down | pull | update | status | ps | services
+#
+# Bridge (CherryLab + CWD project):
+#   start    cherrylab up, then docker compose up -d in CWD
+#   stop     docker compose down in CWD, then cherrylab down
+#
+# Restart targets (lab | project | all | <svc>):
+#   restart [target]   default: all in project, lab elsewhere
+#
+# Context-aware (project first if CWD has compose, else lab):
+#   open  [svc]              No svc in project → project URL
+#   url   [svc]              No svc in project → project URL
+#   logs  [args...]          Service in args resolves the target
+#   shell <svc> [cmd...]     Service name resolves the target
+#
+# Override location with: export CHERRYLAB_DIR=/path/to/cherrylab
+#
+# Note: the `cd` subcommand is implemented in the shell-side wrapper
+# (plugins/cherrylab.sh) — it can't run from a child process.
+
+set -eu
+
+. "${0%/*}/../core/lib.sh"
+
+CHERRYLAB_DIR="${CHERRYLAB_DIR:-$HOME/Works/cbtw/tools/cherrylab}"
+
+# --- helpers --------------------------------------------------------------
+
+_compose() {
+    dir="$1"; shift
+    if [ ! -d "$dir" ]; then
+        error "cherrylab: directory not found: $dir"
+        return 1
+    fi
+    if [ ! -f "$dir/docker-compose.yml" ] \
+        && [ ! -f "$dir/compose.yaml" ] \
+        && [ ! -f "$dir/compose.yml" ]; then
+        error "cherrylab: no docker-compose.yml in $dir"
+        return 1
+    fi
+    ( cd "$dir" && docker compose "$@" )
+}
+
+_has_compose() {
+    [ -f "$1/docker-compose.yml" ] || [ -f "$1/compose.yaml" ] || [ -f "$1/compose.yml" ]
+}
+
+_in_project() {
+    [ "$PWD" != "$CHERRYLAB_DIR" ] && _has_compose "$PWD"
+}
+
+_default_dir() {
+    if _in_project; then
+        printf '%s\n' "$PWD"
+    else
+        printf '%s\n' "$CHERRYLAB_DIR"
+    fi
+}
+
+_services_dir() {
+    dir="${1:-$CHERRYLAB_DIR}"
+    [ -d "$dir" ] || return 0
+    ( cd "$dir" && docker compose config --services 2>/dev/null )
+}
+
+# Resolve compose dir owning <svc>: project (if in one and svc matches), else lab.
+# Falls back to default dir so docker compose can produce its own error.
+_find_service_dir() {
+    svc="$1"
+    if _in_project; then
+        if _services_dir "$PWD" | grep -qx "$svc"; then
+            printf '%s\n' "$PWD"
+            return 0
+        fi
+    fi
+    if _services_dir "$CHERRYLAB_DIR" | grep -qx "$svc"; then
+        printf '%s\n' "$CHERRYLAB_DIR"
+        return 0
+    fi
+    _default_dir
+}
+
+# Read a var from <dir>/.env (fallback .env.example), strip surrounding quotes.
+_env_var() {
+    dir="$1"; var="$2"
+    env="$dir/.env"
+    [ -f "$env" ] || env="$dir/.env.example"
+    [ -f "$env" ] || return 1
+    val=$(awk -F= -v v="$var" '$1==v { sub(/^[^=]*=/, ""); print; exit }' "$env")
+    val="${val%\"}"; val="${val#\"}"
+    val="${val%\'}"; val="${val#\'}"
+    [ -n "$val" ] && printf '%s\n' "$val"
+}
+
+_domain() {
+    _env_var "$CHERRYLAB_DIR" DLAB_DOMAIN \
+        || _env_var "$PWD" DLAB_DOMAIN \
+        || printf 'cherrylab.test\n'
+}
+
+# --- subcommands ----------------------------------------------------------
+
+cmd_update() {
+    if [ -d "$CHERRYLAB_DIR/.git" ] && command -v git >/dev/null 2>&1; then
+        ( cd "$CHERRYLAB_DIR" && git pull --ff-only ) || return $?
+    fi
+    _compose "$CHERRYLAB_DIR" pull "$@" || return $?
+    _compose "$CHERRYLAB_DIR" up -d "$@"
+}
+
+cmd_services() {
+    target="${1:-}"
+    case "$target" in
+        ""|current)
+            _services_dir "$(_default_dir)"
+            ;;
+        lab)
+            _services_dir "$CHERRYLAB_DIR"
+            ;;
+        project|proj)
+            if ! _in_project; then
+                error "cherrylab services project: not in a project directory"
+                return 1
+            fi
+            _services_dir "$PWD"
+            ;;
+        all)
+            # Project first, then lab services not already in project.
+            proj_list=""
+            if _in_project; then
+                proj_list=$(_services_dir "$PWD")
+                [ -n "$proj_list" ] && printf '%s\n' "$proj_list"
+            fi
+            _services_dir "$CHERRYLAB_DIR" | while IFS= read -r s; do
+                [ -z "$s" ] && continue
+                case "
+$proj_list
+" in
+                    *"
+$s
+"*) ;;
+                    *) printf '%s\n' "$s" ;;
+                esac
+            done
+            ;;
+        *)
+            error "cherrylab services: unknown target '$target' (lab|project|all|current)"
+            return 2
+            ;;
+    esac
+}
+
+cmd_url() {
+    svc="${1:-}"
+    if [ -z "$svc" ]; then
+        if _in_project; then
+            sub=$(_env_var "$PWD" DLAB_SUB_DOMAIN || true)
+            domain=$(_env_var "$PWD" DLAB_DOMAIN || true)
+            domain="${domain:-$(_domain)}"
+            if [ -z "$sub" ]; then
+                error "cherrylab url: DLAB_SUB_DOMAIN not set in $PWD/.env"
+                return 1
+            fi
+            printf 'https://%s.%s\n' "$sub" "$domain"
+            return 0
+        fi
+        error "cherrylab url: missing service name"
+        return 2
+    fi
+    printf 'https://%s.%s\n' "$svc" "$(_domain)"
+}
+
+cmd_open() {
+    url=$(cmd_url "$@") || return $?
+    if command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1 &
+    elif command -v open >/dev/null 2>&1; then
+        open "$url"
+    else
+        error "cherrylab open: no xdg-open/open found — URL: $url"
+        return 1
+    fi
+}
+
+cmd_logs() {
+    svc=""
+    for a in "$@"; do
+        case "$a" in
+            -*) ;;
+            *) svc="$a"; break ;;
+        esac
+    done
+    if [ -n "$svc" ]; then
+        dir=$(_find_service_dir "$svc")
+    else
+        dir=$(_default_dir)
+    fi
+    _compose "$dir" logs "$@"
+}
+
+cmd_shell() {
+    svc="${1:-}"
+    if [ -z "$svc" ]; then
+        error "cherrylab shell: missing service name"
+        return 2
+    fi
+    shift
+    dir=$(_find_service_dir "$svc")
+    if [ $# -eq 0 ]; then
+        _compose "$dir" exec "$svc" sh -c '[ -x /bin/bash ] && exec /bin/bash || exec /bin/sh'
+    else
+        _compose "$dir" exec "$svc" "$@"
+    fi
+}
+
+cmd_restart() {
+    target="${1:-}"
+    case "$target" in
+        lab)
+            shift
+            _compose "$CHERRYLAB_DIR" restart "$@"
+            ;;
+        project|proj)
+            shift
+            if ! _in_project; then
+                error "cherrylab restart project: not in a project directory"
+                return 1
+            fi
+            _compose "$PWD" restart "$@"
+            ;;
+        all|both)
+            shift
+            _compose "$CHERRYLAB_DIR" restart "$@" || return $?
+            if _in_project; then
+                _compose "$PWD" restart "$@"
+            fi
+            ;;
+        "")
+            if _in_project; then
+                _compose "$CHERRYLAB_DIR" restart || return $?
+                _compose "$PWD" restart
+            else
+                _compose "$CHERRYLAB_DIR" restart
+            fi
+            ;;
+        *)
+            dir=$(_find_service_dir "$target")
+            _compose "$dir" restart "$@"
+            ;;
+    esac
+}
+
+cmd_help() {
+    cat <<EOF
+cherrylab — manage CherryLab + project docker stacks
+
+Stack-only:
+  up                     Start CherryLab stack
+  down                   Stop CherryLab stack
+  pull                   Pull latest CherryLab images
+  update                 git pull && pull images && up -d
+  status|ps              Show CherryLab services
+  services [target]      List service names (current|lab|project|all)
+  cd                     cd into \$CHERRYLAB_DIR (shell wrapper only)
+
+Bridge (CherryLab + CWD):
+  start [args]           Start CherryLab, then 'docker compose up -d' in CWD
+  stop  [args]           'docker compose down' in CWD, then stop CherryLab
+
+Restart:
+  restart [target]       Target: lab|project|all|<svc>
+                         Default: all (in project) | lab (elsewhere)
+
+Context-aware (project services tried first, then CherryLab):
+  open  [svc]            Open URL in browser. No svc in project → project URL.
+  url   [svc]            Print URL. No svc in project → project URL.
+  logs  [args]           Tail logs (target inferred from service arg).
+  shell <svc> [cmd]      Exec into service (default: bash → sh).
+
+CHERRYLAB_DIR=$CHERRYLAB_DIR
+EOF
+}
+
+# --- main dispatch --------------------------------------------------------
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift
+
+case "$cmd" in
+    up)        _compose "$CHERRYLAB_DIR" up -d "$@" ;;
+    down)      _compose "$CHERRYLAB_DIR" down "$@" ;;
+    pull)      _compose "$CHERRYLAB_DIR" pull "$@" ;;
+    status|ps) _compose "$CHERRYLAB_DIR" ps "$@" ;;
+    update)    cmd_update "$@" ;;
+    services)  cmd_services "$@" ;;
+    start)
+        _compose "$CHERRYLAB_DIR" up -d || exit $?
+        _compose "$PWD" up -d "$@"
+        ;;
+    stop)
+        _compose "$PWD" down "$@" || exit $?
+        _compose "$CHERRYLAB_DIR" down
+        ;;
+    restart)    cmd_restart "$@" ;;
+    logs)       cmd_logs   "$@" ;;
+    open)       cmd_open   "$@" ;;
+    url)        cmd_url    "$@" ;;
+    shell|exec) cmd_shell  "$@" ;;
+    cd)
+        error "cherrylab cd: must run as a shell function (load plugins/cherrylab.sh)"
+        exit 1
+        ;;
+    ""|-h|--help|help)
+        cmd_help
+        ;;
+    *)
+        error "cherrylab: unknown command '$cmd' (try: cherrylab help)"
+        exit 2
+        ;;
+esac

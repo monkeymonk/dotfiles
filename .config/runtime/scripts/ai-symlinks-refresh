@@ -1,0 +1,68 @@
+#!/usr/bin/env sh
+# ai-symlinks-refresh — symlink AI CLIs from non-standard paths into ~/.local/bin
+# so they're reachable on PATH regardless of where the installer dropped them.
+#
+# Usage:
+#   ai-symlinks-refresh             Refresh if stamp is older than 1 day
+#   ai-symlinks-refresh --force     Refresh now, ignore stamp
+#
+# Stamp: $XDG_CACHE_HOME/runtime/ai-symlinks.stamp
+#
+# To add a tool: append name + source pattern to the `set --` line below.
+# Source supports globs (e.g. version-manager paths); last match wins.
+
+set -eu
+
+. "${0%/*}/../core/lib.sh"
+
+BIN="$HOME/.local/bin"
+STAMP="${XDG_CACHE_HOME:-$HOME/.cache}/runtime/ai-symlinks.stamp"
+
+force=0
+case "${1:-}" in
+    --force|-f) force=1 ;;
+    --help|-h)
+        sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+esac
+
+# Skip if stamp is fresh (< 1 day old).
+if [ "$force" -eq 0 ] && [ -f "$STAMP" ]; then
+    if find "$STAMP" -mmin -1440 -print 2>/dev/null | grep -q .; then
+        exit 0
+    fi
+fi
+
+[ -d "$BIN" ] || mkdir -p "$BIN"
+
+# Return last existing executable from a glob pattern (last = highest version
+# under standard sort order, e.g. mise's nvm-style version dirs).
+_resolve() {
+    _last=""
+    for _c in $1; do
+        [ -x "$_c" ] && _last="$_c"
+    done
+    [ -n "$_last" ] && printf '%s' "$_last" && return 0
+    return 1
+}
+
+# tool_name  source_path (globs ok — last match wins for version sort)
+set -- \
+    claude    "$HOME/.local/share/claude/versions/*" \
+    gemini    "$HOME/.local/share/mise/installs/node/*/bin/gemini" \
+    codex     "$HOME/.local/share/mise/installs/node/*/bin/codex" \
+    opencode  "$HOME/.opencode/bin/opencode" \
+    mcp-hub   "$HOME/.local/share/mise/installs/node/*/bin/mcp-hub"
+
+while [ $# -ge 2 ]; do
+    _name="$1"; _pattern="$2"; shift 2
+    command -v "$_name" >/dev/null 2>&1 && continue
+    [ -L "$BIN/$_name" ] && continue
+    _src=$(_resolve "$_pattern") || continue
+    ln -s "$_src" "$BIN/$_name"
+    info "ai: symlinked $_name -> $_src"
+done
+
+mkdir -p "$(dirname "$STAMP")" 2>/dev/null
+touch "$STAMP"

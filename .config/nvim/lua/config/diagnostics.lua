@@ -4,6 +4,7 @@ vim.diagnostic.config({
 		prefix = "●",
 		source = "if_many",
 	},
+	-- virtual_lines is owned by lsp_lines.nvim (toggled via <leader>ul).
 	signs = {
 		text = {
 			[vim.diagnostic.severity.ERROR] = " ",
