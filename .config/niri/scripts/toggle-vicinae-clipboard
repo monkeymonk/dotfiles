@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if vicinae state open; then
+  vicinae close
+else
+  vicinae vicinae://launch/clipboard/history
+fi

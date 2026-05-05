@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toggle Bitwarden Desktop visibility via its StatusNotifierItem.
+# - If Bitwarden isn't running: launch it, wait for tray registration, then show the window.
+# - If running: call Activate to flip hidden<->visible (same as a tray-icon click).
+
+BW_CMD=(bitwarden-desktop --ozone-platform=wayland)
+BW_PROC_PATTERN='bitwarden/app\.asar'
+
+get_bw_pid() {
+    pgrep -f "$BW_PROC_PATTERN" 2>/dev/null | head -n1
+}
+
+# Resolve the SNI service name registered by a given PID.
+find_sni_for_pid() {
+    local target_pid="$1" items item svc pid
+    items=$(busctl --user --no-pager call \
+        org.kde.StatusNotifierWatcher \
+        /StatusNotifierWatcher \
+        org.freedesktop.DBus.Properties Get \
+        ss org.kde.StatusNotifierWatcher RegisteredStatusNotifierItems \
+        2>/dev/null) || return 1
+
+    while read -r item; do
+        [ -z "$item" ] && continue
+        svc="${item%%/*}"
+        pid=$(busctl --user status "$svc" 2>/dev/null | awk -F= '/^PID=/{print $2}')
+        if [ "$pid" = "$target_pid" ]; then
+            printf '%s\n' "$svc"
+            return 0
+        fi
+    done < <(printf '%s\n' "$items" | grep -oE '"[^"]+"' | tr -d '"')
+
+    return 1
+}
+
+bw_pid=$(get_bw_pid || true)
+
+if [ -z "$bw_pid" ]; then
+    setsid -f "${BW_CMD[@]}" >/dev/null 2>&1 || true
+    # Poll for SNI registration (up to ~6s).
+    for _ in $(seq 1 30); do
+        sleep 0.2
+        bw_pid=$(get_bw_pid || true)
+        [ -z "$bw_pid" ] && continue
+        if find_sni_for_pid "$bw_pid" >/dev/null 2>&1; then
+            break
+        fi
+    done
+fi
+
+[ -z "${bw_pid:-}" ] && { echo "bitwarden failed to start" >&2; exit 1; }
+
+svc=$(find_sni_for_pid "$bw_pid" || true)
+[ -z "${svc:-}" ] && { echo "bitwarden SNI not found for pid $bw_pid" >&2; exit 1; }
+
+busctl --user call "$svc" /StatusNotifierItem \
+    org.kde.StatusNotifierItem Activate ii 0 0

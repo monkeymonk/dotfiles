@@ -16,11 +16,13 @@ binds {
 
     // ─── Applications ───
     Mod+Return                          hotkey-overlay-title="Open Terminal: Ghostty" { spawn "ghostty"; }
+    Mod+Shift+T                         hotkey-overlay-title="Open Terminal: Ghostty" { spawn "ghostty"; }
     Mod+Shift+B                         hotkey-overlay-title="Open Browser" { spawn-sh "xdg-open 'x-junction://https://startpage.com'"; }
     Mod+Shift+F                         hotkey-overlay-title="File Manager: Yazi" { spawn "ghostty" "-e" "yazi-launch"; }
     Mod+Shift+E                         hotkey-overlay-title="File Manager: Nautilus" { spawn "nautilus"; }
-    Mod+Shift+P                         hotkey-overlay-title="Password Manager: Bitwarden" { spawn "sh" "-c" "niri msg windows | grep -q bitwarden-desktop && niri msg action close-window || bitwarden-desktop"; }
-    Mod+Shift+V                         hotkey-overlay-title="Clipboard Manager: Clipper" { spawn-sh "qs -c noctalia-shell ipc call plugin:clipper togglePanel"; }
+    Mod+Shift+P                         hotkey-overlay-title="Password Manager: Bitwarden" { spawn "/home/stephan/.config/niri/scripts/toggle-bitwarden"; }
+    Mod+Shift+V                         hotkey-overlay-title="Clipboard Manager: Vicinae" { spawn "/home/stephan/.config/niri/scripts/toggle-vicinae-clipboard"; }
+    Mod+Shift+N                         hotkey-overlay-title="Sticky Notes" { spawn-sh "qs -c noctalia-shell ipc call plugin:sticky-notes toggle"; }
 
     // ─── Media Controls ───
     XF86AudioRaiseVolume                allow-when-locked=true { spawn-sh "qs -c noctalia-shell ipc call volume increase"; }
