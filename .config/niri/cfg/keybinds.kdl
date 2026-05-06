@@ -23,6 +23,7 @@ binds {
     Mod+Shift+P                         hotkey-overlay-title="Password Manager: Bitwarden" { spawn "/home/stephan/.config/niri/scripts/toggle-bitwarden"; }
     Mod+Shift+V                         hotkey-overlay-title="Clipboard Manager: Vicinae" { spawn "/home/stephan/.config/niri/scripts/toggle-vicinae-clipboard"; }
     Mod+Shift+N                         hotkey-overlay-title="Sticky Notes" { spawn-sh "qs -c noctalia-shell ipc call plugin:sticky-notes toggle"; }
+    Mod+Shift+M                         hotkey-overlay-title="BetterBird Mail" { spawn "/home/stephan/.config/niri/scripts/toggle-betterbird"; }
 
     // ─── Media Controls ───
     XF86AudioRaiseVolume                allow-when-locked=true { spawn-sh "qs -c noctalia-shell ipc call volume increase"; }

@@ -1,0 +1,95 @@
+// This configuration is merged with the default vicinae configuration file, which you can obtain by running the `vicinae config default` command.
+// Every item defined in this file takes precedence over the values defined in the default config or any other imported file.
+//
+// You can make manual edits to this file, however you should keep in mind that this file may be written to by vicinae when a configuration change is made through the GUI.
+// When that happens, any custom comments or formatting will be lost.
+//
+// If you want to maintain a configuration file with your own comments and formatting, you should create a separate file and add it to the 'imports' array.
+//
+// Learn more about configuration at https://docs.vicinae.com/config
+
+{
+   "$schema": "https://vicinae.com/schemas/config.json",
+   "favicon_service": "twenty",
+   "search_files_in_root": true,
+   "theme": {
+      "light": {
+         "name": "noctalia"
+      },
+      "dark": {
+         "name": "catppuccin-mocha",
+         "icon_theme": "Adwaita"
+      }
+   },
+   "telemetry": {
+      "system_info": false
+   },
+   "providers": {
+      "clipboard": {
+         "enabled": true,
+         "preferences": {
+            "encryption": false,
+            "eraseOnStartup": false,
+            "ignorePasswords": false,
+            "monitoring": true
+         }
+      },
+      "files": {
+         "preferences": {
+            "autoIndexing": true,
+            "excludedPaths": "",
+            "paths": "/home/stephan,/home/stephan/Works",
+            "watcherPaths": ""
+         }
+      },
+      "power": {
+         "entrypoints": {
+            "hibernate": {
+               "preferences": {
+                  "confirm": true,
+                  "customProgram": "systemctl hibernate"
+               }
+            },
+            "lock": {
+               "preferences": {
+                  "confirm": false,
+                  "customProgram": "qs -c noctalia-shell ipc call lockScreen lock"
+               }
+            },
+            "logout": {
+               "preferences": {
+                  "confirm": true,
+                  "customProgram": "niri msg action quit"
+               }
+            },
+            "power-off": {
+               "preferences": {
+                  "confirm": true,
+                  "customProgram": "systemctl poweroff"
+               }
+            },
+            "reboot": {
+               "preferences": {
+                  "confirm": true,
+                  "customProgram": "systemctl reboot"
+               }
+            },
+            "sleep": {
+               "preferences": {
+                  "confirm": true,
+                  "customProgram": "niri msg action power-off-monitors"
+               }
+            },
+            "soft-reboot": {
+               "enabled": false
+            },
+            "suspend": {
+               "preferences": {
+                  "confirm": true,
+                  "customProgram": "systemctl suspend"
+               }
+            }
+         }
+      }
+   }
+}

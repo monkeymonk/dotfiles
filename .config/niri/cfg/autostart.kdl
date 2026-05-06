@@ -4,6 +4,6 @@
     spawn-sh-at-startup "qs -c noctalia-shell"
 
     spawn-at-startup "kanshi"
-    spawn-at-startup "bitwarden-desktop" "--ozone-platform=wayland"
+    spawn-at-startup "env" "XDG_CURRENT_DESKTOP=Unity" "bitwarden-desktop" "--ozone-platform=wayland"
     spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
     spawn-at-startup "vicinae" "server"

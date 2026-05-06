@@ -6,6 +6,7 @@ include "./cfg/display.kdl"
 include "./cfg/layout.kdl"
 include "./cfg/rules.kdl"
 include "./cfg/misc.kdl"
+include "./cfg/workspaces.kdl"
 
 include "./noctalia.kdl"
 

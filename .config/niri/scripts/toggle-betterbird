@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toggle BetterBird visibility (Bitwarden-style hide/show without closing).
+# - No window: launch betterbird, wait for window, focus it.
+# - Window focused: park it on the "scratch-betterbird" workspace (focus stays put).
+# - Window elsewhere: pull it to the focused output's active workspace and focus it.
+
+APP_ID='eu.betterbird.Betterbird'
+SCRATCH='scratch-betterbird'
+LAUNCH_CMD=(betterbird)
+
+bb_window_id() {
+    niri msg --json windows 2>/dev/null \
+        | python3 -c "
+import json, sys
+for w in json.load(sys.stdin):
+    if w.get('app_id') == '$APP_ID':
+        print(w['id'], int(bool(w['is_focused'])))
+        sys.exit(0)
+" 2>/dev/null
+}
+
+focused_output() {
+    niri msg --json workspaces 2>/dev/null \
+        | python3 -c "
+import json, sys
+for w in json.load(sys.stdin):
+    if w.get('is_focused'):
+        print(w['output'])
+        sys.exit(0)
+" 2>/dev/null
+}
+
+read -r bb_id bb_focused < <(bb_window_id || true)
+
+if [ -z "${bb_id:-}" ]; then
+    setsid -f "${LAUNCH_CMD[@]}" >/dev/null 2>&1 || true
+    for _ in $(seq 1 60); do
+        sleep 0.2
+        read -r bb_id bb_focused < <(bb_window_id || true)
+        [ -n "${bb_id:-}" ] && break
+    done
+    [ -z "${bb_id:-}" ] && { echo "betterbird failed to start" >&2; exit 1; }
+    out=$(focused_output || true)
+    [ -n "${out:-}" ] && niri msg action move-window-to-monitor --id "$bb_id" "$out" >/dev/null 2>&1 || true
+    niri msg action focus-window --id "$bb_id" >/dev/null 2>&1 || true
+    exit 0
+fi
+
+if [ "${bb_focused:-0}" = "1" ]; then
+    niri msg action move-window-to-workspace --window-id "$bb_id" --focus false "$SCRATCH" >/dev/null
+else
+    out=$(focused_output || true)
+    [ -n "${out:-}" ] && niri msg action move-window-to-monitor --id "$bb_id" "$out" >/dev/null 2>&1 || true
+    niri msg action focus-window --id "$bb_id" >/dev/null
+fi

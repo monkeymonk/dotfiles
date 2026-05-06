@@ -5,7 +5,7 @@ set -euo pipefail
 # - If Bitwarden isn't running: launch it, wait for tray registration, then show the window.
 # - If running: call Activate to flip hidden<->visible (same as a tray-icon click).
 
-BW_CMD=(bitwarden-desktop --ozone-platform=wayland)
+BW_CMD=(env XDG_CURRENT_DESKTOP=Unity bitwarden-desktop --ozone-platform=wayland)
 BW_PROC_PATTERN='bitwarden/app\.asar'
 
 get_bw_pid() {

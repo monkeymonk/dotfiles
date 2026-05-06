@@ -40,7 +40,8 @@
     }
 
     window-rule {
-        match app-id=r#".*[Bb]itwarden.*"#
+        match app-id=r#"(?i)bitwarden"#
+        match title=r#"(?i)bitwarden"#
         default-column-width  { proportion 0.8; }
         default-window-height { proportion 0.9; }
         open-floating true
