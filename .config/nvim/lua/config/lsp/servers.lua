@@ -1,5 +1,35 @@
 local stubs = require("config.php_stubs")
 
+local function mise_node_bin()
+	local config = vim.fn.expand("~/.config/mise/config.toml")
+	local ok, lines = pcall(vim.fn.readfile, config)
+	if ok then
+		for _, line in ipairs(lines) do
+			local version = line:match('^%s*node%s*=%s*"([^"]+)"')
+			if version then
+				local node = vim.fn.expand("~/.local/share/mise/installs/node/" .. version .. "/bin/node")
+				if vim.fn.executable(node) == 1 then
+					return node
+				end
+			end
+		end
+	end
+end
+
+local function node_bin()
+	local node = mise_node_bin()
+	if node then
+		return node
+	end
+
+	node = vim.fn.exepath("node")
+	return node ~= "" and node or "node"
+end
+
+local function mason_package(path)
+	return vim.fn.stdpath("data") .. "/mason/packages/" .. path
+end
+
 return {
 	lua_ls = {
 		cmd = { "lua-language-server" },
@@ -21,9 +51,16 @@ return {
 	},
 
 	intelephense = {
-		cmd = { "intelephense", "--stdio" },
+		cmd = {
+			node_bin(),
+			mason_package("intelephense/node_modules/intelephense/lib/intelephense.js"),
+			"--stdio",
+		},
 		filetypes = { "php", "blade" },
-		root_markers = { "composer.json", ".git" },
+		get_language_id = function()
+			return "php"
+		end,
+		root_markers = { "composer.json", "artisan", "wp-config.php", ".git" },
 		settings = {
 			intelephense = {
 				environment = {
