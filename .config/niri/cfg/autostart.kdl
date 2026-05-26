@@ -3,7 +3,15 @@
 
     spawn-sh-at-startup "qs -c noctalia-shell"
 
+    spawn-at-startup "playerctld" "daemon"
     spawn-at-startup "kanshi"
-    spawn-at-startup "env" "XDG_CURRENT_DESKTOP=Unity" "bitwarden-desktop" "--ozone-platform=wayland"
+    spawn-at-startup "sunsetr"
+    // Bitwarden autostart is owned by ~/.config/autostart/bitwarden.desktop
+    // (Bitwarden's "Open at login" setting). systemd-xdg-autostart-generator
+    // turns it into app-bitwarden@autostart.service. Ordering against the
+    // SNI watcher and the Wayland/Unity launch flags live in the drop-in:
+    //   ~/.config/systemd/user/app-bitwarden@autostart.service.d/wait-for-tray.conf
+    // Drop-ins survive Bitwarden rewriting its .desktop. Don't add a niri
+    // spawn for bitwarden here — they'd race.
     spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
     spawn-at-startup "vicinae" "server"

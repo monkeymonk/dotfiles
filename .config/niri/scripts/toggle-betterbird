@@ -32,13 +32,13 @@ for w in json.load(sys.stdin):
 " 2>/dev/null
 }
 
-read -r bb_id bb_focused < <(bb_window_id || true)
+read -r bb_id bb_focused < <(bb_window_id || true) || true
 
 if [ -z "${bb_id:-}" ]; then
     setsid -f "${LAUNCH_CMD[@]}" >/dev/null 2>&1 || true
     for _ in $(seq 1 60); do
         sleep 0.2
-        read -r bb_id bb_focused < <(bb_window_id || true)
+        read -r bb_id bb_focused < <(bb_window_id || true) || true
         [ -n "${bb_id:-}" ] && break
     done
     [ -z "${bb_id:-}" ] && { echo "betterbird failed to start" >&2; exit 1; }

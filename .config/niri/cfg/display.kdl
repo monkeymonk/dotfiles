@@ -3,38 +3,38 @@
 // You will have to remove "/-" and edit it before it takes effect.
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Outputs
 
-output "PNP(AOC) 2490W1 APGL59A006573" {
-    mode "1920x1080@60.000"
-    scale 1
-    position x=0 y=0
-}
-
-output "BOE 0x095F Unknown" {
-    mode "2256x1504@59.999"
-    scale 1.5
-    position x=1920 y=39
-}
-
-output "PNP(AOC) 2490W1 APGL59A006397" {
-    mode "1920x1080@60.000"
-    scale 1
-    position x=3424 y=0
-}
-
-output "DP-1" {
-    mode "1920x1080@60.000"
-    scale 1
-    position x=1504 y=0
-}
-
-output "DP-3" {
-    mode "1920x1080@60.000"
-    scale 1
-    position x=-1930 y=-20
-}
-
-output "eDP-1" {
-    mode "2256x1504@59.999"
-    scale 1.5
-    position x=0 y=0
-}
+// output "PNP(AOC) 2490W1 APGL59A006573" {
+//     mode "1920x1080@60.000"
+//     scale 1
+//     position x=0 y=0
+// }
+//
+// output "BOE 0x095F Unknown" {
+//     mode "2256x1504@59.999"
+//     scale 1.5
+//     position x=1920 y=39
+// }
+//
+// output "PNP(AOC) 2490W1 APGL59A006397" {
+//     mode "1920x1080@60.000"
+//     scale 1
+//     position x=3424 y=0
+// }
+//
+// output "DP-1" {
+//     mode "1920x1080@60.000"
+//     scale 1
+//     position x=1504 y=0
+// }
+//
+// output "DP-3" {
+//     mode "1920x1080@60.000"
+//     scale 1
+//     position x=-1930 y=-20
+// }
+//
+// output "eDP-1" {
+//     mode "2256x1504@59.999"
+//     scale 1.5
+//     position x=0 y=0
+// }

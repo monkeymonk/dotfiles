@@ -1,1 +1,3 @@
+    // "main" is declared first so niri boots onto it instead of the scratch.
+    workspace "main"
     workspace "scratch-betterbird"

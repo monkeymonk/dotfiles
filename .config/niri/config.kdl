@@ -10,3 +10,6 @@ include "./cfg/workspaces.kdl"
 
 include "./noctalia.kdl"
 
+
+// Monique monitor configuration
+include "monitors.kdl"

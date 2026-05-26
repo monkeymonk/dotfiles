@@ -141,7 +141,8 @@ binds {
     Mod+W                               { toggle-column-tabbed-display; }
 
     // ─── Screenshots ───
-    Mod+Shift+1                        { screenshot; }
+    // Mod+Shift+1                        { screenshot; }
+    Mod+Shift+1                        { spawn-sh "qs -c noctalia-shell ipc call plugin:screen-toolkit annotate"; }
     Mod+Shift+2                        { screenshot-screen; }
     Mod+Shift+3                        { screenshot-window; }
     Mod+Shift+4                        { spawn-sh "qs -c noctalia-shell ipc call plugin:screen-toolkit record"; }
