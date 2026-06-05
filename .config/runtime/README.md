@@ -10,9 +10,10 @@ runtime/
 ├── core/                 # Primitives (no tool-specific logic)
 ├── config/               # Declarative preferences
 ├── plugins/              # Tool integrations (hook-based)
-├── ai/                   # Local LLM tooling (Ollama)
+├── ai/                   # Local LLM tooling (llama.cpp / Ollama)
 │   ├── data/             # Static tip pool
 │   └── integrations/     # Shell integrations (zsh tips)
+├── tips/                 # Pluggable tip aggregator (static + LLM providers)
 ├── secrets/              # Environment files (*.env)
 └── scripts/              # Standalone executables (on PATH)
 ```
@@ -33,14 +34,13 @@ runtime/
 10. Loads secrets (`secrets/*.env`)
 11. Runs `post_secrets` hooks
 12. Prepends `scripts/` to `PATH`
-13. Exports aliases via `alx`
-14. Sources `cdx` if installed
-15. Runs `interactive` hooks
-16. Deduplicates `PATH`
+13. Sources `cdx` if installed
+14. Runs `interactive` hooks
+15. Deduplicates `PATH`
 
 Load order is strict:
 
-`core → plugins → [bootstrap] → context → [context] → config → [setup] → secrets → [post_secrets] → scripts → alx/cdx → [interactive]`
+`core → plugins → [bootstrap] → context → [context] → config → [setup] → secrets → [post_secrets] → scripts → cdx → [interactive]`
 
 Per-machine values (`BROWSER`, `TERMINAL`, etc.) should be `export`ed in your shell rc **before** sourcing `bootstrap.sh` — `core/env.sh` uses `${VAR:=default}` so pre-existing exports win.
 
@@ -116,32 +116,41 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 
 | Plugin           | Tool                                                      | Hook Phase             |
 | ---------------- | --------------------------------------------------------- | ---------------------- |
-| `agentbox.sh`    | AgentBox — AI tools in isolated Docker containers         | setup                  |
-| `ai.sh`          | Local LLM tooling (paths, symlinks, backend-agnostic)     | setup                  |
-| `alx.sh`         | Alias management (alx)                                    | bootstrap, interactive |
-| `bun.sh`         | Bun runtime                                               | setup                  |
-| `cdx.sh`         | Directory navigation (cdx)                                | interactive            |
-| `composer.sh`    | PHP Composer                                              | setup                  |
-| `deno.sh`        | Deno runtime                                              | setup                  |
-| `docker.sh`      | Docker (contributes `RUNTIME_DOCKER_RUNNING`)             | setup                  |
-| `eza.sh`         | Modern `ls` replacement                                   | setup                  |
-| `fzf.sh`         | Fuzzy finder (fd integration)                             | setup                  |
-| `ghcup.sh`       | Haskell (GHCup)                                           | setup                  |
-| `git.sh`         | Git aliases (contributes `RUNTIME_GIT_VERSION`)           | setup                  |
-| `go.sh`          | Go lang                                                   | setup                  |
-| `huggingface.sh` | Hugging Face Hub CLI (`HF_HOME`, auth)                    | setup                  |
-| `llama.sh`       | llama.cpp (`llama-cli`, `llama-server`, `llama-swap`)     | setup                  |
-| `mise.sh`        | mise — polyglot version manager                           | setup                  |
-| `neovim.sh`      | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback)          | setup                  |
-| `node.sh`        | Node.js (contributes `RUNTIME_NODE_VERSION`)              | setup                  |
-| `open.sh`        | Cross-platform `open` shim (Linux fallback via xdg-open)  | setup                  |
-| `pnpm.sh`        | PNPM package manager                                      | setup                  |
-| `rust.sh`        | Rust / Cargo                                              | setup                  |
-| `shell.sh`       | Shell-specific interactive config                         | interactive            |
-| `starship.sh`    | Starship prompt                                           | interactive            |
-| `tmux.sh`        | Tmux (auto-attach)                                        | interactive            |
-| `uv.sh`          | UV Python package manager                                 | setup                  |
-| `zsh.sh`         | Zsh-specific interactive config                           | interactive            |
+| `ai-capabilities.sh` | Activate generated AI tooling bundle (`~/Works/tools/ai-capabilities`) | setup                  |
+| `ai.sh`              | Local LLM tooling (paths, symlinks, backend-agnostic)                  | setup                  |
+| `alx.sh`             | Alias management (alx)                                                 | bootstrap, interactive |
+| `amdgpu.sh`          | AMD GPU/NPU env (ROCm gfx1150 override, NPU detection)                 | setup                  |
+| `bitwarden.sh`       | Bitwarden — official CLI (`bw`) and optional Rust client (`rbw`)       | setup                  |
+| `bun.sh`             | Bun runtime                                                            | setup                  |
+| `cal.sh`             | Calendar/contacts — khal + vdirsyncer                                  | setup                  |
+| `cdx.sh`             | Directory navigation (cdx)                                             | interactive            |
+| `cherrylab.sh`       | CherryLab docker stack wrapper (`cherrylab` CLI)                       | setup                  |
+| `composer.sh`        | PHP Composer                                                           | setup                  |
+| `deno.sh`            | Deno runtime                                                           | setup                  |
+| `docker.sh`          | Docker (contributes `RUNTIME_DOCKER_RUNNING`)                          | setup                  |
+| `eza.sh`             | Modern `ls` replacement                                                | setup                  |
+| `fzf.sh`             | Fuzzy finder (fd integration)                                          | setup                  |
+| `ghcup.sh`           | Haskell (GHCup)                                                        | setup                  |
+| `git.sh`             | Git aliases (contributes `RUNTIME_GIT_VERSION`)                        | setup                  |
+| `go.sh`              | Go lang                                                                | setup                  |
+| `huggingface.sh`     | Hugging Face Hub CLI (`HF_HOME`, auth)                                 | setup                  |
+| `llama.sh`           | llama.cpp (`llama-cli`, `llama-server`, `llama-swap`)                  | setup                  |
+| `mail.sh`            | Mail stack — aerc + isync (mbsync) + notmuch                           | setup                  |
+| `mise.sh`            | mise — polyglot version manager                                        | setup                  |
+| `neovim.sh`          | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback)                       | setup                  |
+| `node.sh`            | Node.js (contributes `RUNTIME_NODE_VERSION`)                           | setup                  |
+| `ollama.sh`          | Ollama (`OLLAMA_HOST`, `OLLAMA_MODELS`, daemon aliases)                | setup                  |
+| `open.sh`            | Cross-platform `open` shim (Linux fallback via xdg-open)               | setup                  |
+| `pnpm.sh`            | PNPM package manager                                                   | setup                  |
+| `rust.sh`            | Rust / Cargo                                                           | setup                  |
+| `shell.sh`           | Shell-specific interactive config                                      | interactive            |
+| `ssh.sh`             | Forces `TERM=xterm-256color` for `ssh` invocations                     | setup                  |
+| `starship.sh`        | Starship prompt                                                        | interactive            |
+| `tmux.sh`            | Tmux (auto-attach)                                                     | interactive            |
+| `uv.sh`              | UV Python package manager                                              | setup                  |
+| `workenv.sh`         | workenv — Dockerized portable development workspace                    | setup                  |
+| `yazi.sh`            | Yazi file manager + `y` cd-on-exit wrapper                             | setup                  |
+| `zsh.sh`             | Zsh-specific interactive config                                        | interactive            |
 
 ### Hook Phases
 
@@ -200,15 +209,14 @@ The `*-edit` variants open the result in Neovim (often in a split). Aliases are 
 
 ### Dynamic Shell Tips (zsh)
 
-When idle for 8 seconds, displays contextual tips:
+`tips/` is a pluggable tip aggregator (sourced by `plugins/zsh.sh` from `tips/tips.sh`). Providers under `tips/providers/` contribute weighted tips from independent sources:
 
-- Static pool from `ai/data/tips.txt`
-- Dynamic tips generated via `tips-generate` (project-aware, uses whichever LLM backend is live — ollama or llama.cpp)
-- Only triggers for project directories (detected by `is-project-dir`)
-- 70/30 weight favoring dynamic tips
-- Force refresh with `tips-refresh [dir]`
-- Configurable: `ZSH_TIPS_DYNAMIC`, `ZSH_TIPS_GENERATOR`, `ZSH_TIPS_DYNAMIC_TTL`
-- Caching via `cache-run`
+- **static** — pool from `ai/data/tips.txt`
+- **llm** — project-aware tips generated via `tips-generate` (uses the active backend: llama.cpp or Ollama), gated by `is-project-dir`, refreshable via `tips-refresh [dir]`
+
+The `ai/integrations/zsh-tips.zsh` integration shows a tip on idle (8s default).
+
+Commands once sourced: `tips`, `tips list [--source X]`, `tips count`, `tips refresh [--source X]`, `tips status`. See `tips/README.md` for provider authoring and config (`TIPS_CONFIG_DIR`, weighting).
 
 ## Scripts
 
@@ -220,18 +228,22 @@ Scripts can bootstrap logging and utils via `core/lib.sh`:
 . "${0%/*}/../core/lib.sh"
 ```
 
-| Script                 | Purpose                                            |
-| ---------------------- | -------------------------------------------------- |
-| `benchurl`             | URL benchmark timing                               |
-| `cache-run`            | Caching wrapper with configurable TTL              |
-| `clipboard`            | Copy: `stdin \| clipboard`; Paste: `clipboard get` |
-| `is-project-dir`       | Check if a directory is a project root (exit 0/1)  |
-| `project-context`      | Extract project metadata                           |
-| `recent`               | Show recently modified files                       |
-| `serve`                | Simple HTTP server                                 |
-| `tips-generate`        | Generate dynamic shell tips (ollama or llama.cpp)  |
-| `tips-refresh`         | Force-regenerate dynamic tips: `tips-refresh [dir]`|
-| `update-system`        | System package manager updates                     |
+| Script                  | Purpose                                                              |
+| ----------------------- | -------------------------------------------------------------------- |
+| `aerc-harden-creds`     | Replace plaintext aerc passwords with `rbw get` lookups (Bitwarden)  |
+| `ai-symlinks-refresh`   | Symlink AI CLIs from non-standard paths into `~/.local/bin`          |
+| `benchurl`              | URL benchmark timing                                                 |
+| `cache-run`             | Caching wrapper with configurable TTL                                |
+| `cherrylab`             | Manage the CherryLab docker stack and project compose files          |
+| `clipboard`             | Copy: `stdin \| clipboard`; Paste: `clipboard get`                   |
+| `is-project-dir`        | Check if a directory is a project root (exit 0/1)                    |
+| `project-context`       | Extract project metadata                                             |
+| `recent`                | Show recently modified files                                         |
+| `serve`                 | Simple HTTP server                                                   |
+| `tips-generate`         | Generate dynamic shell tips (ollama or llama.cpp)                    |
+| `tips-refresh`          | Force-regenerate dynamic tips: `tips-refresh [dir]`                  |
+| `update-system`         | System package manager updates                                       |
+| `yazi-launch`           | Run yazi and emit final cwd (used by the `y` cd-on-exit shim)        |
 
 ## Dependencies
 

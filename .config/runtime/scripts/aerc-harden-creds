@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""aerc-harden-creds — replace plaintext passwords in ~/.config/aerc/accounts.conf
+with `rbw get` lookups (Bitwarden via rbw).
+
+Workflow:
+  1. aerc-harden-creds --extract        # show plaintext passwords + suggested rbw entries
+  2. add the entries to Bitwarden       # via rbw add, web vault, or desktop app
+  3. aerc-harden-creds                   # verify entries exist, rewrite config
+
+Skips sections that already have *-cred-cmd set. Backs up the file before rewrite.
+"""
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import time
+from urllib.parse import urlparse, urlunparse, unquote, quote
+
+
+def discover(lines):
+    section = None
+    section_keys = {}
+    findings = []
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith('[') and s.endswith(']'):
+            section = s[1:-1]
+            section_keys.setdefault(section, set())
+            continue
+        if '=' not in line or section is None:
+            continue
+        k, v = [x.strip() for x in line.split('=', 1)]
+        section_keys[section].add(k)
+        if k not in ('source', 'outgoing'):
+            continue
+        try:
+            parsed = urlparse(v)
+        except ValueError:
+            continue
+        if not parsed.password:
+            continue
+        findings.append({
+            'section': section,
+            'line_idx': i,
+            'key': k,
+            'cred_key': f'{k}-cred-cmd',
+            'user': unquote(parsed.username or ''),
+            'password': unquote(parsed.password),
+            'parsed': parsed,
+        })
+    # drop findings whose section already has a *-cred-cmd for that key
+    return [f for f in findings if f['cred_key'] not in section_keys.get(f['section'], set())]
+
+
+def strip_password_url(parsed):
+    host = parsed.hostname or ''
+    port = f':{parsed.port}' if parsed.port else ''
+    user = quote(unquote(parsed.username), safe='') if parsed.username else ''
+    netloc = (user + '@' if user else '') + host + port
+    return urlunparse(parsed._replace(netloc=netloc))
+
+
+def rbw(*args, capture=True):
+    return subprocess.run(['rbw', *args], capture_output=capture, text=True)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--conf', default=os.path.expanduser('~/.config/aerc/accounts.conf'))
+    ap.add_argument('--rbw-prefix', default='mail', help='entry name prefix (default: mail)')
+    ap.add_argument('--extract', action='store_true', help='show findings and exit')
+    args = ap.parse_args()
+
+    if not os.path.exists(args.conf):
+        sys.exit(f'not found: {args.conf}')
+
+    with open(args.conf) as f:
+        lines = f.readlines()
+
+    findings = discover(lines)
+    if not findings:
+        print('no plaintext passwords found (or all already use *-cred-cmd)')
+        return
+
+    for f in findings:
+        f['entry'] = f"{args.rbw_prefix}/{f['user']}"
+
+    if args.extract:
+        for f in findings:
+            print(f"[{f['section']}] {f['key']}  user={f['user']}")
+            print(f"    password: {f['password']}")
+            print(f"    entry:    {f['entry']}")
+        seen = {}
+        for f in findings:
+            seen.setdefault(f['entry'], f['password'])
+        print('\nsuggested rbw entries:')
+        for entry, pw in seen.items():
+            print(f'  rbw add {entry}    # then paste: {pw}')
+        print('\nthen re-run without --extract.')
+        return
+
+    if shutil.which('rbw') is None:
+        sys.exit('rbw not installed (paru -S rbw)')
+
+    if rbw('unlocked').returncode != 0:
+        if subprocess.run(['rbw', 'unlock']).returncode != 0:
+            sys.exit('rbw unlock failed')
+
+    missing = []
+    for entry in sorted({f['entry'] for f in findings}):
+        if rbw('get', entry).returncode != 0:
+            missing.append(entry)
+    if missing:
+        print('missing rbw entries:', file=sys.stderr)
+        for e in missing:
+            print(f'  {e}', file=sys.stderr)
+        print('run with --extract to see what to add.', file=sys.stderr)
+        sys.exit(1)
+
+    backup = f"{args.conf}.bak.{int(time.time())}"
+    shutil.copy2(args.conf, backup)
+    print(f'backup: {backup}')
+
+    new_lines = lines[:]
+    for f in sorted(findings, key=lambda x: -x['line_idx']):
+        i = f['line_idx']
+        new_lines[i] = f"{f['key']} = {strip_password_url(f['parsed'])}\n"
+        new_lines.insert(i + 1, f"{f['cred_key']} = rbw get {f['entry']}\n")
+
+    with open(args.conf, 'w') as fp:
+        fp.writelines(new_lines)
+    print(f'rewrote {args.conf}: {len(findings)} field(s) hardened')
+
+
+if __name__ == '__main__':
+    main()

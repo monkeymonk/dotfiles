@@ -16,14 +16,14 @@ binds {
 
     // ─── Applications ───
     Mod+Return                          hotkey-overlay-title="Open Terminal: Ghostty" { spawn "ghostty"; }
-    Mod+Shift+T                         hotkey-overlay-title="Open Terminal: Ghostty" { spawn "ghostty"; }
-    Mod+Shift+B                         hotkey-overlay-title="Open Browser" { spawn-sh "xdg-open 'x-junction://https://startpage.com'"; }
-    Mod+Shift+F                         hotkey-overlay-title="File Manager: Yazi" { spawn "ghostty" "-e" "yazi-launch"; }
-    Mod+Shift+E                         hotkey-overlay-title="File Manager: Nautilus" { spawn "nautilus"; }
-    Mod+Shift+P                         hotkey-overlay-title="Password Manager: Bitwarden" { spawn "/home/stephan/.config/niri/scripts/toggle-bitwarden"; }
-    Mod+Shift+V                         hotkey-overlay-title="Clipboard Manager: Vicinae" { spawn "/home/stephan/.config/niri/scripts/toggle-vicinae-clipboard"; }
-    Mod+Shift+N                         hotkey-overlay-title="Sticky Notes" { spawn-sh "qs -c noctalia-shell ipc call plugin:sticky-notes toggle"; }
-    Mod+Shift+M                         hotkey-overlay-title="BetterBird Mail" { spawn "/home/stephan/.config/niri/scripts/toggle-betterbird"; }
+    Mod+T                               hotkey-overlay-title="Open Terminal: Ghostty" { spawn "ghostty"; }
+    Mod+B                               hotkey-overlay-title="Open Browser" { spawn-sh "xdg-open 'x-junction://https://startpage.com'"; }
+    Mod+F                               hotkey-overlay-title="File Manager: Yazi" { spawn "ghostty" "-e" "yazi-launch"; }
+    Mod+E                               hotkey-overlay-title="File Manager: Nautilus" { spawn "nautilus"; }
+    Mod+P                               hotkey-overlay-title="Password Manager: Bitwarden" { spawn "/home/stephan/.config/niri/scripts/toggle-bitwarden"; }
+    Mod+V                               hotkey-overlay-title="Clipboard Manager: Vicinae" { spawn "/home/stephan/.config/niri/scripts/toggle-vicinae-clipboard"; }
+    Mod+N                               hotkey-overlay-title="Sticky Notes" { spawn-sh "qs -c noctalia-shell ipc call plugin:sticky-notes toggle"; }
+    Mod+M                               hotkey-overlay-title="BetterBird Mail" { spawn "/home/stephan/.config/niri/scripts/toggle-betterbird"; }
 
     // ─── Media Controls ───
     XF86AudioRaiseVolume                allow-when-locked=true { spawn-sh "qs -c noctalia-shell ipc call volume increase"; }
@@ -127,8 +127,8 @@ binds {
     Mod+Shift+TAB                       { focus-workspace-previous; }
 
     // ─── Layout Controls ───
-    Mod+CTRL+F                          { expand-column-to-available-width; }
-    Mod+C                               { center-column; }
+    Mod+Shift+F                         { expand-column-to-available-width; }
+    Mod+Shift+C                         { center-column; }
     Mod+CTRL+C                          { center-visible-columns; }
     Mod+Minus                           { set-column-width "-10%"; }
     Mod+Equal                           { set-column-width "+10%"; }
@@ -136,8 +136,8 @@ binds {
     Mod+Shift+Equal                     { set-window-height "+10%"; }
 
     // ─── Modes ───
-    Mod+T                               { toggle-window-floating; }
-    Mod+F                               { fullscreen-window; }
+    Mod+CTRL+T                          { toggle-window-floating; }
+    Mod+CTRL+F                          { fullscreen-window; }
     Mod+W                               { toggle-column-tabbed-display; }
 
     // ─── Screenshots ───

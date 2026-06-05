@@ -125,6 +125,7 @@ _runtime_reset_state() {
     unset RUNTIME_EZA_ALIASES_LOADED 2>/dev/null
     unset RUNTIME_CDX_ALIASES_LOADED 2>/dev/null
     unset RUNTIME_AI_ALIASES_LOADED 2>/dev/null
+    unset RUNTIME_WORKENV_ALIASES_LOADED 2>/dev/null
 
     # Clear bootstrap guard so it re-runs.
     unset RUNTIME_BOOTSTRAP_LOADED
