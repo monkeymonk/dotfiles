@@ -68,11 +68,33 @@ return {
 								vim.cmd("normal! " .. vim.api.nvim_replace_termcodes("<Esc>", true, false, true))
 								picker:action("explorer_del")
 							end,
+							-- Opening a file prompts for a target split when more than one
+							-- editor window is open (snacks' a/s/d/f letter overlay), so
+							-- files from the sidebar can land in a specific split.
+							explorer_confirm_pick = function(picker, item)
+								if item and not item.dir and not picker.input.filter.meta.searching then
+									local targets = vim.tbl_filter(function(win)
+										local buf = vim.api.nvim_win_get_buf(win)
+										return vim.api.nvim_win_get_config(win).relative == ""
+											and not vim.bo[buf].filetype:find("^snacks")
+									end, vim.api.nvim_tabpage_list_wins(0))
+									if #targets > 1 then
+										local win = require("snacks.picker.util").pick_win({ main = picker.main })
+										if not win then
+											return
+										end
+										picker.main = win
+									end
+								end
+								return picker:action("confirm")
+							end,
 						},
 						win = {
 							list = {
 								keys = {
 									["d"] = { "explorer_del_visual", mode = { "x" } },
+									["<CR>"] = "explorer_confirm_pick",
+									["l"] = "explorer_confirm_pick",
 								},
 							},
 						},
