@@ -91,7 +91,8 @@ curl -s ifconfig.me: another way to get your public IP
 fd: fast find alternative (used by fzf default command)
 rg: ripgrep — fast recursive grep with .gitignore support
 fzf: fuzzy finder — pipe anything into it for interactive selection
-Ctrl+R: fuzzy search command history (fzf-enhanced)
+Ctrl+R: search command history (Atuin); press Ctrl+R again to cycle scopes
+Up arrow recalls history scoped to the current directory (Atuin)
 Ctrl+T: fuzzy find files from cwd (fzf-enhanced)
 Alt+C: fuzzy cd into subdirectories (fzf-enhanced)
 

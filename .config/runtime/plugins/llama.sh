@@ -51,7 +51,7 @@ runtime_plugin_llama() {
         fi
     fi
     export LLAMA_MODELS_DIR
-    export LLAMA_HOST="${LLAMA_HOST:-127.0.0.1:8080}"
+    export LLAMA_HOST="${LLAMA_HOST:-127.0.0.1:11435}"
 
     # --- 5. llama-swap wiring -------------------------------------------
     if has_cmd llama-swap; then

@@ -1,133 +1,140 @@
 #!/usr/bin/env bash
-set +H 2>/dev/null
+# Dynamic tmux binding help panel.
+#
+# Source of truth: `tmux list-keys -N`. Bindings are documented in tmux.conf
+# with notes of the form:
+#
+#     bind-key -N "Category | Description" <key> <command>
+#
+# This script only DISPLAYS bindings; it never executes the selected one.
 
-# Catppuccin Mocha palette
-R="\e[0m"; B="\e[1m"; D="\e[2m"
-MAU="\e[38;2;203;166;247m"
-GRN="\e[38;2;166;227;161m"
-SUB="\e[38;2;166;173;200m"
-PNK="\e[38;2;245;194;231m"
-SRF="\e[38;2;69;71;90m"
-OVR="\e[38;2;108;112;134m"
+set -euo pipefail
 
-# Layout:  [2 margin][45 left]│[46 right]  = 94 visible chars
+# Resolve the tmux binary directly (avoid interactive shell aliases/functions).
+TMUX_BIN=$(command -v tmux 2>/dev/null || true)
+[ -n "$TMUX_BIN" ] || TMUX_BIN=tmux
 
-row() {
-  local ld="$1" lk="$2" rd="$3" rk="$4"
-  local lgap=$((41 - ${#ld} - ${#lk}))
-  local rgap=$((40 - ${#rd} - ${#rk}))
-  [ $lgap -lt 1 ] && lgap=1
-  [ $rgap -lt 1 ] && rgap=1
-  printf "  "
-  printf "  ${SUB}%s${R}%*s${GRN}%s${R}  " "$ld" "$lgap" "" "$lk"
-  printf "${SRF}│${R}"
-  printf "     ${SUB}%s${R}%*s${GRN}%s${R} " "$rd" "$rgap" "" "$rk"
-  printf "\n"
+# Detect the configured prefix dynamically (no hardcoded C-a).
+PREFIX=$("$TMUX_BIN" show-options -gv prefix 2>/dev/null || true)
+[ -n "$PREFIX" ] || PREFIX="C-a"
+
+# Extract bindings from one key table into TSV columns:
+#   category <TAB> displayed-key <TAB> description <TAB> table
+#
+# mode=prefix -> render key with the prefix, e.g. "C-a h"
+# mode=root   -> render key bare,            e.g. "M-T"
+# require=1   -> include only notes using the "Category | Description"
+#               convention. This is always on: it keeps the index to the
+#               bindings I have deliberately annotated and drops the dozens of
+#               tmux/plugin defaults that ship their own plain notes.
+extract() {
+  local table="$1" mode="$2" require="$3"
+  "$TMUX_BIN" list-keys -N -T "$table" 2>/dev/null | awk \
+    -v OFS='\t' -v pfx="$PREFIX" -v tbl="$table" -v mode="$mode" -v req="$require" '
+    {
+      key = $2
+      note = $0
+      # list-keys -N prints "<prefix-token> <key-token><padding><note>" for
+      # every table. Strip those two leading tokens regardless of padding,
+      # leaving just the note text.
+      sub(/^[^ ]+[ ]+[^ ]+[ ]+/, "", note)
+      d = index(note, " | ")
+      if (d > 0) {
+        cat  = substr(note, 1, d - 1)
+        desc = substr(note, d + 3)
+      } else {
+        if (req == "1") next
+        cat  = "Other"
+        desc = note
+      }
+      if (cat == "")  cat  = "Other"
+      if (desc == "") next
+      disp = (mode == "prefix") ? pfx " " key : key
+      print cat, disp, desc, tbl
+    }'
 }
 
-rrow() {
-  local rd="$1" rk="$2"
-  local rgap=$((40 - ${#rd} - ${#rk}))
-  [ $rgap -lt 1 ] && rgap=1
-  printf "  %45s" ""
-  printf "${SRF}│${R}"
-  printf "     ${SUB}%s${R}%*s${GRN}%s${R} " "$rd" "$rgap" "" "$rk"
-  printf "\n"
-}
+# Category display order (anything unlisted sorts last, alphabetically).
+CAT_ORDER="Sessions|Windows|Navigation|Panes|Copy mode|Persistence|Configuration|Utilities|Plugins|Workmux|Help"
 
-lrow() {
-  local ld="$1" lk="$2"
-  local lgap=$((41 - ${#ld} - ${#lk}))
-  [ $lgap -lt 1 ] && lgap=1
-  printf "  "
-  printf "  ${SUB}%s${R}%*s${GRN}%s${R}  " "$ld" "$lgap" "" "$lk"
-  printf "\n"
-}
+# Collect annotated bindings from every relevant table, then order them by
+# category rank and key so related bindings stay grouped.
+data=$(
+  {
+    extract prefix        prefix 1
+    extract root          root   1
+    extract copy-mode-vi  copy   1
+  } | awk -F'\t' -v OFS='\t' -v order="$CAT_ORDER" '
+      BEGIN { n = split(order, a, "|"); for (i = 1; i <= n; i++) rank[a[i]] = i }
+      { r = ($1 in rank) ? rank[$1] : 99; printf "%02d\t%s\t%s\t%s\t%s\n", r, $1, $2, $3, $4 }' \
+  | sort -t "$(printf '\t')" -k1,1n -k2,2 -k3,3 \
+  | cut -f2-
+)
 
-hdr() {
-  printf "  "
-  printf "  ${B}${MAU}  %s${R}%*s" "$1" "$((41 - ${#1} - 2))" ""
-  printf "  ${SRF}│${R}"
-  printf "     ${B}${MAU}  %s${R}%*s" "$2" "$((40 - ${#2} - 2))" ""
-  printf " \n"
-}
+if [ -z "$data" ]; then
+  printf 'No annotated tmux bindings found.\n'
+  printf 'Add notes like:  bind-key -N "Sessions | New session" S ...\n'
+  exit 0
+fi
 
-lhdr() {
-  printf "  "
-  printf "  ${B}${MAU}  %s${R}%*s" "$1" "$((41 - ${#1} - 2))" ""
-  printf "  ${SRF}│${R}\n"
-}
+# Detect the popup width so the grid can pick a sensible column count.
+width=$(stty size </dev/tty 2>/dev/null | awk '{ print $2 }')
+case "$width" in ''|*[!0-9]*) width=$(tput cols 2>/dev/null || echo 90) ;; esac
+[ "${width:-0}" -ge 40 ] 2>/dev/null || width=90
 
-sep() {
-  printf "  ${SRF}"
-  for ((i=0;i<45;i++)); do printf '─'; done
-  printf '┼'
-  for ((i=0;i<46;i++)); do printf '─'; done
-  printf "${R}\n"
-}
+# Widest key, used for column alignment.
+keyw=$(printf '%s\n' "$data" | awk -F'\t' '{ if (length($2) > m) m = length($2) } END { print m + 0 }')
 
-lsep() {
-  printf "  ${SRF}"
-  for ((i=0;i<45;i++)); do printf '─'; done
-  printf "┘${R}\n"
-}
+# Render a category-grouped grid: a "── Category ──" divider, then that
+# category's bindings packed into aligned columns. Colour-free — fzf/tmux
+# handle appearance. A search query matches a whole grid row.
+grid=$(printf '%s\n' "$data" | awk -F'\t' -v W="$width" -v keyw="$keyw" '
+  function divider(c,   s, n, i) {
+    s = "── " c " "
+    n = W - length(s)
+    for (i = 0; i < n; i++) s = s "─"
+    return s
+  }
+  function cell(k, d,   dd, pad) {
+    dd = d
+    if (length(dd) > descw) { dd = substr(dd, 1, descw - 1) "…"; pad = 0 }
+    else pad = descw - length(dd)
+    return sprintf("%-*s %s%*s", keyw, k, dd, pad, "")
+  }
+  BEGIN {
+    gutter = 2
+    cols = int((W + gutter) / (keyw + 1 + 16 + gutter))
+    if (cols < 1) cols = 1
+    if (cols > 3) cols = 3
+    descw = int((W - cols * (keyw + 1) - (cols - 1) * gutter) / cols)
+    if (descw < 10) descw = 10
+  }
+  {
+    if ($1 != cur) {
+      if (n > 0) { print row; row = ""; n = 0 }
+      print divider($1)
+      cur = $1
+    }
+    c = cell($2, $3)
+    row = (n == 0) ? c : row sprintf("%*s", gutter, "") c
+    if (++n == cols) { print row; row = ""; n = 0 }
+  }
+  END { if (n > 0) print row }
+')
 
-blank() {
-  printf "  %45s${SRF}│${R}\n" ""
-}
+if command -v fzf >/dev/null 2>&1; then
+  # Informational picker. The selection is deliberately discarded — this panel
+  # never runs a binding.
+  printf '%s\n' "$grid" | fzf \
+    --layout=reverse \
+    --no-sort \
+    --info=inline \
+    --prompt 'bindings> ' \
+    --header "Prefix: ${PREFIX}   ·   type to filter   ·   Esc / Ctrl-c closes" \
+    --bind 'esc:abort,ctrl-c:abort' \
+    >/dev/null 2>&1 || true
+else
+  printf '%s\n' "$grid" | less -R
+fi
 
-clear
-printf "  ${B}${PNK}╔"; for ((i=0;i<90;i++)); do printf '═'; done; printf "╗${R}\n"
-printf "  ${B}${PNK}║%35s%s%40s║${R}\n" "" "Tmux Cheatsheet" ""
-printf "  ${B}${PNK}║%36s%s%40s║${R}\n" "" "Prefix: Ctrl-a" ""
-printf "  ${B}${PNK}╚"; for ((i=0;i<90;i++)); do printf '═'; done; printf "╝${R}\n"
-blank
-hdr "Sessions" "Windows"
-sep
-row "List / switch"    "prefix + s"     "New window"       "Alt-T"
-row "New session"      "prefix + S"     "Previous window"  "Alt-H"
-row "Kill session"     "prefix + Q"     "Next window"      "Alt-L"
-row "Rename session"   "prefix + \$"    "Reorder left"     "Alt-Shift-Left"
-row "Previous session" "prefix + ("     "Reorder right"    "Alt-Shift-Right"
-row "Next session"     "prefix + )"     "Select by number" "prefix + 1-9"
-row "Save (tmuxp)"     "prefix + Alt-s" "Rename window"    "prefix + ,"
-row "Load (tmuxp)"     "prefix + Alt-l" "List all windows" "prefix + w"
-row "Edit (tmuxp)"     "prefix + Alt-S" "Kill window"      "prefix + d"
-row "Detach"           "prefix + D"     "Kill (confirm)"   "prefix + k"
-rrow                                    "Move to session"  "prefix + M"
-blank
-hdr "Panes" "Copy Mode (Vi)"
-sep
-row "Split right"       "prefix + v"         "Enter copy mode"   "prefix + ["
-row "Split below"       "prefix + -"         "Start selection"   "v"
-row "Navigate"          "Ctrl-h/j/k/l"       "Rectangle select"  "Ctrl-v"
-row "Resize"            "prefix + Alt-arrow"  "Copy to clipboard" "y"
-row "Zoom toggle"       "prefix + z"         "Copy & paste"      "Y"
-row "Kill pane"         "prefix + x"         "Paste buffer"      "prefix + ]"
-row "Break to window"   "prefix + !"         "Search forward"    "/"
-row "Floating terminal" "prefix + f"         "Search backward"   "?"
-rrow                                         "Exit"              "q / Escape"
-blank
-hdr "Yank (normal mode)" "Open (copy mode, select first)"
-sep
-row "Copy command line" "prefix + y" "Open file/URL"    "o"
-row "Copy working dir"  "prefix + Y" "Open in \$EDITOR" "Ctrl-o"
-rrow                                 "Search in Google" "Shift-s"
-blank
-hdr "Persistence" "Misc"
-sep
-row "Save session"    "prefix + Ctrl-s" "Cheatsheet"    "prefix + h"
-row "Restore session" "prefix + Ctrl-r" "Command prompt" "prefix + ."
-row "Auto-save"       "every 15 min"    "Reload config" "prefix + r"
-row "Auto-restore"    "on tmux start"   "Kill server"   "prefix + K"
-rrow                                    "Screensaver"   "prefix + Escape"
-blank
-hdr "Move Window to Split" "TPM"
-sep
-row "Mark source pane"  "prefix + m"  "Install plugins" "prefix + I"
-row "Join from window"  "prefix + J"  "Update plugins"  "prefix + U"
-row "Break pane to win" "prefix + !"  "Remove unused"   "prefix + Alt-u"
-echo ""
-printf "%36s${D}${OVR}Press any key to close${R}\n" ""
-
-read -rsn1
+exit 0

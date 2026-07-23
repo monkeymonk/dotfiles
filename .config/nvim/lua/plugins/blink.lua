@@ -32,7 +32,18 @@ return {
 			},
 			signature = { enabled = true },
 			sources = {
-				default = { "lsp", "path", "snippets", "buffer" },
+				-- In attached prompt.nvim buffers, use only the prompt source (plus
+				-- snippets/buffer) so blink's path/LSP sources don't add noise to
+				-- @-file and /-command completion. Everywhere else, the normal set.
+				default = function()
+					if require("prompt.buffer").is_attached(0) then
+						return { "prompt", "snippets", "buffer" }
+					end
+					return { "lsp", "path", "snippets", "buffer" }
+				end,
+				providers = {
+					prompt = { name = "Prompt", module = "prompt.integrations.blink" },
+				},
 			},
 		})
 	end,

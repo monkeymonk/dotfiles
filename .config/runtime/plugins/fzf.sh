@@ -51,54 +51,6 @@ runtime_plugin_fzf() {
 
         unset _runtime_fzf_sourced
     fi
-
-    # fzf history search for zsh
-    # Binding must happen inside zvm_after_init when zsh-vi-mode is active,
-    # because zvm rebinds ^R in its deferred init (after plugin setup).
-    if [ "${SHELL_FAMILY-}" = "zsh" ]; then
-        fhist() {
-            local selected cmd
-
-            selected=$(
-                fc -rl 1 |
-                    awk '
-        {
-          shown = $0
-          stripped = $0
-          sub(/^[[:space:]]*[0-9]+[[:space:]]+/, "", stripped)
-          if (!seen[stripped]++) print shown
-        }
-      ' |
-                    fzf \
-                        --height=60% \
-                        --layout=reverse \
-                        --border \
-                        --cycle \
-                        --info=inline \
-                        --prompt='History > ' \
-                        --preview 'printf "%s\n" {} | sed "s/^[[:space:]]*[0-9]\+[[:space:]]*//"' \
-                        --preview-window='down,4,wrap'
-            ) || return
-
-            [[ -n "$selected" ]] || return
-
-            cmd="$(printf '%s\n' "$selected" | sed 's/^[[:space:]]*[0-9]\+[[:space:]]*//')"
-            LBUFFER="$cmd"
-            zle redisplay
-        }
-
-        zle -N fhist
-
-        _fhist_bind_cr() { bindkey '^R' fhist; }
-
-        # zsh-vi-mode defers keybinding via precmd and overwrites ^R.
-        # Append to its after_init hook so our binding wins.
-        if (( ${+functions[zvm_init]} )) || [[ -n "${ZVM_VERSION-}" ]]; then
-            zvm_after_init_commands+=('_fhist_bind_cr')
-        else
-            _fhist_bind_cr
-        fi
-    fi
 }
 
 hook_register setup runtime_plugin_fzf

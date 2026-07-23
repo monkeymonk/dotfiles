@@ -120,6 +120,7 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 | `ai.sh`              | Local LLM tooling (paths, symlinks, backend-agnostic)                  | setup                  |
 | `alx.sh`             | Alias management (alx)                                                 | bootstrap, interactive |
 | `amdgpu.sh`          | AMD GPU/NPU env (ROCm gfx1150 override, NPU detection)                 | setup                  |
+| `atuin.sh`           | Atuin — SQLite shell history (dir/session scoping, opt-in sync); owns `^R` + up | interactive       |
 | `bitwarden.sh`       | Bitwarden — official CLI (`bw`) and optional Rust client (`rbw`)       | setup                  |
 | `bun.sh`             | Bun runtime                                                            | setup                  |
 | `cal.sh`             | Calendar/contacts — khal + vdirsyncer                                  | setup                  |
