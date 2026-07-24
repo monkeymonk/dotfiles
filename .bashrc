@@ -11,4 +11,5 @@
 
 export BROWSER=junction
 export TERMINAL=ghostty
+
 [ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"

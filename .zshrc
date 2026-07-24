@@ -73,6 +73,7 @@ export DISABLE_AUTO_TITLE="true"
 plugins=(
   # Utilities
   catimg
+  colorize
   command-not-found
   common-aliases
   composer
@@ -84,7 +85,6 @@ plugins=(
   sudo
   systemadmin
   tmux
-  ubuntu
 
   # Git
   git
@@ -100,11 +100,6 @@ plugins=(
   zsh-autosuggestions
   zsh-syntax-highlighting
   zsh-vi-mode
-
-  # Removed plugins (conflicts with lazy loading or not installed):
-  # colorize      - tool not installed
-  # git-commit    - redundant with git plugin
-  # git-extras    - tool not installed
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -125,4 +120,5 @@ source $ZSH/oh-my-zsh.sh
 
 export BROWSER=junction
 export TERMINAL=ghostty
+
 [ -f "$HOME/.config/runtime/bootstrap.sh" ] && source "$HOME/.config/runtime/bootstrap.sh"
