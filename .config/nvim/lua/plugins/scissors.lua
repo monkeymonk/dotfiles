@@ -2,8 +2,8 @@ return {
 	name = "scissors",
 	src = "https://github.com/chrisgrieser/nvim-scissors",
 	dependencies = {
-		"https://github.com/folke/snacks.nvim",
-		"https://github.com/L3MON4D3/LuaSnip",
+		"folke/snacks.nvim",
+		"L3MON4D3/LuaSnip",
 	},
 	cmd = {
 		"ScissorsAddNewSnippet",
@@ -23,8 +23,8 @@ return {
 		}
 	end,
 
-	keys = function(map)
-		map.n("<leader>csa", "<cmd>ScissorsAddNewSnippet<cr>", "Snippet add")
-		map.map({ "n", "x" }, "<leader>cse", "<cmd>ScissorsEditSnippet<cr>", "Snippet edit")
-	end,
+	keys = {
+		{ "<leader>csa", "<cmd>ScissorsAddNewSnippet<cr>", desc = "Snippet add" },
+		{ "<leader>cse", "<cmd>ScissorsEditSnippet<cr>", desc = "Snippet edit", mode = { "n", "x" } },
+	},
 }

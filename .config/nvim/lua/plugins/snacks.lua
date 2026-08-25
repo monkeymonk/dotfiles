@@ -3,10 +3,12 @@ return {
 	src = "https://github.com/folke/snacks.nvim",
 	priority = 900,
 	dependencies = {
-		"https://github.com/echasnovski/mini.icons",
+		"echasnovski/mini.icons",
 	},
 
-	setup = function()
+	lazy = false,
+
+	config = function()
 		local db = require("util.dashboard")
 
 		require("mini.icons").setup()
@@ -130,20 +132,17 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		local pickers = require("util.pickers")
-
-		-- Find / search
-		map.n("<leader>ff", pickers.files, "Find files")
-		map.n("<leader>fo", pickers.recent, "Recent files")
-		map.n("<leader>fb", pickers.buffers, "Buffers")
-		map.n("<leader>sf", pickers.files, "Files")
-		map.n("<leader>sg", pickers.grep, "Grep")
-		map.n("<leader>sw", pickers.grep_word, "Word under cursor")
-		map.n("<leader>sb", pickers.buffers, "Buffers")
-		map.n("<leader>sh", pickers.help, "Help tags")
-		map.n("<leader>so", pickers.recent, "Recent files")
-		map.n("<leader>ss", pickers.lsp_symbols, "Document symbols")
-		map.n("<leader>sd", pickers.diagnostics, "Diagnostics")
-	end,
+	keys = {
+		{ "<leader>ff", require("util.pickers").files, desc = "Find files" },
+		{ "<leader>fo", require("util.pickers").recent, desc = "Recent files" },
+		{ "<leader>fb", require("util.pickers").buffers, desc = "Buffers" },
+		{ "<leader>sf", require("util.pickers").files, desc = "Files" },
+		{ "<leader>sg", require("util.pickers").grep, desc = "Grep" },
+		{ "<leader>sw", require("util.pickers").grep_word, desc = "Word under cursor" },
+		{ "<leader>sb", require("util.pickers").buffers, desc = "Buffers" },
+		{ "<leader>sh", require("util.pickers").help, desc = "Help tags" },
+		{ "<leader>so", require("util.pickers").recent, desc = "Recent files" },
+		{ "<leader>ss", require("util.pickers").lsp_symbols, desc = "Document symbols" },
+		{ "<leader>sd", require("util.pickers").diagnostics, desc = "Diagnostics" },
+	},
 }

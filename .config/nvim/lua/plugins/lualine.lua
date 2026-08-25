@@ -2,10 +2,10 @@ return {
 	name = "lualine",
 	src = "https://github.com/nvim-lualine/lualine.nvim",
 	dependencies = {
-		"https://github.com/echasnovski/mini.icons",
+		"echasnovski/mini.icons",
 	},
 
-	setup = function()
+	config = function()
 		require("lualine").setup({
 			options = {
 				theme = "auto",

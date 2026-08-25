@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/HakonHarnes/img-clip.nvim",
 	lazy = true,
 
-	setup = function()
+	config = function()
 		require("img-clip").setup({
 			default = {
 				dir_path = "assets",
@@ -14,9 +14,9 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>cp", "<cmd>PasteImage<cr>", "Paste image from clipboard")
-	end,
+	keys = {
+		{ "<leader>cp", "<cmd>PasteImage<cr>", desc = "Paste image from clipboard" },
+	},
 
 	install = {
 		notes = {

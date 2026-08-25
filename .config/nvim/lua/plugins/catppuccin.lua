@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/catppuccin/nvim",
 	priority = 1000,
 
-	setup = function()
+	config = function()
 		require("catppuccin").setup({
 			flavour = "mocha",
 			integrations = {

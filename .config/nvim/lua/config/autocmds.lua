@@ -6,6 +6,7 @@ local group_numbers = augroup("user_numbers", { clear = true })
 local group_markdown = augroup("user_markdown", { clear = true })
 local group_terminal = augroup("user_terminal", { clear = true })
 local group_php = augroup("user_php", { clear = true })
+local group_php_tools = augroup("user_php_tools", { clear = true })
 
 vim.api.nvim_create_user_command("Q", "qa", {})
 
@@ -108,5 +109,12 @@ autocmd("FileType", {
 		vim.opt_local.tabstop = 4
 		vim.opt_local.shiftwidth = 4
 		vim.opt_local.softtabstop = 4
+	end,
+})
+
+autocmd({ "VimEnter", "DirChanged" }, {
+	group = group_php_tools,
+	callback = function()
+		require("util.php_project").setup()
 	end,
 })

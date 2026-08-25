@@ -2,11 +2,11 @@ return {
 	name = "blade-nav",
 	src = "https://github.com/ricardoramirezr/blade-nav.nvim",
 	dependencies = {
-		"https://github.com/saghen/blink.cmp",
+		"saghen/blink.cmp",
 	},
 	ft = { "blade", "php" },
 
-	setup = function()
+	config = function()
 		require("blade-nav").setup({})
 
 		local group = vim.api.nvim_create_augroup("user_blade_nav_keys", { clear = true })

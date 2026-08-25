@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/echasnovski/mini.surround",
 	event = { "BufReadPost", "BufNewFile" },
 
-	setup = function()
+	config = function()
 		require("mini.surround").setup()
 	end,
 }

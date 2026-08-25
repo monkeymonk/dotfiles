@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/NeogitOrg/neogit",
 	cmd = "Neogit",
 	dependencies = {
-		"https://github.com/nvim-lua/plenary.nvim",
+		"nvim-lua/plenary.nvim",
 	},
 
 	install = {
@@ -13,7 +13,7 @@ return {
 		},
 	},
 
-	setup = function()
+	config = function()
 		require("neogit").setup({
 			integrations = {
 				diffview = false,
@@ -27,7 +27,7 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>gg", "<cmd>Neogit<cr>", "Open Neogit")
-	end,
+	keys = {
+		{ "<leader>gg", "<cmd>Neogit<cr>", desc = "Open Neogit" },
+	},
 }

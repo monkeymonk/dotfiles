@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/echasnovski/mini.pairs",
 	event = "InsertEnter",
 
-	setup = function()
+	config = function()
 		require("mini.pairs").setup()
 	end,
 }

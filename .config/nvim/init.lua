@@ -3,9 +3,10 @@ vim.g.maplocalleader = ","
 
 require("config.options")
 require("config.autocmds")
-require("util.pack").setup()
+
+vim.pack.add({ "https://github.com/zuqini/zpack.nvim" })
+require("zpack").setup({ cmd_name = "Pack" })
+
 require("config.diagnostics")
 require("config.lsp")
 require("config.keymaps")
-
-require("util.pack").boot()

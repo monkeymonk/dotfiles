@@ -1,8 +1,11 @@
 # Neovim config
 
-Personal Neovim 0.12+ config. Native `vim.pack` for plugins, snacks for the
-fuzzy stack, lspsaga for LSP UI, blink.cmp for completion, conform/nvim-lint
-for formatting/linting, neogit + gitsigns for git, persistence for sessions.
+Personal Neovim 0.12+ config. [zpack.nvim](https://github.com/zuqini/zpack.nvim)
+(thin layer over native `vim.pack`) for plugins, snacks for the fuzzy stack,
+lspsaga for LSP UI, blink.cmp for completion, conform/nvim-lint for
+formatting/linting, neogit + gitsigns for git, atlas for GitHub PRs/issues,
+triforce for coding stats, track-action for Neovim 0.13+ action stats,
+persistence for sessions.
 
 ```
 init.lua                       Entry point. Bootstraps in fixed order.
@@ -20,7 +23,7 @@ lua/config/                    User-level configuration.
   php_stubs.lua                Composer-managed PHP stubs for intelephense.
 lua/plugins/                   One file per plugin spec. Auto-discovered.
 lua/util/                      Self-contained helpers (no plugin deps).
-  pack.lua                     vim.pack wrapper: spec discovery + lazy loading.
+  plugin_specs.lua              Reads name/install metadata from lua/plugins/*.lua.
   mason_ensure.lua             :MasonEnsure auto-installer.
   pickers.lua                  Snacks picker shortcuts.
   quicklist.lua                Quickfix/loclist helpers.
@@ -31,7 +34,7 @@ lua/util/                      Self-contained helpers (no plugin deps).
   blade_nav.lua                Blade view/component navigation under cursor.
   dap.lua                      DAP adapter glue (PHP/Xdebug, JS, Godot).
   scratch.lua                  Scratch buffer helper.
-  memory_sheet.lua             :MemorySheet quick-reference popup.
+  memory_sheet.lua             Generated :MemorySheet quick-reference popup.
   dashboard/                   ASCII art + tips for the Snacks dashboard.
 luasnippets/                   User Lua snippets (filetype-named files).
 snippets/                      User VS Code-style JSON snippets (Scissors).
@@ -43,9 +46,9 @@ snippets/                      User VS Code-style JSON snippets (Scissors).
 nvim
 ```
 
-`util.pack.setup()` clones any missing plugins via `vim.pack.add`, eager
-plugins load immediately, and lazy plugins register their triggers. On the
-first launch that's a one-time clone; subsequent launches are fast.
+`vim.pack.add` clones zpack.nvim itself on first run, then `require("zpack").setup()`
+clones any missing plugins declared in `lua/plugins/`, loads eager ones
+immediately, and registers lazy triggers for the rest. Subsequent launches are fast.
 
 Then install the LSP/tooling binaries:
 
@@ -65,11 +68,13 @@ External tools that **don't** come from Mason:
 ## Plugin management
 
 ```vim
-:Pack list          " loaded vs lazy
-:Pack update        " native vim.pack update UI
-:Pack health        " :checkhealth pack + vim.pack
-:Pack log           " :checkhealth vim.pack (lockfile state)
+:Pack update        " update all plugins (skip confirm: :Pack! update)
+:Pack restore       " restore to lockfile state
+:Pack clean         " remove plugins no longer in lua/plugins/
+:Pack build [name]  " rerun a plugin's build hook
 ```
+
+`<leader>up` lists loaded vs lazy plugins; `<leader>uP` runs `:Pack update`.
 
 Plugins live under `~/.local/share/nvim/site/pack/core/opt/`. The lockfile is
 `nvim-pack-lock.json` in this directory.
@@ -88,37 +93,39 @@ return {
   event = "BufReadPost",                      -- string or list
   ft = { "lua", "tsx" },
   cmd = { "Foo", "Bar" },
-  keys = { { "<leader>x", "<cmd>Foo<cr>" } }, -- table form is a trigger
+  keys = { { "<leader>x", "<cmd>Foo<cr>", desc = "Foo" } }, -- also a trigger
   lazy = true,                                -- force lazy with no trigger
 
   -- One of these initializes the plugin:
   opts = { ... },                             -- passed to require(main).setup
-  setup = function(spec) ... end,             -- full custom init
-  config = function(spec, opts) ... end,      -- if you need both opts and code
+  config = function(plugin, opts) ... end,    -- full custom init
 
   -- Optional:
   main = "module.name",                       -- override module-name inference
   priority = 100,                             -- higher → earlier eager load
-  build = "<cmd>" or function(spec) end,      -- runs on PackChanged
-  init = function(spec) end,                  -- runs at startup, even if lazy
-  cond = function() return ... end,           -- skip load if false
-  enabled = false,                            -- skip entirely
+  build = "<cmd>" or function(plugin) end,    -- runs on PackChanged
+  init = function(plugin) end,                -- runs at startup, even if lazy
+  cond = function() return ... end,           -- installs but skips load if false
+  enabled = false,                            -- skip install entirely
   install = {                                 -- consumed by :checkhealth pack
     binaries = { "..." },
     packages = { npm = {...}, composer = {...} },
     notes = { "..." },
   },
-
-  -- keys = function(map) ... end is a load-time callback (NOT a lazy trigger)
 }
 ```
+
+`keys` counts as a lazy trigger and auto-sets `lazy = true` unless overridden
+— set `lazy = false` explicitly on a plugin that declares `keys` but must
+still load eagerly (see `snacks.lua`, `persistence.lua`, `noice.lua`,
+`yanky.lua`).
 
 After saving, restart Neovim — the new plugin will be cloned by `vim.pack.add`
 on next startup.
 
 ### Removing a plugin
 
-Delete `lua/plugins/<name>.lua`, restart, then `:Pack update` to prune the
+Delete `lua/plugins/<name>.lua`, restart, then `:Pack clean` to prune the
 clone from disk (or `rm -rf ~/.local/share/nvim/site/pack/core/opt/<dir>`).
 
 ## Keymaps
@@ -225,6 +232,7 @@ LSP UI provided by **lspsaga**.
 | `<leader>cv` / `gV` (in blade/php) | Goto Blade view/component under cursor |
 | `<leader>cp` | Paste image from clipboard (img-clip) |
 | `<leader>cps/cpt/cpi/cpu` | package-info.nvim show/toggle/install/upgrade |
+| `<leader>ce` / `<C-y>,` (insert) | Expand Emmet abbreviation |
 
 ### Snippets (`<leader>cs`)
 
@@ -232,6 +240,26 @@ LSP UI provided by **lspsaga**.
 |---|---|
 | `<leader>csa` | Add new snippet (Scissors) |
 | `<leader>cse` | Edit snippet (Scissors) |
+
+### Emmet
+
+**emmet-language-server** attaches to html, blade, astro, svelte, vue, pug,
+eruby, htmldjango, jsx/tsx and css/scss/sass/less. Three ways to expand
+`div.card>ul>li*3`:
+
+* Completion menu — the abbreviation shows up as an `Emmet Abbreviation`
+  item while typing; `<CR>` accepts it.
+* `<C-y>,` in insert mode — expands whatever abbreviation ends at the cursor,
+  no menu needed (buffer-local, only where the emmet client is attached).
+* `<leader>ce` in normal mode — same, for an abbreviation you already typed
+  and left.
+
+All three apply the server's snippet, so `<Tab>` / `<S-Tab>` walk the
+resulting tabstops. Implementation: `lua/config/actions/emmet.lua`.
+
+The server also detects `<style>` blocks and switches to CSS abbreviations
+there, so `init_options.includeLanguages` in `lua/config/lsp/servers.lua` is
+deliberately empty — any entry overrides that detection.
 
 ### Diagnostics (`<leader>ux`)
 
@@ -257,10 +285,21 @@ LSP UI provided by **lspsaga**.
 | `<leader>uM` | Toggle render-markdown |
 | `<leader>up` / `<leader>uP` | Pack list / Pack update |
 | `<leader>ur` | Restart Neovim (`:restart`) |
-| `<leader>u?` | Memory sheet popup |
+| `<leader>u?` | Generated memory sheet popup |
 | `<leader>um` | MCPHub |
+| `<leader>ut` | Triforce profile |
 | `<leader>uh` / `<leader>un` | Noice history / dismiss |
 | `<leader>ui` / `<leader>ue` / `<leader>uN` | Noice picker / errors / last |
+
+### Tracking stats (`<leader>t`)
+
+Requires Neovim 0.13+ because track-action.nvim reads the `CmdAtom` event.
+
+| Key / command | Action |
+|---|---|
+| `<leader>ta` / `:TrackActionStats` | Toggle live action stats window |
+| `:TrackActionTop [N]` | Print top tracked actions |
+| `:TrackActionSave` | Save stats now |
 
 ### Git (`<leader>g`)
 
@@ -281,6 +320,27 @@ fetch all happen there. Inline hunk operations stay on the file with
 | `<leader>gt` | Time machine (agitator) |
 | `<leader>gl` | Toggle blame (agitator) |
 | `<leader>gB` / `<leader>gD` / `<leader>gL` | advanced-git-search: branches / commits / log content |
+
+### Pull requests & issues (`<leader>ga`)
+
+**atlas.nvim** — GitHub PRs and issues in the editor. Auth comes from the
+`gh` CLI (`gh auth login`, scopes `repo` + `read:org`); Jira/GitLab/Bitbucket
+are deliberately not configured. Views and searches live in
+`lua/plugins/atlas.lua`.
+
+| Key | Action |
+|---|---|
+| `<leader>gaa` | Command picker (`:Atlas`) |
+| `<leader>gap` / `<leader>gai` | Pull request / issue dashboard |
+| `<leader>gar` | Review a pull request (native AtlasDiff) |
+| `<leader>gac` / `<leader>gaI` | Create pull request / issue |
+| `<leader>gas` | Search pulls & issues |
+| `<leader>gan` / `<leader>gal` | Local review notes / Atlas logs |
+
+Inside the dashboard: `1`–`4` switch views, `S` opens bookmarks, `*` stars an
+item, `gd` opens the diff, `gc` checks the branch out, `A` lists actions,
+`g?` shows the full buffer-local map. In a review: `]h`/`[h` hunks,
+`c` comment, `s` suggestion, `<leader>n` local note, `gs` submit.
 
 ### Debugging (`<leader>j`)
 
@@ -308,18 +368,17 @@ detected stack (PHP/Xdebug, Node).
 
 ### AI (`<leader>a`)
 
-Claude Code integration.
+CodeCompanion, driven by CLI agents over ACP (claude-agent-acp / codex-acp /
+`omp acp`).
 
 | Key | Action |
 |---|---|
-| `<leader>ac` | Toggle Claude |
-| `<leader>af` | Focus Claude |
-| `<leader>ar` | Resume |
-| `<leader>aC` | Continue |
-| `<leader>am` | Select model |
-| `<leader>ab` | Add current buffer |
-| `<leader>as` (visual) | Send selection |
-| `<leader>aD` / `<leader>ad` | Accept / deny diff |
+| `<leader>aa` | Actions menu |
+| `<leader>aa` (visual) | Actions menu (selection) |
+| `<leader>at` | Toggle chat |
+| `<leader>ae` (visual) | Add selection to chat |
+| `<leader>ai` | Inline prompt |
+| `<leader>aq` | Cmdline prompt |
 
 ### Sessions (`<leader>q`)
 
@@ -441,12 +500,12 @@ sort -k2 -nr /tmp/nvim.log | head -20    # slowest entries
 Inspect spec load state:
 
 ```vim
-:lua local p = require("util.pack"); for _,s in ipairs(p.specs()) do print((p.is_loaded(s.name) and "✓" or "·").." "..s.name) end
+:lua vim.print(require("zpack.api").get_plugins())
 ```
 
 ## Conventions
 
-* `<leader>` groups: a/b/c/cs/f/g/j/q/s/u/ux/w/x/xm. Adding a new group?
+* `<leader>` groups: a/b/c/cs/f/g/ga/j/q/s/u/ux/w/x/xm. Adding a new group?
   Edit `lua/plugins/which-key.lua` so it shows up in the popup.
 * Each plugin file declares everything that plugin needs: src, deps, lazy
   triggers, opts/setup, install hints, keymaps. No global keymap dump.

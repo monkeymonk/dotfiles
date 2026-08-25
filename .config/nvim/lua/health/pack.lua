@@ -2,8 +2,7 @@ local M = {}
 
 function M.check()
 	local h = vim.health
-	local pack = require("util.pack")
-	local specs = pack.specs()
+	local specs = require("util.plugin_specs").list()
 
 	h.start("pack")
 

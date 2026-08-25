@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/nvimdev/lspsaga.nvim",
 	event = "LspAttach",
 
-	setup = function()
+	config = function()
 		require("lspsaga").setup({
 			ui = {
 				border = "rounded",
@@ -41,55 +41,84 @@ return {
 		})
 	end,
 
-	keys = function(map)
+	keys = {
 		-- Navigation
-		map.n("gd", "<cmd>Lspsaga goto_definition<cr>", "Goto definition")
-		map.n("gD", "<cmd>Lspsaga peek_definition<cr>", "Peek definition")
-		map.n("gr", "<cmd>Lspsaga finder ref<cr>", "References")
-		map.n("gi", "<cmd>Lspsaga finder imp<cr>", "Goto implementation")
-		map.n("gy", "<cmd>Lspsaga goto_type_definition<cr>", "Goto type definition")
-		map.n("gY", "<cmd>Lspsaga peek_type_definition<cr>", "Peek type definition")
+		{ "gd", "<cmd>Lspsaga goto_definition<cr>", desc = "Goto definition" },
+		{ "gD", "<cmd>Lspsaga peek_definition<cr>", desc = "Peek definition" },
+		{ "gr", "<cmd>Lspsaga finder ref<cr>", desc = "References" },
+		{ "gi", "<cmd>Lspsaga finder imp<cr>", desc = "Goto implementation" },
+		{ "gy", "<cmd>Lspsaga goto_type_definition<cr>", desc = "Goto type definition" },
+		{ "gY", "<cmd>Lspsaga peek_type_definition<cr>", desc = "Peek type definition" },
 
 		-- Info
-		map.n("K", "<cmd>Lspsaga hover_doc<cr>", "Hover")
-		map.n("gK", function()
-			vim.lsp.buf.signature_help({ border = "rounded" })
-		end, "Signature help")
-		map.i("<C-k>", function()
-			vim.lsp.buf.signature_help({ border = "rounded" })
-		end, "Signature help")
+		{ "K", "<cmd>Lspsaga hover_doc<cr>", desc = "Hover" },
+		{
+			"gK",
+			function()
+				vim.lsp.buf.signature_help({ border = "rounded" })
+			end,
+			desc = "Signature help",
+		},
+		{
+			"<C-k>",
+			function()
+				vim.lsp.buf.signature_help({ border = "rounded" })
+			end,
+			desc = "Signature help",
+			mode = "i",
+		},
 
 		-- Code actions
-		map.n("<leader>cr", "<cmd>Lspsaga rename<cr>", "Rename")
-		map.map({ "n", "v" }, "<leader>ca", "<cmd>Lspsaga code_action<cr>", "Code action")
-		map.n("<leader>co", "<cmd>Lspsaga outline<cr>", "Outline")
-		map.n("<leader>ci", "<cmd>Lspsaga incoming_calls<cr>", "Incoming calls")
-		map.n("<leader>cO", "<cmd>Lspsaga outgoing_calls<cr>", "Outgoing calls")
-		map.n("<leader>cl", "<cmd>lsp status<cr>", "LSP info")
-		map.n("<leader>cR", "<cmd>lsp restart<cr>", "LSP restart")
-		map.n("<leader>cL", "<cmd>lsp log<cr>", "LSP log")
-		map.n("<leader>ch", function()
-			local bufnr = vim.api.nvim_get_current_buf()
-			vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr }), { bufnr = bufnr })
-		end, "Toggle inlay hints")
+		{ "<leader>cr", "<cmd>Lspsaga rename<cr>", desc = "Rename" },
+		{ "<leader>ca", "<cmd>Lspsaga code_action<cr>", desc = "Code action", mode = { "n", "v" } },
+		{ "<leader>co", "<cmd>Lspsaga outline<cr>", desc = "Outline" },
+		{ "<leader>ci", "<cmd>Lspsaga incoming_calls<cr>", desc = "Incoming calls" },
+		{ "<leader>cO", "<cmd>Lspsaga outgoing_calls<cr>", desc = "Outgoing calls" },
+		{ "<leader>cl", "<cmd>lsp status<cr>", desc = "LSP info" },
+		{ "<leader>cR", "<cmd>lsp restart<cr>", desc = "LSP restart" },
+		{ "<leader>cL", "<cmd>lsp log<cr>", desc = "LSP log" },
+		{
+			"<leader>ch",
+			function()
+				local bufnr = vim.api.nvim_get_current_buf()
+				vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr }), { bufnr = bufnr })
+			end,
+			desc = "Toggle inlay hints",
+		},
 
 		-- Diagnostics
-		map.n("<leader>uxo", "<cmd>Lspsaga show_line_diagnostics<cr>", "Line diagnostics")
-		map.n("<leader>uxb", "<cmd>Lspsaga show_buf_diagnostics<cr>", "Buffer diagnostics")
-		map.n("<leader>uxw", "<cmd>Lspsaga show_workspace_diagnostics<cr>", "Workspace diagnostics")
-		map.n("[d", "<cmd>Lspsaga diagnostic_jump_prev<cr>", "Previous diagnostic")
-		map.n("]d", "<cmd>Lspsaga diagnostic_jump_next<cr>", "Next diagnostic")
-		map.n("[e", function()
-			require("lspsaga.diagnostic"):goto_prev({ severity = vim.diagnostic.severity.ERROR })
-		end, "Previous error")
-		map.n("]e", function()
-			require("lspsaga.diagnostic"):goto_next({ severity = vim.diagnostic.severity.ERROR })
-		end, "Next error")
-		map.n("[w", function()
-			require("lspsaga.diagnostic"):goto_prev({ severity = vim.diagnostic.severity.WARN })
-		end, "Previous warning")
-		map.n("]w", function()
-			require("lspsaga.diagnostic"):goto_next({ severity = vim.diagnostic.severity.WARN })
-		end, "Next warning")
-	end,
+		{ "<leader>uxo", "<cmd>Lspsaga show_line_diagnostics<cr>", desc = "Line diagnostics" },
+		{ "<leader>uxb", "<cmd>Lspsaga show_buf_diagnostics<cr>", desc = "Buffer diagnostics" },
+		{ "<leader>uxw", "<cmd>Lspsaga show_workspace_diagnostics<cr>", desc = "Workspace diagnostics" },
+		{ "[d", "<cmd>Lspsaga diagnostic_jump_prev<cr>", desc = "Previous diagnostic" },
+		{ "]d", "<cmd>Lspsaga diagnostic_jump_next<cr>", desc = "Next diagnostic" },
+		{
+			"[e",
+			function()
+				require("lspsaga.diagnostic"):goto_prev({ severity = vim.diagnostic.severity.ERROR })
+			end,
+			desc = "Previous error",
+		},
+		{
+			"]e",
+			function()
+				require("lspsaga.diagnostic"):goto_next({ severity = vim.diagnostic.severity.ERROR })
+			end,
+			desc = "Next error",
+		},
+		{
+			"[w",
+			function()
+				require("lspsaga.diagnostic"):goto_prev({ severity = vim.diagnostic.severity.WARN })
+			end,
+			desc = "Previous warning",
+		},
+		{
+			"]w",
+			function()
+				require("lspsaga.diagnostic"):goto_next({ severity = vim.diagnostic.severity.WARN })
+			end,
+			desc = "Next warning",
+		},
+	},
 }

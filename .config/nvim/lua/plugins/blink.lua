@@ -2,11 +2,11 @@ return {
 	name = "blink",
 	src = "https://github.com/saghen/blink.cmp",
 	dependencies = {
-		"https://github.com/saghen/blink.lib",
-		"https://github.com/saghen/blink.compat",
+		"saghen/blink.lib",
+		"saghen/blink.compat",
 	},
 
-	setup = function()
+	config = function()
 		require("blink.compat").setup({})
 
 		require("blink.cmp").setup({
@@ -31,6 +31,19 @@ return {
 				},
 			},
 			signature = { enabled = true },
+			cmdline = {
+				-- blink defaults the cmdline menu to <Tab>-only; show it while typing.
+				keymap = {
+					-- <Tab>/<S-Tab> cycling comes from the cmdline preset. These add
+					-- arrows on top; they fall back to command history when the menu
+					-- is closed.
+					["<Down>"] = { "select_next", "fallback" },
+					["<Up>"] = { "select_prev", "fallback" },
+				},
+				completion = {
+					menu = { auto_show = true },
+				},
+			},
 			sources = {
 				-- In attached prompt.nvim buffers, use only the prompt source (plus
 				-- snippets/buffer) so blink's path/LSP sources don't add noise to

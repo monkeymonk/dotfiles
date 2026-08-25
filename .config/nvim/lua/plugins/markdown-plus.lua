@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/yousefhadder/markdown-plus.nvim",
 	ft = "markdown",
 
-	setup = function()
+	config = function()
 		require("markdown-plus").setup({})
 	end,
 }

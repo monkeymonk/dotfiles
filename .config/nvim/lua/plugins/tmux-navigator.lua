@@ -3,14 +3,14 @@ return {
 	src = "https://github.com/christoomey/vim-tmux-navigator",
 	lazy = true,
 
-	setup = function()
+	config = function()
 		vim.g.tmux_navigator_no_mappings = 1
 	end,
 
-	keys = function(map)
-		map.n("<C-h>", "<cmd>TmuxNavigateLeft<cr>", "Navigate left")
-		map.n("<C-j>", "<cmd>TmuxNavigateDown<cr>", "Navigate down")
-		map.n("<C-k>", "<cmd>TmuxNavigateUp<cr>", "Navigate up")
-		map.n("<C-l>", "<cmd>TmuxNavigateRight<cr>", "Navigate right")
-	end,
+	keys = {
+		{ "<C-h>", "<cmd>TmuxNavigateLeft<cr>", desc = "Navigate left" },
+		{ "<C-j>", "<cmd>TmuxNavigateDown<cr>", desc = "Navigate down" },
+		{ "<C-k>", "<cmd>TmuxNavigateUp<cr>", desc = "Navigate up" },
+		{ "<C-l>", "<cmd>TmuxNavigateRight<cr>", desc = "Navigate right" },
+	},
 }

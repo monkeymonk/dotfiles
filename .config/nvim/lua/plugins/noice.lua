@@ -2,10 +2,12 @@ return {
 	name = "noice",
 	src = "https://github.com/folke/noice.nvim",
 	dependencies = {
-		"https://github.com/MunifTanjim/nui.nvim",
+		"MunifTanjim/nui.nvim",
 	},
 
-	setup = function()
+	lazy = false,
+
+	config = function()
 		require("noice").setup({
 			lsp = {
 				override = {
@@ -22,11 +24,11 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>ui", "<cmd>Noice pick<cr>", "Notifications")
-		map.n("<leader>uh", "<cmd>Noice history<cr>", "Message history")
-		map.n("<leader>ue", "<cmd>Noice errors<cr>", "Message errors")
-		map.n("<leader>uN", "<cmd>Noice last<cr>", "Last message")
-		map.n("<leader>un", "<cmd>Noice dismiss<cr>", "Dismiss notifications")
-	end,
+	keys = {
+		{ "<leader>ui", "<cmd>Noice pick<cr>", desc = "Notifications" },
+		{ "<leader>uh", "<cmd>Noice history<cr>", desc = "Message history" },
+		{ "<leader>ue", "<cmd>Noice errors<cr>", desc = "Message errors" },
+		{ "<leader>uN", "<cmd>Noice last<cr>", desc = "Last message" },
+		{ "<leader>un", "<cmd>Noice dismiss<cr>", desc = "Dismiss notifications" },
+	},
 }

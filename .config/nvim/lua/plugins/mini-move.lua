@@ -1,5 +1,4 @@
 return {
-	name = "mini-move",
 	src = "https://github.com/echasnovski/mini.move",
 	event = { "BufReadPost", "BufNewFile" },
 

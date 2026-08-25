@@ -15,34 +15,62 @@ return {
 		current_line_blame = false,
 	},
 
-	keys = function(map)
-		local gs = function()
-			return require("gitsigns")
-		end
-
-		map.n("]h", function()
-			gs().nav_hunk("next")
-		end, "Next git hunk")
-		map.n("[h", function()
-			gs().nav_hunk("prev")
-		end, "Previous git hunk")
-		map.n("<leader>gs", function()
-			gs().stage_hunk()
-		end, "Stage hunk")
-		map.n("<leader>gr", function()
-			gs().reset_hunk()
-		end, "Reset hunk")
-		map.n("<leader>gp", function()
-			gs().preview_hunk()
-		end, "Preview hunk")
-		map.n("<leader>gb", function()
-			gs().blame_line({ full = true })
-		end, "Blame line")
-		map.n("<leader>gi", function()
-			gs().toggle_current_line_blame()
-		end, "Toggle line blame")
-		map.n("<leader>gd", function()
-			require("util.native_tools").diff_current_file("HEAD")
-		end, "Diff current file against HEAD")
-	end,
+	keys = {
+		{
+			"]h",
+			function()
+				require("gitsigns").nav_hunk("next")
+			end,
+			desc = "Next git hunk",
+		},
+		{
+			"[h",
+			function()
+				require("gitsigns").nav_hunk("prev")
+			end,
+			desc = "Previous git hunk",
+		},
+		{
+			"<leader>gs",
+			function()
+				require("gitsigns").stage_hunk()
+			end,
+			desc = "Stage hunk",
+		},
+		{
+			"<leader>gr",
+			function()
+				require("gitsigns").reset_hunk()
+			end,
+			desc = "Reset hunk",
+		},
+		{
+			"<leader>gp",
+			function()
+				require("gitsigns").preview_hunk()
+			end,
+			desc = "Preview hunk",
+		},
+		{
+			"<leader>gb",
+			function()
+				require("gitsigns").blame_line({ full = true })
+			end,
+			desc = "Blame line",
+		},
+		{
+			"<leader>gi",
+			function()
+				require("gitsigns").toggle_current_line_blame()
+			end,
+			desc = "Toggle line blame",
+		},
+		{
+			"<leader>gd",
+			function()
+				require("util.native_tools").diff_current_file("HEAD")
+			end,
+			desc = "Diff current file against HEAD",
+		},
+	},
 }

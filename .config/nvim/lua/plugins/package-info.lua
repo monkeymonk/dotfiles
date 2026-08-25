@@ -2,32 +2,45 @@ return {
 	name = "package-info",
 	src = "https://github.com/vuki656/package-info.nvim",
 	dependencies = {
-		"https://github.com/MunifTanjim/nui.nvim",
+		"MunifTanjim/nui.nvim",
 	},
 	ft = "json",
 
-	setup = function()
+	config = function()
 		require("package-info").setup({
 			hide_unstable_versions = true,
 			package_manager = "npm",
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>cps", function()
-			require("package-info").show()
-		end, "Show dependency versions")
-
-		map.n("<leader>cpt", function()
-			require("package-info").toggle()
-		end, "Toggle dependency versions")
-
-		map.n("<leader>cpi", function()
-			require("package-info").install()
-		end, "Install dependency")
-
-		map.n("<leader>cpu", function()
-			require("package-info").change_version()
-		end, "Change dependency version")
-	end,
+	keys = {
+		{
+			"<leader>cps",
+			function()
+				require("package-info").show()
+			end,
+			desc = "Show dependency versions",
+		},
+		{
+			"<leader>cpt",
+			function()
+				require("package-info").toggle()
+			end,
+			desc = "Toggle dependency versions",
+		},
+		{
+			"<leader>cpi",
+			function()
+				require("package-info").install()
+			end,
+			desc = "Install dependency",
+		},
+		{
+			"<leader>cpu",
+			function()
+				require("package-info").change_version()
+			end,
+			desc = "Change dependency version",
+		},
+	},
 }

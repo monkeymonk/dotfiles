@@ -2,11 +2,11 @@ return {
 	name = "trouble",
 	src = "https://github.com/folke/trouble.nvim",
 	dependencies = {
-		"https://github.com/nvim-tree/nvim-web-devicons",
+		"nvim-tree/nvim-web-devicons",
 	},
 	cmd = "Trouble",
 
-	setup = function()
+	config = function()
 		require("trouble").setup({
 			focus = false,
 			follow = true,
@@ -21,11 +21,11 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>uxt", "<cmd>Trouble diagnostics toggle<cr>", "Trouble diagnostics")
-		map.n("<leader>uxT", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", "Trouble buffer diagnostics")
-		map.n("<leader>uxQ", "<cmd>Trouble qflist toggle<cr>", "Trouble quickfix")
-		map.n("<leader>uxL", "<cmd>Trouble loclist toggle<cr>", "Trouble location list")
-		map.n("<leader>cT", "<cmd>Trouble lsp toggle focus=false win.position=right<cr>", "Trouble LSP")
-	end,
+	keys = {
+		{ "<leader>uxt", "<cmd>Trouble diagnostics toggle<cr>", desc = "Trouble diagnostics" },
+		{ "<leader>uxT", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", desc = "Trouble buffer diagnostics" },
+		{ "<leader>uxQ", "<cmd>Trouble qflist toggle<cr>", desc = "Trouble quickfix" },
+		{ "<leader>uxL", "<cmd>Trouble loclist toggle<cr>", desc = "Trouble location list" },
+		{ "<leader>cT", "<cmd>Trouble lsp toggle focus=false win.position=right<cr>", desc = "Trouble LSP" },
+	},
 }

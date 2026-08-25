@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/nvim-treesitter/nvim-treesitter",
 	build = "TSUpdate",
 	dependencies = {
-		"https://github.com/EmranMR/tree-sitter-blade",
+		"EmranMR/tree-sitter-blade",
 	},
 
 	install = {
@@ -13,7 +13,7 @@ return {
 		},
 	},
 
-	setup = function()
+	config = function()
 		local ts = require("nvim-treesitter")
 		ts.setup({})
 
@@ -50,6 +50,7 @@ return {
 			"toml",
 			"tsx",
 			"typescript",
+			"vue",
 			"vim",
 			"vimdoc",
 			"yaml",
@@ -57,6 +58,21 @@ return {
 		ts.install(parsers)
 
 		local installing = {}
+
+		local function has_parser(lang)
+			return vim.list_contains(ts.get_installed("parsers"), lang)
+		end
+
+		local function has_queries(lang)
+			return #vim.api.nvim_get_runtime_file("queries/" .. lang .. "/highlights.scm", true) > 0
+		end
+
+		local function start(buf, ft, lang)
+			if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == ft then
+				pcall(vim.treesitter.start, buf, lang)
+			end
+		end
+
 		vim.api.nvim_create_autocmd("FileType", {
 			group = vim.api.nvim_create_augroup("user_treesitter", { clear = true }),
 			callback = function(args)
@@ -66,7 +82,7 @@ return {
 				end
 				local lang = vim.treesitter.language.get_lang(ft) or ft
 
-				if vim.list_contains(ts.get_installed(), lang) then
+				if has_parser(lang) and has_queries(lang) then
 					pcall(vim.treesitter.start, args.buf, lang)
 					return
 				end
@@ -76,11 +92,9 @@ return {
 				end
 
 				installing[lang] = true
-				ts.install({ lang }):await(function()
+				ts.install({ lang }, { force = has_parser(lang) and not has_queries(lang) }):await(function()
 					installing[lang] = nil
-					if vim.api.nvim_buf_is_valid(args.buf) and vim.bo[args.buf].filetype == ft then
-						pcall(vim.treesitter.start, args.buf, lang)
-					end
+					start(args.buf, ft, lang)
 				end)
 			end,
 		})

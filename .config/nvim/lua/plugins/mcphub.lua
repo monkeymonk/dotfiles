@@ -2,7 +2,7 @@ return {
 	name = "mcphub",
 	src = "https://github.com/ravitemer/mcphub.nvim",
 	dependencies = {
-		"https://github.com/nvim-lua/plenary.nvim",
+		"nvim-lua/plenary.nvim",
 	},
 	lazy = true,
 
@@ -13,7 +13,7 @@ return {
 		},
 	},
 
-	setup = function()
+	config = function()
 		local node = vim.fn.exepath("node")
 		local mcp_hub = vim.fn.exepath("mcp-hub")
 
@@ -28,7 +28,7 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>um", "<cmd>MCPHub<cr>", "MCP Hub")
-	end,
+	keys = {
+		{ "<leader>um", "<cmd>MCPHub<cr>", desc = "MCP Hub" },
+	},
 }

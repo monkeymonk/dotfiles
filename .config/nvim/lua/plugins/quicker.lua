@@ -2,7 +2,7 @@ return {
 	name = "quicker",
 	src = "https://github.com/stevearc/quicker.nvim",
 
-	setup = function()
+	config = function()
 		require("quicker").setup({
 			edit = {
 				enabled = true,

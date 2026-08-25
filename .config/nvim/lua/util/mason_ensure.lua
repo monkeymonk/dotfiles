@@ -15,7 +15,7 @@ local LSP_TO_MASON = {
 	cssls = "css-lsp",
 	docker_compose_language_service = "docker-compose-language-service",
 	dockerls = "dockerfile-language-server",
-	emmet_ls = "emmet-ls",
+	["emmet-language-server"] = "emmet-language-server",
 	gopls = "gopls",
 	html = "html-lsp",
 	intelephense = "intelephense",
@@ -25,6 +25,7 @@ local LSP_TO_MASON = {
 	rust_analyzer = "rust-analyzer",
 	tailwindcss = "tailwindcss-language-server",
 	ts_ls = "typescript-language-server",
+	vue_ls = "vue-language-server",
 	yamlls = "yaml-language-server",
 }
 
@@ -57,10 +58,9 @@ local function package_names()
 		end
 	end
 
-	local pack_ok, pack = pcall(require, "util.pack")
+	local pack_ok, plugin_specs = pcall(require, "util.plugin_specs")
 	if pack_ok then
-		local specs = pack.specs()
-		for _, spec in ipairs(specs) do
+		for _, spec in ipairs(plugin_specs.list()) do
 			if spec.install and spec.install.binaries then
 				for _, bin in ipairs(spec.install.binaries) do
 					local exe = bin:match("^[%w_-]+")
@@ -112,10 +112,7 @@ local function install(packages, mode)
 		end
 
 		if mode == "list" then
-			notify.info(
-				"mason",
-				("%d installed, %d to install, %d unknown"):format(installed, skipped, missing)
-			)
+			notify.info("mason", ("%d installed, %d to install, %d unknown"):format(installed, skipped, missing))
 		elseif installing > 0 then
 			notify.info("mason", ("queueing %d package(s); see :Mason for progress"):format(installing))
 		end

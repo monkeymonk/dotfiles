@@ -2,7 +2,9 @@ return {
 	name = "persistence",
 	src = "https://github.com/folke/persistence.nvim",
 
-	setup = function()
+	lazy = false,
+
+	config = function()
 		local sessions = require("util.sessions")
 
 		require("persistence").setup({
@@ -60,45 +62,58 @@ return {
 		end
 	end,
 
-	keys = function(map)
-		map.n("<leader>qn", function()
-			vim.ui.input({ prompt = "Session name: " }, function(name)
-				if name and name ~= "" then
-					require("util.sessions").save(name)
+	keys = {
+		{
+			"<leader>qn",
+			function()
+				vim.ui.input({ prompt = "Session name: " }, function(name)
+					if name and name ~= "" then
+						require("util.sessions").save(name)
+					end
+				end)
+			end,
+			desc = "Save named session",
+		},
+		{
+			"<leader>qs",
+			function()
+				local sessions = require("util.sessions")
+				local names = sessions.list()
+				if #names == 0 then
+					vim.notify("No named sessions for this project", vim.log.levels.INFO)
+					return
 				end
-			end)
-		end, "Save named session")
-
-		map.n("<leader>qs", function()
-			local sessions = require("util.sessions")
-			local names = sessions.list()
-			if #names == 0 then
-				vim.notify("No named sessions for this project", vim.log.levels.INFO)
-				return
-			end
-			vim.ui.select(names, { prompt = "Load session:" }, function(choice)
-				if choice then
-					sessions.load(choice)
+				vim.ui.select(names, { prompt = "Load session:" }, function(choice)
+					if choice then
+						sessions.load(choice)
+					end
+				end)
+			end,
+			desc = "Load named session",
+		},
+		{
+			"<leader>qx",
+			function()
+				local sessions = require("util.sessions")
+				local names = sessions.list()
+				if #names == 0 then
+					vim.notify("No named sessions for this project", vim.log.levels.INFO)
+					return
 				end
-			end)
-		end, "Load named session")
-
-		map.n("<leader>qx", function()
-			local sessions = require("util.sessions")
-			local names = sessions.list()
-			if #names == 0 then
-				vim.notify("No named sessions for this project", vim.log.levels.INFO)
-				return
-			end
-			vim.ui.select(names, { prompt = "Delete session:" }, function(choice)
-				if choice then
-					sessions.delete(choice)
-				end
-			end)
-		end, "Delete named session")
-
-		map.n("<leader>qd", function()
-			require("persistence").stop()
-		end, "Stop session recording")
-	end,
+				vim.ui.select(names, { prompt = "Delete session:" }, function(choice)
+					if choice then
+						sessions.delete(choice)
+					end
+				end)
+			end,
+			desc = "Delete named session",
+		},
+		{
+			"<leader>qd",
+			function()
+				require("persistence").stop()
+			end,
+			desc = "Stop session recording",
+		},
+	},
 }

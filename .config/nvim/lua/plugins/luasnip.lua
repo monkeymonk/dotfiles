@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/L3MON4D3/LuaSnip",
 	priority = 120,
 	dependencies = {
-		"https://github.com/rafamadriz/friendly-snippets",
+		"rafamadriz/friendly-snippets",
 	},
 
 	install = {
@@ -15,7 +15,7 @@ return {
 		},
 	},
 
-	setup = function()
+	config = function()
 		require("util.snippets").setup()
 	end,
 }

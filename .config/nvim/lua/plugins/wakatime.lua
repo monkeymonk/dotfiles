@@ -1,7 +1,7 @@
 return {
 	name = "wakatime",
 	src = "https://github.com/wakatime/vim-wakatime",
-	lazy = true,
+	lazy = false,
 
 	install = {
 		notes = {

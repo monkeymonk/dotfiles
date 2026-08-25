@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/danymat/neogen",
 	lazy = true,
 
-	setup = function()
+	config = function()
 		require("neogen").setup({
 			languages = {
 				php = { template = { annotation_convention = "phpdoc" } },
@@ -12,13 +12,21 @@ return {
 		})
 	end,
 
-	keys = function(map)
-		map.n("<leader>cn", function()
-			require("neogen").generate({})
-		end, "Generate annotation")
-
-		map.x("<leader>cn", function()
-			require("neogen").generate({})
-		end, "Generate annotation")
-	end,
+	keys = {
+		{
+			"<leader>cn",
+			function()
+				require("neogen").generate({})
+			end,
+			desc = "Generate annotation",
+		},
+		{
+			"<leader>cn",
+			function()
+				require("neogen").generate({})
+			end,
+			desc = "Generate annotation",
+			mode = "x",
+		},
+	},
 }

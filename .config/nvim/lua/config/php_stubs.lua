@@ -2,12 +2,19 @@ local notify = require("util.notify")
 
 local stub_path = vim.fn.expand("~/.local/share/php-stubs")
 local vendor_path = stub_path .. "/vendor"
+-- Hand-written stubs Composer does not provide (e.g. the WordPress bootstrap
+-- constants defined at runtime by wp-config.php). Kept outside vendor/ so
+-- Composer never reclaims it.
+local local_path = stub_path .. "/local"
 local composer = vim.fn.exepath("composer")
 
+-- Unpinned on purpose: stubs are additive symbol sets, so the newest stable
+-- release is always the right one. Pinned majors silently go stale as WordPress
+-- moves on (a `^6.0` pin stops matching once WordPress 7 ships).
 local required_stubs = {
-	"php-stubs/wordpress-stubs:^6.0",
-	"php-stubs/woocommerce-stubs:^6.0",
-	"php-stubs/acf-pro-stubs:^6.0",
+	"php-stubs/wordpress-stubs:*",
+	"php-stubs/woocommerce-stubs:*",
+	"php-stubs/acf-pro-stubs:*",
 }
 
 local function run_cmd(cmd, on_done)
@@ -56,6 +63,9 @@ local function get_installed_stub_paths()
 		end
 	end
 	table.sort(paths)
+	if vim.fn.isdirectory(local_path) == 1 then
+		table.insert(paths, local_path)
+	end
 	return paths
 end
 

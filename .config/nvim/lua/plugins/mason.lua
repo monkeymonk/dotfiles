@@ -2,7 +2,7 @@ return {
 	name = "mason",
 	src = "https://github.com/mason-org/mason.nvim",
 	dependencies = {
-		"https://github.com/mason-org/mason-lspconfig.nvim",
+		"mason-org/mason-lspconfig.nvim",
 	},
 
 	install = {
@@ -13,7 +13,7 @@ return {
 		},
 	},
 
-	setup = function()
+	config = function()
 		require("mason").setup({
 			ui = { border = "rounded" },
 		})

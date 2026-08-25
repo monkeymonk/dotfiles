@@ -35,3 +35,4 @@ vim.lsp.enable(names)
 -- after mason.setup(), and re-enables the same servers idempotently.
 
 require("config.lsp.commands").setup()
+require("config.actions.emmet").setup()

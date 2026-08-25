@@ -2,7 +2,7 @@ return {
 	name = "yanky",
 	src = "https://github.com/gbprod/yanky.nvim",
 	dependencies = {
-		"https://github.com/folke/snacks.nvim",
+		"folke/snacks.nvim",
 	},
 	priority = 110,
 
@@ -29,32 +29,44 @@ return {
 		},
 	},
 
-	keys = function(map)
-		map.map({ "n", "x" }, "y", "<Plug>(YankyYank)", "Yank")
-		map.map({ "n", "x" }, "p", "<Plug>(YankyPutAfter)", "Put after")
-		map.map({ "n", "x" }, "P", "<Plug>(YankyPutBefore)", "Put before")
-		map.map({ "n", "x" }, "gp", "<Plug>(YankyGPutAfter)", "Put after and leave cursor")
-		map.map({ "n", "x" }, "gP", "<Plug>(YankyGPutBefore)", "Put before and leave cursor")
-		map.n("]p", "<Plug>(YankyPutIndentAfterLinewise)", "Put linewise below")
-		map.n("[p", "<Plug>(YankyPutIndentBeforeLinewise)", "Put linewise above")
-		map.n("]P", "<Plug>(YankyPutIndentAfterLinewise)", "Put linewise below")
-		map.n("[P", "<Plug>(YankyPutIndentBeforeLinewise)", "Put linewise above")
-		map.n(">p", "<Plug>(YankyPutIndentAfterShiftRight)", "Put and indent right")
-		map.n("<p", "<Plug>(YankyPutIndentAfterShiftLeft)", "Put and indent left")
-		map.n(">P", "<Plug>(YankyPutIndentBeforeShiftRight)", "Put before and indent right")
-		map.n("<P", "<Plug>(YankyPutIndentBeforeShiftLeft)", "Put before and indent left")
-		map.n("=p", "<Plug>(YankyPutAfterFilter)", "Put after and filter")
-		map.n("=P", "<Plug>(YankyPutBeforeFilter)", "Put before and filter")
-		map.map({ "n", "x" }, "<leader>y", function()
-			local ok, snacks = pcall(require, "snacks")
-			if ok and snacks.picker and snacks.picker.yanky then
-				snacks.picker.yanky()
-			else
-				vim.cmd("YankyRingHistory")
-			end
-		end, "Yank history")
-		map.map({ "o", "x" }, "iy", function()
-			require("yanky.textobj").last_put()
-		end, "Last put text object")
-	end,
+	lazy = false,
+
+	keys = {
+		{ "y", "<Plug>(YankyYank)", desc = "Yank", mode = { "n", "x" } },
+		{ "p", "<Plug>(YankyPutAfter)", desc = "Put after", mode = { "n", "x" } },
+		{ "P", "<Plug>(YankyPutBefore)", desc = "Put before", mode = { "n", "x" } },
+		{ "gp", "<Plug>(YankyGPutAfter)", desc = "Put after and leave cursor", mode = { "n", "x" } },
+		{ "gP", "<Plug>(YankyGPutBefore)", desc = "Put before and leave cursor", mode = { "n", "x" } },
+		{ "]p", "<Plug>(YankyPutIndentAfterLinewise)", desc = "Put linewise below" },
+		{ "[p", "<Plug>(YankyPutIndentBeforeLinewise)", desc = "Put linewise above" },
+		{ "]P", "<Plug>(YankyPutIndentAfterLinewise)", desc = "Put linewise below" },
+		{ "[P", "<Plug>(YankyPutIndentBeforeLinewise)", desc = "Put linewise above" },
+		{ ">p", "<Plug>(YankyPutIndentAfterShiftRight)", desc = "Put and indent right" },
+		{ "<p", "<Plug>(YankyPutIndentAfterShiftLeft)", desc = "Put and indent left" },
+		{ ">P", "<Plug>(YankyPutIndentBeforeShiftRight)", desc = "Put before and indent right" },
+		{ "<P", "<Plug>(YankyPutIndentBeforeShiftLeft)", desc = "Put before and indent left" },
+		{ "=p", "<Plug>(YankyPutAfterFilter)", desc = "Put after and filter" },
+		{ "=P", "<Plug>(YankyPutBeforeFilter)", desc = "Put before and filter" },
+		{
+			"<leader>y",
+			function()
+				local ok, snacks = pcall(require, "snacks")
+				if ok and snacks.picker and snacks.picker.yanky then
+					snacks.picker.yanky()
+				else
+					vim.cmd("YankyRingHistory")
+				end
+			end,
+			desc = "Yank history",
+			mode = { "n", "x" },
+		},
+		{
+			"iy",
+			function()
+				require("yanky.textobj").last_put()
+			end,
+			desc = "Last put text object",
+			mode = { "o", "x" },
+		},
+	},
 }

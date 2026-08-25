@@ -8,20 +8,18 @@ return {
 			"eslint_d",
 			"phpcs",
 			"markdownlint",
-			"yamllint",
 			"shellcheck",
 		},
 		packages = {
 			npm = { "eslint_d", "markdownlint-cli" },
 			composer = { "squizlabs/php_codesniffer" },
-			pip = { "yamllint" },
 		},
 		notes = {
 			"Go/Rust linting handled by gopls/rust-analyzer via LSP.",
 		},
 	},
 
-	setup = function()
+	config = function()
 		local lint = require("lint")
 
 		lint.linters_by_ft = {
@@ -29,9 +27,9 @@ return {
 			javascriptreact = { "eslint_d" },
 			typescript = { "eslint_d" },
 			typescriptreact = { "eslint_d" },
+			vue = { "eslint_d" },
 			php = { "phpcs" },
 			markdown = { "markdownlint" },
-			yaml = { "yamllint" },
 			sh = { "shellcheck" },
 			bash = { "shellcheck" },
 		}

@@ -3,7 +3,7 @@ return {
 	src = "https://github.com/fei6409/log-highlight.nvim",
 	ft = "log",
 
-	setup = function()
+	config = function()
 		require("log-highlight").setup({})
 
 		-- Large file optimizations for log files
