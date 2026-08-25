@@ -1,0 +1,103 @@
+# tips — default tips for terminal power users
+# Lines starting with # and blank lines are ignored.
+# One tip per line. Edit this file or override $TIPS_DATA_FILE in config.sh.
+
+# --- shell navigation & history ---
+cd - jumps back to the previous directory; pushd/popd manage a directory stack
+!! repeats the last command; !$ is its last argument; !* is all arguments
+Ctrl+R searches command history incrementally; Ctrl+G cancels the search
+fc opens the last command in $EDITOR — handy for fixing long pipelines
+Alt+. inserts the last argument of the previous command at the cursor
+history -d <n> deletes a single entry; HISTCONTROL=ignoreboth skips dupes and leading-space cmds
+type -a <cmd> shows every definition (alias, function, builtin, file) for a name
+
+# --- file & directory operations ---
+mkdir -p creates parent directories as needed; rmdir only removes empties
+mv -n refuses to overwrite; cp -n is the same; ln -sf forces a symlink replace
+shred -u overwrites then deletes a file; rm -P does similar on macOS
+find . -maxdepth 1 limits traversal; -prune skips a subtree entirely
+find . -newer reference.txt finds files modified after a known file
+find . -type f -size +100M shows large files; +0c -empty finds empty ones
+rsync -a --info=progress2 --partial is a great cp/mv replacement for big trees
+
+# --- text processing ---
+grep -F treats the pattern as a fixed string (faster, no regex surprises)
+grep -r -l prints only filenames containing matches; -L inverts (no match)
+grep -P enables Perl regex (lookarounds, \K, etc.) on GNU grep
+sed -i.bak edits in place and keeps a .bak; -i '' on BSD/macOS
+awk -F'\t' '$3>100' is often the right tool when grep + cut feels awkward
+column -t -s'\t' aligns tab-separated input into a readable table
+sort -u | uniq -c | sort -rn finds the most-frequent lines fast
+xargs -P "$(nproc)" parallelises any command across all CPUs
+xargs -I {} keeps argument position; -n 1 forces one item per invocation
+
+# --- redirection & pipes ---
+2>&1 merges stderr into stdout; |& is the bash 4+ shorthand
+> /dev/null 2>&1 silences both streams; &>/dev/null is the bash shorthand
+<(cmd) is process substitution — diff <(ls a) <(ls b) compares two outputs
+tee -a appends; tee >(cmd) forks output into a sub-pipeline
+exec 3>logfile then >&3 keeps a long-lived FD open for structured logging
+
+# --- jobs & processes ---
+Ctrl+Z suspends; bg resumes in background; fg brings it forward; jobs lists them
+disown -h "%1" detaches a job so it survives logout; nohup does this from start
+pgrep -fa pattern shows full command lines; pkill -f matches against them
+ps -eo pid,pcpu,pmem,cmd --sort=-pcpu shows the heaviest processes first
+kill -l lists signal names; kill -STOP / -CONT pauses and resumes a process
+lsof -i :PORT shows what's bound to a port; -p PID lists files held by a pid
+strace -f -e trace=openat command tracks every file a program touches
+
+# --- networking ---
+ss -tlnp lists listening TCP sockets with their owning process (Linux)
+curl -I fetches headers only; -L follows redirects; -w '%{http_code}\n' prints status
+curl --resolve host:port:IP overrides DNS for a single request — invaluable for testing
+dig +short cuts DNS noise; dig @1.1.1.1 forces a specific resolver
+ssh -J jumphost target tunnels through a bastion in one command
+ssh -L localport:remotehost:remoteport sets up local port forwarding
+scp is fine but rsync -avz over ssh is faster on resumes and large trees
+
+# --- git ---
+git switch -c branch creates and switches; git restore undoes the staging dance
+git log --oneline --graph --all decodes branch topology at a glance
+git diff --stat summarises by file; --word-diff shows inline word changes
+git stash push -m "msg" -- path/ stashes only specific files
+git reflog is the "undo history" — you can recover almost anything for 90 days
+git rebase -i HEAD~5 lets you reorder, squash, or reword recent commits
+git bisect run <script> automates finding the commit that broke a test
+git worktree add ../branch lets you check out two branches simultaneously
+
+# --- modern replacements (when installed) ---
+fzf adds fuzzy-find to anything: kill **<TAB>, ssh **<TAB>, vim $(fzf)
+ripgrep (rg) is faster than grep -r and respects .gitignore by default
+fd is a friendlier find: fd -e py 'pattern' searches by extension
+bat is cat + syntax highlighting + git gutters; --paging=never for piping
+eza/exa replaces ls with tree, git status, and icon support
+zoxide (z) jumps to frequent directories: z proj, z foo bar
+delta makes git diff readable; set core.pager = delta in .gitconfig
+
+# --- archives & compression ---
+tar -tf archive.tar lists contents without extracting; -tzf for .tar.gz
+tar --strip-components=1 strips leading path components on extract
+zstd outperforms gzip for both speed and ratio; xz compresses harder, slower
+
+# --- environment & shell ---
+set -u catches undefined variables; set -e exits on first error; set -o pipefail propagates pipe failures
+$(...) is preferred over backticks — nestable, parses cleaner
+${var:-default} substitutes a default; ${var:=default} also assigns it
+${var%suffix} trims from the end; ${var#prefix} from the start (## and %% are greedy)
+declare -p var prints the variable with its attributes (array, exported, readonly)
+trap 'cleanup' EXIT runs cleanup on any script exit, including errors
+
+# --- terminal & tmux ---
+Ctrl+L clears the screen without losing scrollback; clear -x preserves it explicitly
+reset fixes a terminal mangled by a binary cat; stty sane is faster
+script -q logfile records a session including timing; scriptreplay plays it back
+tmux new -As work attaches to "work" or creates it; -d starts detached
+tmux capture-pane -p dumps current pane content for inspection or piping
+
+# --- safety & sanity ---
+alias rm='rm -i' is one school; the other says "use -i never, use git/snapshots"
+trash-cli (trash-put) is a reversible rm — recoverable via trash-restore
+mktemp -d gives you a safe scratch directory; trap 'rm -rf "$tmp"' EXIT cleans up
+shellcheck script.sh catches the bugs you don't see in your own shell scripts
+set -x prints each command before running; PS4='+ ${BASH_SOURCE}:${LINENO}: ' adds context
