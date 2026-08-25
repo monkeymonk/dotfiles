@@ -1,0 +1,73 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      {
+        "id": "1",
+        "type": "model",
+        "color": "cyan"
+      },
+      {
+        "id": "5094aa80-29ef-4073-8ef8-ef8244e32c10",
+        "type": "context-bar",
+        "backgroundColor": "bgBrightBlue"
+      },
+      {
+        "id": "a0216c86-937b-4de1-ab47-c2f358acb2bb",
+        "type": "tokens-total",
+        "backgroundColor": "bgBlue"
+      },
+      {
+        "id": "393c5939-da8d-4b74-b151-4a6590114859",
+        "type": "claude-session-id",
+        "backgroundColor": "bgBrightGreen"
+      },
+      {
+        "id": "9f76a098-46d8-40cf-8f76-b05a4ed83aa2",
+        "type": "flex-separator",
+        "backgroundColor": "bgBrightBlue"
+      },
+      {
+        "id": "b28c03f5-53cd-436b-a9ce-7b03a0b23aef",
+        "type": "git-branch",
+        "backgroundColor": "bgGreen"
+      },
+      {
+        "id": "e578ddb3-a339-4591-82aa-7d369515b5f7",
+        "type": "git-changes",
+        "backgroundColor": "bgBrightGreen"
+      },
+      {
+        "id": "c85e0125-cbcf-4424-934a-8fafd46d0270",
+        "type": "custom-command",
+        "backgroundColor": "bgYellow",
+        "commandPath": "sh -c 'if [ -n \"$CLAUDE_PROFILE\" ]; then printf \"%s\" \"$CLAUDE_PROFILE\"; else jq -r \".oauthAccount.emailAddress // \\\"local\\\"\" \"$HOME/.claude.json\" 2>/dev/null; fi'"
+      }
+    ],
+    [],
+    []
+  ],
+  "flexMode": "full",
+  "compactThreshold": 60,
+  "colorLevel": 2,
+  "defaultPadding": " ",
+  "defaultPaddingSide": "both",
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "gitCacheTtlSeconds": 5,
+  "minimalistMode": false,
+  "powerline": {
+    "enabled": true,
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
+    "startCaps": [],
+    "endCaps": [],
+    "theme": "catppuccin",
+    "autoAlign": true,
+    "continueThemeAcrossLines": true
+  }
+}

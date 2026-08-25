@@ -1,0 +1,35 @@
+# Atuin — managed by installers/atuin.sh (machines repo).
+# Docs: https://docs.atuin.sh/configuration/config/
+
+## Ctrl-R: search full history; press Ctrl-R again to cycle filter modes
+## (global -> host -> session -> directory -> workspace).
+filter_mode = "global"
+
+## Up arrow: scope recall to the current directory (across sessions).
+## Swap to "session" (this shell only) or "workspace" (git repo root).
+filter_mode_shell_up_key_binding = "directory"
+
+## Respect the shell's vi keymap (zsh-vi-mode).
+keymap_mode = "auto"
+
+## Press Enter to run the selected command immediately (vs. edit first).
+enter_accept = true
+
+## Compact inline UI instead of fullscreen.
+style = "compact"
+inline_height = 25
+
+## Fuzzy search.
+search_mode = "fuzzy"
+
+## Commands never recorded (ported from the shell's HISTORY_IGNORE).
+history_filter = [
+  "^ls$",
+  "^cd$",
+  "^cd -$",
+  "^cd \\.\\.$",
+  "^pwd$",
+  "^exit$",
+  "^history$",
+  "^sudo reboot$",
+]

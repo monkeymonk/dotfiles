@@ -1,0 +1,176 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
+#
+# llama-swap — user config for stephan@cachyos (Ryzen AI HX 370, Radeon 890M).
+# Started via the `llama-swap-up` alias (see plugins/llama.py):
+#   llama-swap --config $LLAMA_SWAP_CONFIG --listen $LLAMA_HOST
+#
+# ${env.LLAMA_MODELS_DIR} expands to /data/models (exported by the runtime
+# builder via config/exports.py). Run llama-swap from a runtime-managed
+# shell so the env var is set.
+#
+# Model aliases let callers reference a *role* instead of a concrete ID —
+# `code`, `fast`, `reason`, `embed`, `default`. ai/helpers.sh uses those.
+
+# ─────────────────────────────────────────────────────────────────────────
+# Global settings
+# ─────────────────────────────────────────────────────────────────────────
+
+healthCheckTimeout: 300        # seconds to wait for a model to become ready
+logLevel: warn                 # debug | info | warn | error
+logToStdout: both              # proxy | upstream | both | none
+startPort: 10001               # ${PORT} auto-increments from here
+globalTTL: 900                 # unload inactive models after 15 min
+sendLoadingState: true         # stream loading updates into reasoning field
+includeAliasesInList: true     # expose role aliases in /v1/models
+
+# ─────────────────────────────────────────────────────────────────────────
+# Macros
+# ─────────────────────────────────────────────────────────────────────────
+
+macros:
+  # Absolute path to the GGUF root — pulled from the environment at load.
+  models_dir: "${env.LLAMA_MODELS_DIR}"
+
+  # Chat / instruct models on the Radeon 890M (Vulkan):
+  # -ngl 99      : offload every layer (Vulkan + GTT handles the split)
+  # -fa on       : flash attention. Recent llama.cpp made --flash-attn
+  #                valued (on|off|auto) — always pass a value or the flag
+  #                swallows the next arg.
+  # --jinja      : use the chat template embedded in the GGUF
+  # --mlock omitted: RLIMIT_MEMLOCK is too low for it to work anyway, and
+  #                  with 94 GB RAM there's zero swap pressure.
+  chat_args: "-ngl 99 -fa on --jinja"
+
+  # Embedding models need different flags.
+  embed_args: "-ngl 99 --embeddings --pooling mean"
+
+  # Common server prefix. ${PORT} is auto-assigned per model.
+  server_base: "llama-server --port ${PORT} --host 127.0.0.1"
+
+# ─────────────────────────────────────────────────────────────────────────
+# Models
+# ─────────────────────────────────────────────────────────────────────────
+#
+# API example:
+#   curl http://127.0.0.1:8080/v1/chat/completions \
+#     -H 'Content-Type: application/json' \
+#     -d '{"model":"code","messages":[{"role":"user","content":"hi"}]}'
+#
+# Either the real ID ("qwen3-coder-30b") or an alias ("code") works.
+
+models:
+
+  # ── Qwen2.5-Coder 3B Instruct (Q5_K_M, 2.4 GB) ────────────────────────
+  # Smallest coder — quickest replies, lowest VRAM. Good fit for the
+  # `fast` role (commit messages, idle tips, short explains). Unaliased
+  # by default — claim it by adding to `aliases` here, or per-shell with
+  # `export AI_MODEL_FAST=qwen2.5-coder-3b`.
+  "qwen2.5-coder-3b":
+    name: "Qwen2.5-Coder 3B Instruct (Q5_K_M)"
+    description: "Smallest coder — quick explains / commit msgs / tips"
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/qwen2.5-coder-3b/qwen2.5-coder-3b-instruct-q5_k_m.gguf
+      -c 16384
+      ${chat_args}
+
+  # ── Qwen2.5-Coder 7B Instruct (Q4_K_M, 4.4 GB) ────────────────────────
+  # Fast daily driver. Used for `default` and `fast` roles (commit msgs,
+  # short explanations, general chat).
+  "qwen2.5-coder-7b":
+    name: "Qwen2.5-Coder 7B Instruct (Q4_K_M)"
+    description: "Fast coder — default / commit-msg / quick explain"
+    aliases: ["default", "fast"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/qwen2.5-coder-7b/qwen2.5-coder-7b-instruct-q4_k_m.gguf
+      -c 16384
+      ${chat_args}
+
+  # ── Qwen3-Coder 30B-A3B Instruct (Q4_K_M, 18 GB, MoE) ─────────────────
+  # 30B total, 3B active params — runs close to 7B speed with bigger
+  # reasoning. Primary role for heavy code work (refactor, optimize,
+  # generate, review).
+  "qwen3-coder-30b":
+    name: "Qwen3-Coder 30B-A3B Instruct (Q4_K_M, MoE)"
+    description: "Heavy coder — refactor / optimize / implement / review"
+    aliases: ["code"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      -c 32768
+      ${chat_args}
+
+  # ── OpenAI gpt-oss 20B (MXFP4 native, 12 GB) ──────────────────────────
+  # Reasoning-focused. Native MXFP4 quant (llama.cpp ≥ b8000 supports it).
+  # Used for debug / security audit / deep-thinking paths.
+  "gpt-oss-20b":
+    name: "OpenAI gpt-oss 20B (MXFP4)"
+    description: "Reasoning model — debug / security / think"
+    aliases: ["reason"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/gpt-oss-20b/gpt-oss-20b-mxfp4.gguf
+      -c 32768
+      ${chat_args}
+
+  # ── Qwen3-30B-A3B-Thinking-2507 (Q4_K_M, 18 GB, MoE) ──────────────────
+  # Reasoning "brain" — 30B total, 3B active, so it plans/reviews at coder
+  # speed but reasons deeper than gpt-oss 20B. Primary role for the PLAN and
+  # REVIEW steps of the Plan -> Build -> Review loop (OpenCode @plan/@review).
+  "qwen3-30b-thinking":
+    name: "Qwen3-30B-A3B-Thinking-2507 (Q4_K_M, MoE)"
+    description: "Reasoning brain — plan / review / decompose"
+    aliases: ["plan"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/qwen3-30b-thinking/Qwen3-30B-A3B-Thinking-2507-Q4_K_M.gguf
+      -c 32768
+      ${chat_args}
+
+  # ── Nomic Embed Text v1.5 (Q8_0, 140 MB) ──────────────────────────────
+  # Text embeddings. Uses /v1/embeddings endpoint (not /v1/chat/completions).
+  "nomic-embed":
+    name: "Nomic Embed Text v1.5 (Q8_0)"
+    description: "Text embeddings for search / RAG"
+    aliases: ["embed"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/nomic-embed/nomic-embed-text-v1.5.Q8_0.gguf
+      -c 8192
+      ${embed_args}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Groups
+# ─────────────────────────────────────────────────────────────────────────
+#
+# OpenCode uses two models per turn: `model` (code -> qwen3-coder-30b) for
+# the answer, and `small_model` (fast -> qwen2.5-coder-7b) for session
+# titles and summaries. Without a group they evict each other on every
+# turn, and each eviction costs an 18 GB reload (~50 s cold, of which
+# ~30 s is prompt eval at 0.34 tok/s while the weights page in).
+#
+# swap: false      -> members stay resident together (18 + 4.4 GB)
+# exclusive: false -> loading this group does not unload other groups
+#
+# globalTTL still unloads them after 15 min idle. Add `persistent: true`
+# if a request for `reason`/`plan` evicting this pair becomes a problem —
+# at the cost of pinning ~22 GB.
+groups:
+  opencode:
+    swap: false
+    exclusive: false
+    members:
+      - qwen3-coder-30b
+      - qwen2.5-coder-7b
+
+# ─────────────────────────────────────────────────────────────────────────
+# Peers
+# ─────────────────────────────────────────────────────────────────────────
+
+peers:
+  ollama:
+    proxy: http://127.0.0.1:11434
+    models:
+      - qwen2.5-coder:7b
+      - nomic-embed-text:latest

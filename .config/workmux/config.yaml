@@ -1,0 +1,49 @@
+# workmux global configuration
+# Docs: https://github.com/raine/workmux  ·  full reference: `workmux config reference`
+# Per-repo overrides live in a project-local `.workmux.yaml` (`workmux init`).
+
+# ── Agent ─────────────────────────────────────────────────
+# Command substituted for the `<agent>` placeholder in pane layouts below.
+agent: claude
+
+# ── Tmux windows ──────────────────────────────────────────
+# window (default): create windows in the current session.
+# session: one tmux session per worktree.
+mode: window
+window_placement: rightmost
+
+# Do NOT inject status icons into tmux's window-status-format — that would
+# override the Catppuccin window styling in tmux.conf. Live agent status is
+# instead surfaced via `workmux sidebar` / `workmux dashboard` (see below).
+# Flip to true if you'd rather have inline 🤖/💬/✅ icons and accept that they
+# take over the Catppuccin window format.
+status_format: false
+
+# Default pane layout for a new worktree window: agent focused, shell beside it.
+panes:
+  - command: <agent>
+    focus: true
+  - split: horizontal
+    command: clear
+
+# ── Worktrees ─────────────────────────────────────────────
+# In-project '.worktrees' dir instead of a sibling '<project>__worktrees'.
+# Relative paths resolve against each repo's root, so this applies to every
+# project by default; override per-repo in .workmux.yaml if one wants
+# something else (e.g. a home-dir hub: "~/.workmux/{project}").
+worktree_dir: .worktrees
+worktree_naming: basename
+
+# ── Git ───────────────────────────────────────────────────
+# main_branch / base_branch auto-detect from remote HEAD; override if needed.
+# merge_strategy: merge   # merge | rebase | squash
+
+# ── Dashboard / sidebar ───────────────────────────────────
+# `workmux dashboard` — full TUI.  `workmux sidebar` — live in-tmux status pane
+# (the direct replacement for tmux-agent-sidebar). Bind a key in tmux.conf, e.g.
+#   bind e run-shell 'workmux sidebar'
+sidebar:
+  position: left
+  layout: tiles
+nerdfont: true
+theme: emberforge

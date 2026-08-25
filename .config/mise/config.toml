@@ -1,0 +1,12 @@
+[tools]
+node = "24.15.0"
+python = "3.13"
+go = "1.26"
+typst = "latest"
+bun = "latest"
+"npm:@google/gemini-cli" = "0.55.1"
+"npm:@earendil-works/pi-coding-agent" = "0.84.2"
+"npm:@openai/codex" = "0.148.0"
+"npm:@fission-ai/openspec" = "1.9.0"
+"npm:mcp-hub" = "4.2.1"
+
