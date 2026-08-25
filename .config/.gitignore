@@ -1,4 +1,17 @@
-# ignore NeoVim distribs
-./LazyVim/*
-./NvChad/*
-./kickstart/*
+# Local secrets — only secrets.example.env is tracked, real values stay local.
+runtime/secrets/*.env
+!runtime/secrets/secrets.example.env
+runtime/secrets/*.secret
+
+# Backups / editor droppings
+*.bak
+*.swp
+*.tmp
+
+# tips: vendored bats test dependencies (reinstallable, own git checkouts)
+runtime/tips/tests/bats/
+runtime/tips/tests/test_helper/bats-assert/
+runtime/tips/tests/test_helper/bats-support/
+
+# noctalia writes this itself; `theme = noctalia` in ghostty/config is the source
+ghostty/config.ghostty
