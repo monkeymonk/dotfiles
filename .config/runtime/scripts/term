@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Launch the preferred terminal emulator. Single indirection point so the
+# emulator can be switched via $TERMINAL (see core/env.sh / niri environment).
+exec "${TERMINAL:-ghostty}" "$@"

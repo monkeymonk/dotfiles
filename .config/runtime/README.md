@@ -141,6 +141,7 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 | `neovim.sh`          | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback)                       | setup                  |
 | `node.sh`            | Node.js (contributes `RUNTIME_NODE_VERSION`)                           | setup                  |
 | `ollama.sh`          | Ollama (`OLLAMA_HOST`, `OLLAMA_MODELS`, daemon aliases)                | setup                  |
+| `omp.sh`             | oh-my-pi (`omp`) coding agent — cached shell completions               | interactive            |
 | `open.sh`            | Cross-platform `open` shim (Linux fallback via xdg-open)               | setup                  |
 | `pnpm.sh`            | PNPM package manager                                                   | setup                  |
 | `rust.sh`            | Rust / Cargo                                                           | setup                  |
