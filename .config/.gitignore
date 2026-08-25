@@ -15,3 +15,9 @@ runtime/tips/tests/test_helper/bats-support/
 
 # noctalia writes this itself; `theme = noctalia` in ghostty/config is the source
 ghostty/config.ghostty
+
+# Files carrying personal identifiers or keys are NOT excluded here on
+# purpose: this .gitignore sits in the shared work-tree ($HOME), so it would
+# also stop the private `secretfiles` repo from tracking them — a tree
+# .gitignore outranks $GIT_DIR/info/exclude and cannot be negated from there.
+# The public-repo fence lives in .dotfiles/info/exclude instead.
