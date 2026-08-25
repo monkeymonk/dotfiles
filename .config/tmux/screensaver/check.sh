@@ -4,7 +4,7 @@
 
 # Hardcoded to avoid 2x tmux show-option forks per status refresh.
 # Change here if you update @screensaver_idle or @screensaver_window in tmux.conf.
-LIMIT=300
+LIMIT=600
 WINDOW_NAME=matrix
 STARTER="$HOME/.config/tmux/screensaver/start.sh"
 
