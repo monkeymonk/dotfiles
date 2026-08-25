@@ -1,0 +1,34 @@
+[Default Applications]
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+x-scheme-handler/https=re.sonny.Junction.desktop
+x-scheme-handler/http=re.sonny.Junction.desktop
+x-scheme-handler/mailto=eu.betterbird.Betterbird.desktop;google-chrome.desktop;
+text/plain=nvim.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=onlyoffice-desktopeditors.desktop
+application/vnd.ms-excel=onlyoffice-desktopeditors.desktop
+application/x-zerosize=libreoffice-calc.desktop
+application/pdf=org.pwmt.zathura-pdf-mupdf.desktop;
+image/gif=qimgv.desktop;
+image/jpeg=qimgv.desktop;
+image/png=qimgv.desktop;
+text/x-c++hdr=nvim.desktop;
+text/x-c++src=nvim.desktop;
+text/x-chdr=nvim.desktop;
+text/x-csrc=nvim.desktop;
+text/x-java=nvim.desktop;
+text/x-pascal=nvim.desktop;
+text/x-vcard=eu.betterbird.Betterbird.desktop;
+text/calendar=eu.betterbird.Betterbird.desktop;
+x-scheme-handler/webcal=eu.betterbird.Betterbird.desktop;
+x-scheme-handler/webcals=eu.betterbird.Betterbird.desktop;
+x-scheme-handler/mid=eu.betterbird.Betterbird.desktop;
+text/markdown=typora.desktop
+video/x-matroska=mpv.desktop
+x-scheme-handler/postman=Postman.desktop
+
+[Added Associations]
+x-scheme-handler/https=google-chrome.desktop;brave-browser.desktop;firefox.desktop;
+application/x-zerosize=onlyoffice-desktopeditors.desktop;libreoffice-calc.desktop;
+text/markdown=typora.desktop;
+x-scheme-handler/http=brave-browser.desktop;
+video/x-matroska=mpv.desktop;

@@ -1,0 +1,16 @@
+[Unit]
+Description=Block until org.kde.StatusNotifierWatcher is owned on the user bus
+Documentation=https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/StatusNotifierWatcher/
+After=graphical-session.target dbus.socket
+Requisite=dbus.socket
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Poll the user bus for the watcher every 100ms. Capped at ~30s; after that we
+# give up and let dependents run anyway (degraded: no tray icon registration).
+ExecStart=/bin/sh -c 'i=0; while [ $i -lt 300 ]; do busctl --user --no-pager status org.kde.StatusNotifierWatcher >/dev/null 2>&1 && exit 0; i=$((i+1)); sleep 0.1; done; echo "tray-watcher-ready: org.kde.StatusNotifierWatcher did not appear within 30s; tray-dependent apps will start in degraded mode" >&2; exit 0'
+TimeoutStartSec=35s
+
+[Install]
+WantedBy=graphical-session.target

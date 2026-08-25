@@ -1,0 +1,9 @@
+[Unit]
+Description=Update SDDM background after login
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/update-sddm-bg
+
+[Install]
+WantedBy=default.target
