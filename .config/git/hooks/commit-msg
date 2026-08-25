@@ -1,0 +1,18 @@
+#!/bin/sh
+# Enforce the cbtw GitLab commit-message convention.
+# Mirrors the server pre-receive rule so commits are caught locally, not at push.
+pattern='^(us|fix|style|chore|refactor|maintain|feat|merge|test|ci|docs)\(.*\):(.+){4,}|^(Merge|Revert|Initial).*'
+
+head -1 "$1" | grep -qE "$pattern" && exit 0
+
+cat >&2 <<'EOF'
+✗ Commit message rejected — must match the cbtw convention:
+
+    type(scope): description
+      type  = us | fix | style | chore | refactor | maintain | feat | merge | test | ci | docs
+      scope = required, e.g. (docker), (theme), (deps)
+    or a message starting with  Merge / Revert / Initial
+
+  example:  feat(docker): update php to 8.5
+EOF
+exit 1

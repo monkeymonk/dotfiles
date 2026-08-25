@@ -1,0 +1,8 @@
+[user]
+	email = stephan@zych.be
+	name = Stéphan Zych
+
+[includeIf "gitdir:~/Works/cbtw/"]
+	path = cbtw
+[credential]
+	helper = libsecret

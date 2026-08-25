@@ -1,0 +1,4 @@
+[user]
+	email = szych@cbtw.tech
+[core]
+	hooksPath = /home/stephan/.config/git/hooks
