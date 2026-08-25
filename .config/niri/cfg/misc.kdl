@@ -3,6 +3,7 @@
 
     environment {
         PATH "/home/stephan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin"
+        TERMINAL "ghostty"
         ELECTRON_OZONE_PLATFORM_HINT "auto"
         QT_QPA_PLATFORM "wayland"
         QT_QPA_PLATFORMTHEME "gtk3"
