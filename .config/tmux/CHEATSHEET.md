@@ -58,12 +58,60 @@ orders groups as: `Sessions`, `Windows`, `Navigation`, `Panes`, `Copy mode`,
 
 ## Workmux
 
-| Binding        | Action                                    |
-| -------------- | ----------------------------------------- |
-| `prefix + W`   | Open the Workmux agent dashboard (popup)  |
-| `prefix + C-w` | Toggle the live agent status sidebar      |
+| Binding              | Action                                   |
+| -------------------- | ---------------------------------------- |
+| `prefix + W`         | Toggle the Workmux agent dashboard       |
+| `prefix + C-w`       | Toggle the live agent status sidebar     |
+| click status segment | Toggle the dashboard                     |
 
-Both are annotated `Workmux | …`, so they also appear in `prefix + h`.
+All three are annotated `Workmux | …`, so they also appear in `prefix + h`.
+
+### Status-bar segment
+
+`scripts/workmux_status.sh` feeds a catppuccin-styled module at the left of
+`status-right`: `▲n` agents waiting for input (peach), `●n` working
+(sapphire), `✓n` done (green); `–` when no agents are tracked, `?` when
+workmux or jq cannot be queried. Counts are server-global, like the dashboard.
+
+Two details that are easy to regress:
+
+- The script `cd /` before querying. Status-line jobs inherit the focused
+  pane's working directory, and inside a git repo `workmux status` scopes
+  itself to that repository and reports no agents at all — the segment showed
+  a bare `–` until this was fixed.
+- The output is padded to a constant 9 cells (`WIDTH`). `status-right` is
+  right-aligned, so a segment that changes width shifts every segment left of
+  it on every count change; that shifting was the flicker.
+
+The module is assembled inline instead of via catppuccin's
+`utils/status_module.conf`: that helper needs a `%hidden MODULE_NAME`, which
+does not survive the `source` while catppuccin is still loading from its own
+asynchronous `run`. All references are lazy (`#{E:...}`) so the segment
+resolves at draw time regardless of load order. Icon and colour are options
+(`@catppuccin_workmux_icon`, `@catppuccin_workmux_color`) — the icon is
+nerd-font `md-robot` (U+F06A9).
+
+### Dashboard toggle
+
+`scripts/workmux_dashboard.sh` opens `workmux dashboard` in a centred
+**floating pane** (tmux 3.7 `new-pane`), not a popup, and closes it when it is
+already open. A popup is a modal overlay: while one is open tmux swallows
+every mouse event outside it, so a second click on the status segment can
+never reach the binding that would close it — verified by injecting SGR mouse
+events into a nested client. A floating pane is an ordinary pane, so the
+toggle works.
+
+The pane is found by its title (`wmx-dashboard`) rather than a stored id, so
+the toggle is stateless and survives a server restart. `new-pane` takes
+absolute cells and has no centring flag, so the script computes 90%×85% and
+the offsets itself. A `client-detached` hook closes it so tmux-resurrect never
+saves a floating pane it cannot restore.
+
+The segment is wrapped in `#[range=user|wmx]`, and the root
+`MouseDown1Status` binding runs the toggle when `#{mouse_status_range}` is
+`wmx`, falling back to tmux's default `switch-client -t =` for every other
+status click — so clicking windows and the session name still behaves
+normally.
 
 ### Sidebar + tmux-resurrect
 
