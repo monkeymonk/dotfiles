@@ -65,6 +65,7 @@ window-padding-x = 0
 window-padding-y = 0
 
 keybind = ctrl+shift+t=unbind
+keybind = ctrl+enter=unbind
 
 keybind = ctrl+comma=open_config
 keybind = ctrl+shift+comma=reload_config
