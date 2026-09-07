@@ -4,8 +4,8 @@ Personal Neovim 0.12+ config. [zpack.nvim](https://github.com/zuqini/zpack.nvim)
 (thin layer over native `vim.pack`) for plugins, snacks for the fuzzy stack,
 lspsaga for LSP UI, blink.cmp for completion, conform/nvim-lint for
 formatting/linting, neogit + gitsigns for git, atlas for GitHub PRs/issues,
-triforce for coding stats, track-action for Neovim 0.13+ action stats,
-persistence for sessions.
+code-review for local pre-push review, triforce for coding stats,
+track-action for Neovim 0.13+ action stats, persistence for sessions.
 
 ```
 init.lua                       Entry point. Bootstraps in fixed order.
@@ -341,6 +341,44 @@ Inside the dashboard: `1`–`4` switch views, `S` opens bookmarks, `*` stars an
 item, `gd` opens the diff, `gc` checks the branch out, `A` lists actions,
 `g?` shows the full buffer-local map. In a review: `]h`/`[h` hunks,
 `c` comment, `s` suggestion, `<leader>n` local note, `gs` submit.
+
+### Local code review (`<leader>gc`)
+
+**code-review.nvim** collects line comments in any buffer and formats them
+for an agent; it is the counterpart to atlas, which reviews pull requests.
+Use atlas for anything that goes back to GitHub, this for work that is not
+pushed yet (untracked files, agent-generated code, scratch buffers).
+
+| Key | Action |
+|---|---|
+| `<leader>gcc` (n, x) | Add comment on the cursor line or visual range |
+| `<leader>gcs` | Show comment at cursor |
+| `<leader>gcr` / `<leader>gcx` | Reply to thread / resolve thread |
+| `<leader>gcd` | Delete comment at cursor |
+| `<leader>gcl` | List review threads |
+| `<leader>gcp` | Preview the whole review |
+| `<leader>gcy` / `<leader>gcw` | Copy review to clipboard / write to file |
+| `<leader>gcX` | Clear all comments |
+
+A count before `<leader>gcc` in normal mode widens the captured context by
+that many lines either side of the cursor; a visual selection comments the
+whole range instead. The verbs mirror atlas's in-review keys (`c` comment,
+`r` reply, `x` resolve, `d` delete).
+
+Every commented line gets a 󰆉 sign in the gutter, hint-colored so it
+reads as a review marker and not as gitsigns' `▎`, and the comment text
+appears as end-of-line virtual text on the first line of its range. Both
+re-render on buffer entry: the plugin only re-renders indicators for its
+file backend, so otherwise they blank out on any `:e`, buffer wipe or
+session restore.
+
+Comments live in memory for the session only — nothing is written to the
+repo. `<leader>gcy` yanks the whole review to the `+` register as
+`path:L12-18: comment` lines, `<leader>gcw` writes a markdown file.
+`<leader>gcl` opens the quickfix list (the plugin supports only
+telescope/fzf-lua pickers, neither installed). The preview is read-only
+here: `q` closes it, and its `:w` handler is removed on open because the
+minimal format cannot be parsed back into comments.
 
 ### Debugging (`<leader>j`)
 

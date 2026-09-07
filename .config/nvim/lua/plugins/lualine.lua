@@ -17,7 +17,16 @@ return {
 				lualine_a = { "mode" },
 				lualine_b = { "branch", "diff" },
 				lualine_c = { { "filename", path = 1 } },
-				lualine_x = { "diagnostics", "filetype" },
+				lualine_x = {
+					-- lualine loads independently of codecompanion, so require
+					-- lazily and stay silent when nothing has set it up.
+					function()
+						local ok, ai_status = pcall(require, "util.ai_status")
+						return ok and ai_status.lualine() or ""
+					end,
+					"diagnostics",
+					"filetype",
+				},
 				lualine_y = { "progress" },
 				lualine_z = { "location" },
 			},

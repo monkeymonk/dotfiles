@@ -15,6 +15,7 @@ return {
 			{ "<leader>f", group = "file/find" },
 			{ "<leader>g", group = "git" },
 			{ "<leader>ga", group = "atlas" },
+			{ "<leader>gc", group = "code review" },
 			{ "<leader>j", group = "debug" },
 			{ "<leader>q", group = "quit/session" },
 			{ "<leader>s", group = "search" },

@@ -7,19 +7,16 @@ return {
 		require("render-markdown").setup({
 			file_types = { "markdown", "codecompanion" },
 			render_modes = true,
+			overrides = {
+				filetype = {
+					-- codecompanion's auto_scroll parks the cursor on the
+					-- streaming line, so anti-conceal would leave the live
+					-- response looking unrendered. Real files keep it.
+					codecompanion = {
+						anti_conceal = { enabled = false },
+					},
+				},
+			},
 		})
 	end,
-
-	keys = {
-		{
-			"<leader>uM",
-			function()
-				local ok, rm = pcall(require, "render-markdown")
-				if ok and rm.toggle then
-					rm.toggle()
-				end
-			end,
-			desc = "Toggle markdown render",
-		},
-	},
 }

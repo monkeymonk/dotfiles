@@ -52,6 +52,8 @@ return {
 	},
 
 	config = function()
+		require("util.ai_status").setup()
+
 		local extensions = {}
 		if pcall(require, "mcphub") then
 			extensions.mcphub = {
@@ -104,6 +106,27 @@ return {
 					end,
 				},
 			},
+			display = {
+				chat = {
+					window = {
+						-- The chat buffer inherits number/signcolumn/cursorline
+						-- from lua/config/options.lua otherwise; upstream only
+						-- sets the wrap-related options here, and user config is
+						-- deep-extended onto them.
+						opts = {
+							number = false,
+							relativenumber = false,
+							signcolumn = "no",
+							cursorline = false,
+							list = false,
+						},
+					},
+					-- Streamed reasoning arriving inside a closed fold is one of
+					-- the "nothing is happening" cases.
+					fold_reasoning = false,
+					intro_message = "CodeCompanion ✨ ? options · q stop request · gm send follow-up while streaming · ga change adapter",
+				},
+			},
 			interactions = {
 				chat = { adapter = default_agent() },
 			},
@@ -116,5 +139,12 @@ return {
 		{ "<leader>aa", "<cmd>CodeCompanionActions<cr>", desc = "CodeCompanion actions", mode = "x" },
 		{ "<leader>at", "<cmd>CodeCompanionChat Toggle<cr>", desc = "Toggle CodeCompanion chat" },
 		{ "<leader>ae", "<cmd>CodeCompanionChat Add<cr>", desc = "Add selection to CodeCompanion", mode = "x" },
+		{
+			"<leader>ac",
+			function()
+				require("util.ai_status").focus()
+			end,
+			desc = "Focus in-flight CodeCompanion chat",
+		},
 	},
 }
