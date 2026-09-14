@@ -1,12 +1,17 @@
 local map = require("util.map")
+local multicursor_ns = vim.api.nvim_create_namespace("nvim.multicursor")
+
+local function clear_transient_state()
+	vim.cmd.nohlsearch()
+	vim.api.nvim_buf_clear_namespace(0, multicursor_ns, 0, -1)
+end
 
 map.batch({
-	{ "Q", "<Nop>", desc = "Disable Ex mode" },
 	{ "<S-l>", "<cmd>bnext<cr>", desc = "Next buffer" },
 	{ "<S-h>", "<cmd>bprevious<cr>", desc = "Previous buffer" },
 	{ "+", "<C-a>", desc = "Increment number" },
 	{ "-", "<C-x>", desc = "Decrement number" },
-	{ "<Esc>", "<cmd>nohlsearch<cr>", desc = "Clear search highlight" },
+	{ "<Esc>", clear_transient_state, desc = "Clear search and multicursors" },
 	{ "<BS>", "<cmd>nohlsearch<cr>", desc = "Clear search highlight" },
 	{ "<C-Up>", "<cmd>resize -2<cr>", desc = "Resize split up" },
 	{ "<C-Down>", "<cmd>resize +2<cr>", desc = "Resize split down" },
@@ -21,13 +26,13 @@ map.batch({
 }, { mode = "v" })
 
 map.batch({
-	{ "x", '"_x', desc = "Delete char without yanking" },
-}, { mode = { "n", "x" } })
+	{ "x", '"_d', desc = "Delete without yanking" },
+	{ "xx", '"_dd', desc = "Delete line without yanking" },
+}, { mode = "n" })
 
 map.batch({
-	{ "<leader>d", '"_d', desc = "Delete without yanking" },
+	{ "x", '"_d', desc = "Delete selection without yanking" },
 	{ "p", '"_dP', desc = "Paste without replacing yank register" },
 }, { mode = "x" })
 
-map.n("<leader>d", '"_d', "Delete without yanking")
 map.t("<Esc><Esc>", [[<C-\><C-n>]], "Exit terminal mode")

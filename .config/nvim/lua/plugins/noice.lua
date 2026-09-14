@@ -25,10 +25,10 @@ return {
 	end,
 
 	keys = {
-		{ "<leader>ui", "<cmd>Noice pick<cr>", desc = "Notifications" },
-		{ "<leader>uh", "<cmd>Noice history<cr>", desc = "Message history" },
-		{ "<leader>ue", "<cmd>Noice errors<cr>", desc = "Message errors" },
-		{ "<leader>uN", "<cmd>Noice last<cr>", desc = "Last message" },
-		{ "<leader>un", "<cmd>Noice dismiss<cr>", desc = "Dismiss notifications" },
+		{ "<leader>unp", "<cmd>Noice pick<cr>", desc = "Notifications" },
+		{ "<leader>unh", "<cmd>Noice history<cr>", desc = "Message history" },
+		{ "<leader>une", "<cmd>Noice errors<cr>", desc = "Message errors" },
+		{ "<leader>unl", "<cmd>Noice last<cr>", desc = "Last message" },
+		{ "<leader>und", "<cmd>Noice dismiss<cr>", desc = "Dismiss notifications" },
 	},
 }

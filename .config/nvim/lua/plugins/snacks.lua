@@ -133,9 +133,6 @@ return {
 	end,
 
 	keys = {
-		{ "<leader>ff", require("util.pickers").files, desc = "Find files" },
-		{ "<leader>fo", require("util.pickers").recent, desc = "Recent files" },
-		{ "<leader>fb", require("util.pickers").buffers, desc = "Buffers" },
 		{ "<leader>sf", require("util.pickers").files, desc = "Files" },
 		{ "<leader>sg", require("util.pickers").grep, desc = "Grep" },
 		{ "<leader>sw", require("util.pickers").grep_word, desc = "Word under cursor" },
@@ -143,6 +140,6 @@ return {
 		{ "<leader>sh", require("util.pickers").help, desc = "Help tags" },
 		{ "<leader>so", require("util.pickers").recent, desc = "Recent files" },
 		{ "<leader>ss", require("util.pickers").lsp_symbols, desc = "Document symbols" },
-		{ "<leader>sd", require("util.pickers").diagnostics, desc = "Diagnostics" },
+		{ "<leader>ds", require("util.pickers").diagnostics, desc = "Diagnostics" },
 	},
 }

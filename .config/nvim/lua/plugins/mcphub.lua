@@ -29,6 +29,6 @@ return {
 	end,
 
 	keys = {
-		{ "<leader>um", "<cmd>MCPHub<cr>", desc = "MCP Hub" },
+		{ "<leader>am", "<cmd>MCPHub<cr>", desc = "MCP Hub" },
 	},
 }

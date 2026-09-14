@@ -5,17 +5,17 @@ return {
 
 	config = function()
 		require("lsp_lines").setup()
-		-- Start disabled to avoid visual noise; toggle with <leader>ul
+		-- Start disabled to avoid visual noise; toggle with <leader>dv
 		require("lsp_lines").toggle()
 	end,
 
 	keys = {
 		{
-			"<leader>ul",
+			"<leader>dv",
 			function()
 				require("lsp_lines").toggle()
 			end,
-			desc = "Toggle LSP lines",
+			desc = "Toggle virtual lines",
 		},
 	},
 }

@@ -8,7 +8,7 @@
 -- no `.code-review/` directory to gitignore, and the file backend's
 -- thread-resolve silently no-ops once a thread has a reply. `minimal`
 -- output is one `path:L12-18: text` line per comment — the shape an agent
--- reads best; `<leader>gcy` puts it on the system clipboard.
+-- reads best; `<leader>ccy` puts it on the system clipboard.
 --
 -- The plugin's own `<leader>r*` maps are disabled wholesale. The keys below
 -- reuse Atlas's review verbs so one muscle memory covers both reviewers:
@@ -33,7 +33,7 @@ return {
 
 	install = {
 		notes = {
-			"`<leader>gcl` falls back to the quickfix list: the plugin only knows telescope and fzf-lua.",
+			"`<leader>ccl` falls back to the quickfix list: the plugin only knows telescope and fzf-lua.",
 		},
 	},
 
@@ -113,7 +113,7 @@ return {
 
 	keys = {
 		{
-			"<leader>gcc",
+			"<leader>ccc",
 			function()
 				-- Normal mode: a count widens the captured context by N lines
 				-- either side of the cursor. Visual mode ignores it.
@@ -123,63 +123,63 @@ return {
 			desc = "Add review comment",
 		},
 		{
-			"<leader>gcs",
+			"<leader>ccs",
 			function()
 				require("code-review").show_comment_at_cursor()
 			end,
 			desc = "Show comment at cursor",
 		},
 		{
-			"<leader>gcr",
+			"<leader>ccr",
 			function()
 				require("code-review").reply_to_comment_at_cursor()
 			end,
 			desc = "Reply to comment",
 		},
 		{
-			"<leader>gcx",
+			"<leader>ccx",
 			function()
 				require("code-review").resolve_thread_at_cursor()
 			end,
 			desc = "Resolve thread",
 		},
 		{
-			"<leader>gcd",
+			"<leader>ccd",
 			function()
 				require("code-review").delete_comment_at_cursor()
 			end,
 			desc = "Delete comment at cursor",
 		},
 		{
-			"<leader>gcl",
+			"<leader>ccl",
 			function()
 				require("code-review").list_comments()
 			end,
 			desc = "List review threads",
 		},
 		{
-			"<leader>gcp",
+			"<leader>ccp",
 			function()
 				require("code-review").preview()
 			end,
 			desc = "Preview review",
 		},
 		{
-			"<leader>gcy",
+			"<leader>ccy",
 			function()
 				require("code-review").copy()
 			end,
 			desc = "Copy review to clipboard",
 		},
 		{
-			"<leader>gcw",
+			"<leader>ccw",
 			function()
 				require("code-review").save()
 			end,
 			desc = "Write review to file",
 		},
 		{
-			"<leader>gcX",
+			"<leader>ccX",
 			function()
 				require("code-review").clear()
 			end,

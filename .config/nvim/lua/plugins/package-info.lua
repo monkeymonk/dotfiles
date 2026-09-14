@@ -15,28 +15,28 @@ return {
 
 	keys = {
 		{
-			"<leader>cps",
+			"<leader>cds",
 			function()
 				require("package-info").show()
 			end,
 			desc = "Show dependency versions",
 		},
 		{
-			"<leader>cpt",
+			"<leader>cdt",
 			function()
 				require("package-info").toggle()
 			end,
 			desc = "Toggle dependency versions",
 		},
 		{
-			"<leader>cpi",
+			"<leader>cdi",
 			function()
 				require("package-info").install()
 			end,
 			desc = "Install dependency",
 		},
 		{
-			"<leader>cpu",
+			"<leader>cdu",
 			function()
 				require("package-info").change_version()
 			end,

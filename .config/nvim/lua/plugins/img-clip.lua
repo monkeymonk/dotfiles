@@ -1,7 +1,7 @@
 return {
 	name = "img-clip",
 	src = "https://github.com/HakonHarnes/img-clip.nvim",
-	lazy = true,
+	cmd = { "PasteImage" },
 
 	config = function()
 		require("img-clip").setup({
@@ -13,10 +13,6 @@ return {
 			},
 		})
 	end,
-
-	keys = {
-		{ "<leader>cp", "<cmd>PasteImage<cr>", desc = "Paste image from clipboard" },
-	},
 
 	install = {
 		notes = {

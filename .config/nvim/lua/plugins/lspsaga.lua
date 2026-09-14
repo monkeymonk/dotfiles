@@ -87,9 +87,9 @@ return {
 		},
 
 		-- Diagnostics
-		{ "<leader>uxo", "<cmd>Lspsaga show_line_diagnostics<cr>", desc = "Line diagnostics" },
-		{ "<leader>uxb", "<cmd>Lspsaga show_buf_diagnostics<cr>", desc = "Buffer diagnostics" },
-		{ "<leader>uxw", "<cmd>Lspsaga show_workspace_diagnostics<cr>", desc = "Workspace diagnostics" },
+		{ "<leader>df", "<cmd>Lspsaga show_line_diagnostics<cr>", desc = "Line diagnostics" },
+		{ "<leader>db", "<cmd>Lspsaga show_buf_diagnostics<cr>", desc = "Buffer diagnostics" },
+		{ "<leader>dw", "<cmd>Lspsaga show_workspace_diagnostics<cr>", desc = "Workspace diagnostics" },
 		{ "[d", "<cmd>Lspsaga diagnostic_jump_prev<cr>", desc = "Previous diagnostic" },
 		{ "]d", "<cmd>Lspsaga diagnostic_jump_next<cr>", desc = "Next diagnostic" },
 		{
