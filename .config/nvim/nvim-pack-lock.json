@@ -48,6 +48,10 @@
       "rev": "edefef779ab08ce1a4a404713e3012b0d202bd35",
       "src": "https://github.com/catppuccin/nvim"
     },
+    "code-review": {
+      "rev": "ed91462e20bd08c3be71efb11a4a7d00459f0b47",
+      "src": "https://github.com/choplin/code-review.nvim"
+    },
     "codecompanion": {
       "rev": "6fb43a1754956198f94df141de5e185a12a52c4d",
       "src": "https://github.com/olimorris/codecompanion.nvim"
