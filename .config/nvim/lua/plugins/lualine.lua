@@ -14,7 +14,13 @@ return {
 				section_separators = { left = "", right = "" },
 			},
 			sections = {
-				lualine_a = { "mode" },
+				lualine_a = {
+					"mode",
+					function()
+						local recording = vim.fn.reg_recording()
+						return recording ~= "" and ("REC @" .. recording) or ""
+					end,
+				},
 				lualine_b = { "branch", "diff" },
 				lualine_c = { { "filename", path = 1 } },
 				lualine_x = {

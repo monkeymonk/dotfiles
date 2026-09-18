@@ -10,6 +10,48 @@ local group_php_tools = augroup("user_php_tools", { clear = true })
 
 vim.api.nvim_create_user_command("Q", "qa", {})
 
+local function detach_reattach_command()
+	local server = vim.v.servername
+	if server == nil or server == "" then
+		return nil
+	end
+	return string.format("nvim --server %s --remote-ui", vim.fn.shellescape(server))
+end
+
+local function detach_with_confirmation()
+	local reattach_cmd = detach_reattach_command()
+	if reattach_cmd == nil then
+		require("util.notify").warn("Detach", "No server address available; not detaching")
+		return
+	end
+
+	pcall(vim.fn.setreg, "+", reattach_cmd)
+
+	vim.api.nvim_echo({
+		{ "Reattach with:\n", "MoreMsg" },
+		{ reattach_cmd, "Question" },
+		{ "\n\nPress <Enter> to detach, <Esc> to cancel: ", "MoreMsg" },
+	}, false, {})
+
+	local ok, key = pcall(vim.fn.getcharstr)
+	if not ok or key == vim.api.nvim_replace_termcodes("<Esc>", true, false, true) or key == "\3" then
+		vim.api.nvim_echo({ { "\nDetach cancelled", "MoreMsg" } }, false, {})
+		return
+	end
+	if key ~= "\r" and key ~= "\n" then
+		vim.api.nvim_echo({ { "\nDetach cancelled", "MoreMsg" } }, false, {})
+		return
+	end
+
+	vim.cmd("detach")
+end
+
+vim.api.nvim_create_user_command("Detach", detach_with_confirmation, {
+	desc = "Detach from this Neovim server, showing the reattach command first",
+})
+
+vim.cmd([[cnoreabbrev <expr> detach (getcmdtype() == ':' && getcmdline() == 'detach') ? 'Detach' : 'detach']])
+
 autocmd("FileType", {
 	group = group_general,
 	pattern = { "json", "jsonc", "markdown" },
@@ -116,5 +158,44 @@ autocmd({ "VimEnter", "DirChanged" }, {
 	group = group_php_tools,
 	callback = function()
 		require("util.php_project").setup()
+	end,
+})
+
+local group_scratchpad = augroup("user_scratchpad", { clear = true })
+
+local function fixup_scratchpad_buffer(buf)
+	if not vim.g.scratchpad then
+		return
+	end
+	local name = vim.api.nvim_buf_get_name(buf)
+	if not name:match("nvim%-scratch") or not name:match("%.md$") then
+		return
+	end
+	if vim.bo[buf].filetype ~= "markdown" then
+		vim.bo[buf].filetype = "markdown"
+	end
+	vim.keymap.set("n", "q", function()
+		vim.schedule(function()
+			pcall(function()
+				require("lualine").refresh({ place = { "statusline" } })
+			end)
+		end)
+		if vim.fn.reg_recording() == "" then
+			return "qq"
+		end
+		return "q"
+	end, {
+		buffer = buf,
+		expr = true,
+		nowait = true,
+		desc = "Toggle macro recording in q register",
+	})
+end
+
+autocmd({ "BufReadPost", "BufNewFile", "BufEnter" }, {
+	group = group_scratchpad,
+	pattern = "*.md",
+	callback = function(args)
+		fixup_scratchpad_buffer(args.buf)
 	end,
 })
