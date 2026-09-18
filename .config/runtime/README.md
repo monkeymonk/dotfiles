@@ -140,7 +140,7 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 | `mail.sh`            | Mail stack — aerc + isync (mbsync) + notmuch                           | setup                  |
 | `mise.sh`            | mise — polyglot version manager                                        | setup                  |
 | `neovim.sh`          | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback)                       | setup                  |
-| `nvim-scratch.sh`    | Persistent nvim scratchpad server (`nvim-scratch`); contributes `RUNTIME_SCRATCH_RUNNING` | setup |
+| `nvim-scratch.sh`    | Persistent nvim scratchpad (`nvim-scratch` service); contributes `RUNTIME_SCRATCH_RUNNING` (via socket count) | setup |
 | `node.sh`            | Node.js (contributes `RUNTIME_NODE_VERSION`)                           | setup                  |
 | `ollama.sh`          | Ollama (`OLLAMA_HOST`, `OLLAMA_MODELS`, daemon aliases)                | setup                  |
 | `omp.sh`             | oh-my-pi (`omp`) coding agent — cached shell completions               | interactive            |
@@ -250,7 +250,7 @@ bootstrapping keeps working unchanged:
 | `cherrylab`       | Manage the CherryLab docker stack and project compose files   |
 | `clipboard`       | Copy: `stdin \| clipboard`; Paste: `clipboard get`             |
 | `notify`          | Alert when a long job ends: popup, sound, tmux bell            |
-| `nvim-scratch`    | Persistent nvim scratchpad: spawn-or-attach a headless nvim server |
+| `nvim-scratch`    | Persistent nvim scratchpad service: `attach`, `open`, `eval`, `stop`, `status`, `doctor`, `toggle`/`close` (tmux) |
 | `project-context` | Extract project metadata                                      |
 | `recent`          | Open the most recently modified file                          |
 | `serve`           | Simple HTTP server                                             |
@@ -269,6 +269,42 @@ bootstrapping keeps working unchanged:
 | `tips-generate`       | Generate dynamic shell tips (ollama or llama.cpp)                   | `zsh-tips.zsh`, `tips-refresh`|
 | `tips-refresh`        | Force-regenerate dynamic tips: `tips-refresh [dir]`                 | by hand                       |
 | `yazi-launch`         | Run yazi and emit final cwd                                         | `plugins/yazi.sh`, niri `Mod+F`|
+
+#### nvim-scratch Service Architecture
+
+**Full documentation:** [docs/nvim-scratch/README.md](docs/nvim-scratch/README.md)
+
+`nvim-scratch` provides a tmux-independent service API for a long-running Neovim server with on-demand UI attachment:
+
+**Service vs. UI (tmux) Boundary:**
+- **Service (core):** One persistent headless Neovim instance (`--headless --listen`) per named scratchpad, spawned by `nvim-scratch` and surviving shell/tmux/pane closure.
+- **UI (tmux helper):** Presentation is owned by `${XDG_CONFIG_HOME:-$HOME/.config}/tmux/scripts/nvim-scratch-toggle`, which handles tmux float/popup geometry, pane naming, and tmux-specific lifecycle. The `toggle` and `close` commands are tmux-only and rely on this helper.
+
+**Terminology:**
+- **Attach:** UI client connects to a running server via `--server`/`--remote-ui`; closing the client detaches the UI without stopping the server.
+- **Detach:** User command `:detach` (or closing the pane) drops the UI while the server keeps running.
+- **Quit:** `:q` inside the client quits the server itself (same as in any Neovim session).
+
+**Core Commands:**
+- `nvim-scratch attach [NAME]` — Ensure server for NAME, attach a UI in the current terminal (blocking). NAME defaults to `scratch`.
+- `nvim-scratch open [--name NAME] FILE...` or `nvim-scratch open NAME -- FILE...` — Ensure server, open files via `--remote`; relative paths become absolute from caller cwd. Examples: `nvim-scratch open README.md`, `nvim-scratch open --name notes 'file with spaces.md'`, or `nvim-scratch open notes -- file.md`.
+- `nvim-scratch eval EXPR` or `nvim-scratch eval NAME EXPR` — Execute Neovim expression in running server, print output, return status (e.g., `nvim-scratch eval scratch 'getcwd()'`). Requires already-live server (does not spawn).
+- `nvim-scratch stop [NAME]` — Quit the server for NAME, remove its socket.
+- `nvim-scratch status` — List live instances (one line per instance).
+- `nvim-scratch doctor` — Environment + per-instance diagnostics.
+- `nvim-scratch toggle [NAME]` (tmux only) — Toggle a floating pane/popup running `attach`.
+- `nvim-scratch close [NAME]` (tmux only) — Close the surface if open; no-op otherwise.
+
+**Socket & State:**
+- Sockets stored in `$XDG_RUNTIME_DIR/nvim-scratch/` (mode 0700) for security: msgpack-RPC is unauthenticated code execution, so only the user's own processes can connect. When `XDG_RUNTIME_DIR` is unset, falls back to `${TMPDIR:-/tmp}/nvim-scratch-$(id -u)/`. Existing socket directories must already be current-user-owned non-symlink mode 0700 (no automatic repair into trust).
+- State (markdown notes) at `~/.local/state/nvim-scratch/NAME.md` (or `${XDG_STATE_HOME:-...}`).
+- Dedicated `~/.cache/nvim-scratch/NAME/main.shada` preserves marks/registers independently.
+- Server strips `TMUX`/`TMUX_PANE` env vars at spawn to prevent pane-aware plugins from targeting stale pane IDs.
+
+**Stale Socket Detection:**
+- The plugin's `RUNTIME_SCRATCH_RUNNING` detection counts socket files via cheap file-type check (no server probe during shell startup).
+- Stale socket files from crashed servers can remain in the socket directory.
+- `RUNTIME_SCRATCH_RUNNING` conservatively reports `yes` if any `.sock` node exists; lifecycle commands `attach`, `open`, and `stop` clean stale sockets when they run.
 
 ## Dependencies
 

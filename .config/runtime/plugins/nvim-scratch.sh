@@ -10,8 +10,12 @@
 # its defaults.
 
 _runtime_resolve_scratch_running() {
-    # Cheap: counts *.sock files. Never spawns nvim to probe — this runs
-    # during shell startup and must stay fast.
+    # Cheap: counts actual socket nodes only. Never spawns nvim to probe —
+    # this runs during shell startup and must stay fast. Note: stale socket
+    # files from crashed servers can remain until a service-start command
+    # (attach, open) or nvim-scratch stop removes them. This detection
+    # conservatively reports 'yes' if any .sock node exists; in the rare case
+    # of only stale sockets, they will be cleaned on next lifecycle operation.
     if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
         _rs_dir="$XDG_RUNTIME_DIR/nvim-scratch"
     else
@@ -21,7 +25,7 @@ _runtime_resolve_scratch_running() {
     _rs_n=0
     if [ -d "$_rs_dir" ]; then
         for _rs_f in "$_rs_dir"/*.sock; do
-            [ -e "$_rs_f" ] || continue
+            [ -S "$_rs_f" ] || continue
             _rs_n=$((_rs_n + 1))
         done
     fi
@@ -37,7 +41,7 @@ _runtime_resolve_scratch_running() {
 
 runtime_plugin_nvim_scratch() {
     has_cmd nvim || return 0
-    command -v alx >/dev/null 2>&1 && alias scratch='nvim-scratch' --desc "Toggle the persistent nvim scratchpad" --tags "nvim,scratch,notes"
+    command -v alx >/dev/null 2>&1 && alias scratch='nvim-scratch' --desc "Attach the persistent nvim scratchpad" --tags "nvim,scratch,notes"
     ctx_set_lazy RUNTIME_SCRATCH_RUNNING _runtime_resolve_scratch_running plugin
 }
 

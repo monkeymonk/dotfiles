@@ -1,19 +1,24 @@
 #!/usr/bin/env sh
 
-# nvim-scratch — one persistent nvim server per named scratchpad, attached
-# on demand by a disposable terminal UI.
+# nvim-scratch — one persistent nvim server per named scratchpad, driven as
+# a tmux-independent service: attach/open/eval/status/stop/doctor all work
+# against plain sockets, no tmux required. tmux *presentation* (the
+# floating pane / popup toggle) is a separate concern owned by the
+# dedicated helper at $XDG_CONFIG_HOME/tmux/scripts/nvim-scratch-toggle;
+# `toggle`/`close` here are thin compatibility forwards to it.
 #
 # Usage: nvim-scratch [SUBCOMMAND] [NAME]
 #   attach   (default)  ensure server, attach a UI in the current terminal
 #                        (blocking)
-#   toggle               tmux only: toggle a floating pane/popup running
-#                        `attach`
-#   close                 tmux only: close the surface if open; no-op
-#                        otherwise
-#   stop                   quit the server for NAME, remove its socket
-#   status                  one line per live instance
-#   doctor                   environment + per-instance diagnostics
-# NAME defaults to "scratch".
+#   open                 ensure server, open FILE(s) in it, do not attach
+#   eval                  evaluate a Vimscript EXPR against a live server
+#   toggle                 forwards to the tmux helper (floating pane/popup)
+#   close                   forwards to the tmux helper; no-op otherwise
+#   stop                     quit the server for NAME, remove its socket
+#   status                    one line per live instance
+#   doctor                     environment + per-instance diagnostics
+# NAME defaults to "scratch". Run with -h/--help for the full synopsis,
+# including `open`/`eval`'s own argument forms.
 #
 # The server is persistent, the UI is disposable. `nvim-scratch attach`
 # opens an ordinary `--remote-ui` client against a `--headless --listen`
@@ -26,21 +31,26 @@
 # type is what decides it. `:detach` (or just closing the pane) to leave the
 # scratchpad running, `:q` / `:qa` to actually kill it.
 #
-# The socket lives under $XDG_RUNTIME_DIR (mode 0700), never under /tmp: a
-# `--listen` socket is an unauthenticated msgpack-RPC endpoint exposing
-# `nvim_exec_lua`, i.e. arbitrary code execution for whoever can connect to
-# it. /tmp is world-traversable; $XDG_RUNTIME_DIR is a per-user 0700
-# directory that only this user's own processes can even see.
+# The socket prefers $XDG_RUNTIME_DIR (mode 0700): a `--listen` socket is
+# an unauthenticated msgpack-RPC endpoint exposing `nvim_exec_lua`, i.e.
+# arbitrary code execution for whoever can connect to it, and
+# $XDG_RUNTIME_DIR is a per-user 0700 directory that only this user's own
+# processes can even see. When it is unset, the fallback is a dedicated
+# leaf under $TMPDIR (default /tmp) — /tmp itself is world-traversable, so
+# that leaf is never trusted blindly: a symlink, an owner mismatch, or a
+# mode looser than 0700 fails the whole invocation rather than being
+# silently "fixed" past (see ns_prepare_sock_dir), for either location.
 #
 # Env overrides (defaulted below; plugins/nvim-scratch.sh sets none of
 # these — the server outlives the shell that spawned it, so a later shell's
 # defaults would just be a second, driftable copy of the ones below):
 #   NVIM_SCRATCH_NVIM        nvim binary                   (default: nvim)
 #   NVIM_SCRATCH_NVIM_ARGS   extra args, word-split          (default: "")
-#   NVIM_SCRATCH_SURFACE     auto | float | popup              (default: auto)
-#   NVIM_SCRATCH_SIZE        WxH, percent of window             (default: 80x70)
 #   NVIM_SCRATCH_FILE        explicit state-file override for NAME
 #   NVIM_SCRATCH_STATE_DIR   explicit state-dir override
+#
+# NVIM_SCRATCH_SURFACE and NVIM_SCRATCH_SIZE (tmux float/popup kind and
+# dimensions) are owned by the tmux helper, not this script.
 
 set -eu
 
@@ -53,8 +63,6 @@ esac
 
 : "${NVIM_SCRATCH_NVIM:=nvim}"
 : "${NVIM_SCRATCH_NVIM_ARGS:=}"
-: "${NVIM_SCRATCH_SURFACE:=auto}"
-: "${NVIM_SCRATCH_SIZE:=80x70}"
 
 ns_has_timeout=0
 has_cmd timeout && ns_has_timeout=1
@@ -64,16 +72,23 @@ has_cmd setsid && ns_has_setsid=1
 ns_usage() {
     cat <<'EOF'
 usage: nvim-scratch [SUBCOMMAND] [NAME]
+       nvim-scratch open [--name NAME] FILE...
+       nvim-scratch open NAME -- FILE...
+       nvim-scratch eval [NAME] EXPR
 
   attach   (default)  ensure server, attach a UI in the current terminal
                        (blocking)
-  toggle              tmux only: toggle a floating pane/popup running attach
-  close               tmux only: close the surface if open; no-op otherwise
+  open                ensure server, open FILE(s) in it; does not attach
+  eval                evaluate a Vimscript EXPR against an already-running
+                       server and print the result; never spawns one
+  toggle              forwards to the tmux helper (nvim-scratch-toggle)
+  close               forwards to the tmux helper; no-op if unavailable
   stop                quit the server for NAME, remove its socket
   status              one line per live instance
   doctor              environment + per-instance diagnostics
 
-NAME defaults to "scratch".
+NAME defaults to "scratch". `eval EXPR` targets the default scratch;
+`eval NAME EXPR` targets NAME.
 EOF
 }
 
@@ -98,6 +113,84 @@ ns_state_file_for() {
     # (that override only makes sense for the single instance an invocation
     # is actually acting on, not for every name a listing happens to find).
     printf '%s/%s.md\n' "$(ns_default_state_dir)" "$1"
+}
+
+ns_stat_owner() {
+    # $1 = path -> owning uid, or "" if it cannot be stat'd.
+    stat -c '%u' "$1" 2>/dev/null || stat -f '%u' "$1" 2>/dev/null || printf ''
+}
+
+ns_stat_mode() {
+    # $1 = path -> octal mode, or "" if it cannot be stat'd.
+    stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1" 2>/dev/null || printf ''
+}
+
+ns_sock_dir_state() {
+    # $1 = the private socket directory. Sets ns_secure_reason when it
+    # returns something other than 0. This directory holds unauthenticated
+    # msgpack-RPC sockets (arbitrary code execution for whoever can
+    # connect), so an existing entry is never repaired into trust: a
+    # symlink, a mode looser than 0700, or an owner other than us fails
+    # closed instead of being "fixed" past. Applies equally to the
+    # $TMPDIR fallback used when XDG_RUNTIME_DIR is unset, where the risk
+    # of a pre-planted directory from another user is highest.
+    #   0 = present and trustworthy — safe to create sockets in, traverse,
+    #       or probe.
+    #   1 = present but not trustworthy — never traversed or probed.
+    #   2 = absent — nothing to check yet, not an error by itself.
+    ns_dir=$1
+
+    if [ ! -e "$ns_dir" ] && [ ! -L "$ns_dir" ]; then
+        return 2
+    fi
+    if [ -L "$ns_dir" ]; then
+        ns_secure_reason="refusing symlinked socket dir: $ns_dir"
+        return 1
+    fi
+    if [ ! -d "$ns_dir" ]; then
+        ns_secure_reason="socket dir path exists but is not a directory: $ns_dir"
+        return 1
+    fi
+
+    ns_owner=$(ns_stat_owner "$ns_dir")
+    if [ -z "$ns_owner" ] || [ "$ns_owner" != "$(id -u)" ]; then
+        ns_secure_reason="socket dir not owned by uid $(id -u): $ns_dir (owner: ${ns_owner:-unknown})"
+        return 1
+    fi
+
+    ns_mode=$(ns_stat_mode "$ns_dir")
+    if [ "$ns_mode" != "700" ]; then
+        ns_secure_reason="socket dir mode is ${ns_mode:-unknown}, want 700: $ns_dir"
+        return 1
+    fi
+
+    return 0
+}
+
+ns_prepare_sock_dir() {
+    # $1 = the private socket directory, created on demand. A brand-new
+    # directory is always made with mode 700 directly (mkdir -m, not a
+    # post-hoc chmod), so it never needs repairing. An existing directory
+    # is checked, never repaired: see ns_sock_dir_state.
+    ns_dir=$1
+
+    if [ ! -e "$ns_dir" ] && [ ! -L "$ns_dir" ]; then
+        # shellcheck disable=SC2174 # only the leaf dir is new; parents (XDG_RUNTIME_DIR / TMPDIR) already exist
+        mkdir -m 700 -p "$ns_dir" 2>/dev/null || true
+    fi
+
+    ns_sock_dir_state "$ns_dir" && ns_dirstate=0 || ns_dirstate=$?
+    case "$ns_dirstate" in
+        0) return 0 ;;
+        2)
+            error "nvim-scratch: cannot create socket dir: $ns_dir"
+            exit 1
+            ;;
+        *)
+            error "nvim-scratch: $ns_secure_reason"
+            exit 1
+            ;;
+    esac
 }
 
 # Resolves every path for NAME into globals (ns_state_dir, ns_file,
@@ -132,17 +225,7 @@ ns_paths() {
         exit 1
     }
 
-    if [ -d "$ns_sock_dir" ]; then
-        ns_mode=$(stat -c '%a' "$ns_sock_dir" 2>/dev/null || stat -f '%Lp' "$ns_sock_dir" 2>/dev/null || printf '')
-        [ "$ns_mode" = "700" ] || chmod 700 "$ns_sock_dir" 2>/dev/null || true
-    else
-        # shellcheck disable=SC2174 # only the leaf dir is new; parents (XDG_RUNTIME_DIR / TMPDIR) already exist
-        mkdir -m 700 -p "$ns_sock_dir" 2>/dev/null || true
-    fi
-    [ -d "$ns_sock_dir" ] || {
-        error "nvim-scratch: cannot create socket dir: $ns_sock_dir"
-        exit 1
-    }
+    ns_prepare_sock_dir "$ns_sock_dir"
 }
 
 ns_dir_age() {
@@ -182,12 +265,55 @@ ns_stale() {
 }
 
 # --------------------------------------------------------------------------
+# Ownership guards
+# --------------------------------------------------------------------------
+
+ns_check_sock_owner() {
+    # $1 = the expected socket path for a NAME. The containing directory
+    # is already trusted (0700, owned by us) by the time this runs, but
+    # fail closed anyway before ever probing or adopting (spawning over,
+    # connecting to) a path that turns out not to be ours: never trust an
+    # existing entry just because its directory is trustworthy.
+    if [ -L "$1" ]; then
+        error "nvim-scratch: refusing symlinked socket path: $1"
+        exit 1
+    fi
+    [ -e "$1" ] || return 0
+    ns_owner=$(ns_stat_owner "$1")
+    if [ -z "$ns_owner" ] || [ "$ns_owner" != "$(id -u)" ]; then
+        error "nvim-scratch: refusing socket not owned by uid $(id -u): $1 (owner: ${ns_owner:-unknown})"
+        exit 1
+    fi
+}
+
+ns_check_log_path() {
+    # $1 = the spawn log path, about to be truncated with `: >`. Fail
+    # closed first: an existing entry must already be an ordinary file we
+    # own, never a symlink planted to redirect that truncation elsewhere.
+    if [ -L "$1" ]; then
+        error "nvim-scratch: refusing symlinked log path: $1"
+        exit 1
+    fi
+    [ -e "$1" ] || return 0
+    if [ ! -f "$1" ]; then
+        error "nvim-scratch: refusing non-regular log path: $1"
+        exit 1
+    fi
+    ns_owner=$(ns_stat_owner "$1")
+    if [ -z "$ns_owner" ] || [ "$ns_owner" != "$(id -u)" ]; then
+        error "nvim-scratch: refusing log path not owned by uid $(id -u): $1 (owner: ${ns_owner:-unknown})"
+        exit 1
+    fi
+}
+
+# --------------------------------------------------------------------------
 # Spawn (idempotent, race-safe)
 # --------------------------------------------------------------------------
 
 ns_spawn() {
     # $1 = NAME. Assumes the caller already holds ns_lock and has resolved
     # ns_sock / ns_shada / ns_file / ns_state_dir / ns_log via ns_paths.
+    ns_check_log_path "$ns_log"
     : > "$ns_log" 2>/dev/null || true
 
     # `-u TMUX -u TMUX_PANE`: the server is spawned once and its environment
@@ -201,22 +327,33 @@ ns_spawn() {
     # Trailing "$ns_file": a bare headless launch lands on the
     # non-modifiable snacks_dashboard buffer; a real file avoids that.
     if [ "$ns_has_setsid" -eq 1 ]; then
+        # Redirects wrap the whole subshell (not just the final command),
+        # so the forked process has fds 0/1/2 pointed at /dev/null and
+        # ns_log from the instant it exists — no window where it still
+        # holds this script's own stdin/stdout/stderr (e.g. a caller's
+        # capture pipe) before exec takes over. `exec` into setsid means
+        # no shell is left in the chain once nvim is running: the
+        # backgrounded subshell process becomes setsid, which becomes
+        # nvim, with nothing left behind to keep those fds — or the
+        # process itself — alive once the caller has moved on.
         # shellcheck disable=SC2086 # word-splitting NVIM_SCRATCH_NVIM_ARGS is the feature
-        ( cd "$ns_state_dir" && setsid env -u TMUX -u TMUX_PANE \
+        ( cd "$ns_state_dir" && exec setsid env -u TMUX -u TMUX_PANE \
             "$NVIM_SCRATCH_NVIM" --headless --listen "$ns_sock" \
             -i "$ns_shada" --cmd "let g:scratchpad='$1'" \
             $NVIM_SCRATCH_NVIM_ARGS -- "$ns_file" \
-            </dev/null >"$ns_log" 2>&1 & )
+        ) </dev/null >"$ns_log" 2>&1 &
     else
-        # No setsid: backgrounding inside this subshell is the classic
-        # double fork — the subshell exits the instant it has forked nvim
-        # into the background, orphaning it to init rather than to us.
+        # No setsid: same shape, minus the new-session step. The
+        # backgrounded subshell still exits (via exec) the instant nvim
+        # replaces it, so it never lingers as a shell process, and nvim
+        # itself is reparented to init like any other orphaned background
+        # job once this script exits.
         # shellcheck disable=SC2086 # word-splitting NVIM_SCRATCH_NVIM_ARGS is the feature
-        ( cd "$ns_state_dir" && env -u TMUX -u TMUX_PANE \
+        ( cd "$ns_state_dir" && exec env -u TMUX -u TMUX_PANE \
             "$NVIM_SCRATCH_NVIM" --headless --listen "$ns_sock" \
             -i "$ns_shada" --cmd "let g:scratchpad='$1'" \
             $NVIM_SCRATCH_NVIM_ARGS -- "$ns_file" \
-            </dev/null >"$ns_log" 2>&1 & )
+        ) </dev/null >"$ns_log" 2>&1 &
     fi
 
     ns_i=0
@@ -236,51 +373,90 @@ ns_spawn() {
     return 1
 }
 
-ns_spawn_locked() {
-    # $1 = NAME. Caller has just created ns_lock via mkdir and owns it.
-    trap 'rm -rf "$ns_lock"' EXIT INT TERM
-    ns_spawn "$1"
-    ns_rc=$?
-    rm -rf "$ns_lock" 2>/dev/null || true
+# --------------------------------------------------------------------------
+# Lifecycle lock (shared by ensure/start and stop)
+# --------------------------------------------------------------------------
+
+ns_lock_acquired=0
+
+ns_lock_release() {
+    # Removes ns_lock only when *this* invocation is the one that created
+    # it via ns_lock_acquire — never a lock some concurrent starter or
+    # stopper still owns. Safe to call as a plain function or as the
+    # EXIT/INT/TERM trap handler; idempotent either way.
+    if [ "$ns_lock_acquired" -eq 1 ]; then
+        rm -rf "$ns_lock" 2>/dev/null || true
+        ns_lock_acquired=0
+    fi
     trap - EXIT INT TERM
-    return "$ns_rc"
 }
 
-ns_ensure_server() {
-    ns_name=$1
-
-    if [ -S "$ns_sock" ] && ns_probe_live "$ns_sock"; then
-        return 0
-    fi
-    ns_stale "$ns_sock" || true
+ns_lock_acquire() {
+    # $1 = NAME, for context only. Serializes every liveness decision
+    # (ensure/start and stop alike) on the one per-name mkdir lock: no
+    # caller may probe staleness/liveness, spawn, or shut down until it
+    # holds ns_lock. On success, installs a trap so a crash or signal
+    # between acquire and release still cleans up — but only the lock
+    # this invocation created.
+    ns_lock_acquired=0
 
     if mkdir "$ns_lock" 2>/dev/null; then
-        ns_spawn_locked "$ns_name"
-        return $?
+        ns_lock_acquired=1
+        trap 'ns_lock_release' EXIT INT TERM
+        return 0
     fi
 
-    # Another invocation is already spawning (or crashed mid-spawn). Poll
-    # for the socket to come alive for up to 5s before deciding the lock
-    # is stale.
+    # Someone else holds it (another ensure, or a stop). Wait up to 5s for
+    # them to release it, re-attempting the instant it looks gone.
     ns_i=0
     while [ "$ns_i" -lt 50 ]; do
-        if ns_probe_live "$ns_sock"; then
+        if [ ! -d "$ns_lock" ] && mkdir "$ns_lock" 2>/dev/null; then
+            ns_lock_acquired=1
+            trap 'ns_lock_release' EXIT INT TERM
             return 0
         fi
         sleep 0.1
         ns_i=$((ns_i + 1))
     done
 
-    if [ "$(ns_dir_age "$ns_lock")" -ge 60 ]; then
+    # Still held after 5s: only recover it once it is old enough to
+    # plausibly be abandoned by a crashed invocation, never a live one.
+    if [ -d "$ns_lock" ] && [ "$(ns_dir_age "$ns_lock")" -ge 60 ]; then
         rm -rf "$ns_lock" 2>/dev/null || true
         if mkdir "$ns_lock" 2>/dev/null; then
-            ns_spawn_locked "$ns_name"
-            return $?
+            ns_lock_acquired=1
+            trap 'ns_lock_release' EXIT INT TERM
+            return 0
         fi
     fi
 
-    error "nvim-scratch: '$ns_name' did not come up (lock held by another process: $ns_lock)"
     return 1
+}
+
+ns_ensure_server() {
+    ns_name=$1
+    ns_check_sock_owner "$ns_sock"
+
+    if ! ns_lock_acquire "$ns_name"; then
+        error "nvim-scratch: '$ns_name' did not come up (lock held by another process: $ns_lock)"
+        return 1
+    fi
+
+    # Holding the lock: the pre-acquire ownership check above is stale
+    # after any wait, so re-check before making the liveness decision,
+    # which — like every decision from here on — is entirely ours to
+    # make; never adopt a socket without holding the lock, since a
+    # concurrent stop could be tearing it down at the same moment.
+    ns_check_sock_owner "$ns_sock"
+    if [ -S "$ns_sock" ] && ns_probe_live "$ns_sock"; then
+        ns_lock_release
+        return 0
+    fi
+    ns_stale "$ns_sock" || true
+    ns_spawn "$ns_name"
+    ns_rc=$?
+    ns_lock_release
+    return "$ns_rc"
 }
 
 # --------------------------------------------------------------------------
@@ -301,136 +477,134 @@ ns_cmd_attach() {
 }
 
 # --------------------------------------------------------------------------
-# tmux surface (toggle / close)
+# open
 # --------------------------------------------------------------------------
 
-ns_has_new_pane() {
-    tmux list-commands -F '#{command_list_name}' 2>/dev/null | grep -qx new-pane
-}
-
-ns_resolve_surface_kind() {
-    # Sets ns_kind. May exit the whole script (not just this function) when
-    # an explicit `float` is impossible — that must be a hard error, not a
-    # silent downgrade to popup.
-    case "$NVIM_SCRATCH_SURFACE" in
-        float)
-            if ns_has_new_pane; then
-                ns_kind=float
-            else
-                error "nvim-scratch: NVIM_SCRATCH_SURFACE=float but this tmux has no 'new-pane' command (needs tmux 3.7+)"
-                exit 1
-            fi
-            ;;
-        popup)
-            ns_kind=popup
-            ;;
-        *)
-            if ns_has_new_pane; then
-                ns_kind=float
-            else
-                ns_kind=popup
-            fi
+ns_cmd_open() {
+    case "${1:-}" in
+        -h | --help)
+            ns_usage
+            exit 0
             ;;
     esac
-}
 
-ns_parse_size() {
-    # Sets ns_pct_w / ns_pct_h from NVIM_SCRATCH_SIZE ("WxH" percentages),
-    # falling back to 80x70 for anything malformed.
-    ns_pct_w=${NVIM_SCRATCH_SIZE%x*}
-    ns_pct_h=${NVIM_SCRATCH_SIZE#*x}
-    case "$ns_pct_w" in '' | *[!0-9]*) ns_pct_w=80 ;; esac
-    case "$ns_pct_h" in '' | *[!0-9]*) ns_pct_h=70 ;; esac
-}
+    ns_open_name=scratch
+    if [ "${1:-}" = "--name" ]; then
+        [ $# -ge 2 ] || {
+            error "nvim-scratch: --name requires a value"
+            exit 2
+        }
+        ns_open_name=$2
+        shift 2
+    elif [ $# -ge 2 ] && [ "$2" = "--" ]; then
+        ns_open_name=$1
+        shift 2
+    fi
 
-ns_surface_find() {
-    # $1 = NAME -> pane ids (one per line) whose title matches, via exit
-    # status (found or not) rather than storing anything, which keeps the
-    # toggle stateless and self-healing across server restarts. Mirrors
-    # ~/.config/tmux/scripts/workmux_dashboard.sh's title lookup.
-    tmux list-panes -a -F '#{pane_id} #{pane_title}' 2>/dev/null |
-        awk -v t="nvim-scratch:$1" '$2 == t { print $1; f=1 } END { exit f ? 0 : 1 }'
-}
+    ns_validate_name "$ns_open_name"
 
-ns_surface_open_float() {
-    ns_name=$1
-    ns_wh=$(tmux display-message -p '#{window_width} #{window_height}' 2>/dev/null) || {
-        error "nvim-scratch: could not query the tmux window size"
-        return 1
-    }
-    IFS=' ' read -r ns_ww ns_winh <<EOF
-$ns_wh
-EOF
-    [ -n "${ns_ww:-}" ] && [ -n "${ns_winh:-}" ] || {
-        error "nvim-scratch: could not parse the tmux window size"
-        return 1
+    [ $# -ge 1 ] || {
+        error "nvim-scratch: open requires at least one FILE"
+        ns_usage >&2
+        exit 2
     }
 
-    ns_parse_size
-    # new-pane takes absolute cells and has no centring flag, so compute it.
-    ns_w=$((ns_ww * ns_pct_w / 100))
-    ns_h=$((ns_winh * ns_pct_h / 100))
-    [ "$ns_w" -lt 40 ] && ns_w=$ns_ww
-    [ "$ns_h" -lt 10 ] && ns_h=$ns_winh
-    ns_x=$(((ns_ww - ns_w) / 2))
-    ns_y=$(((ns_winh - ns_h) / 2))
+    # Each FILE becomes an absolute path from the *caller's* cwd before
+    # nvim ever sees it: the server's own cwd is ns_state_dir (see
+    # ns_spawn), so a relative path handed straight to --remote would
+    # resolve against the wrong directory. Rebuilding $@ in place (instead
+    # of joining into one string) keeps embedded spaces intact — the `for`
+    # loop already snapshotted the original list, so reassigning $@ inside
+    # it via `set --` is safe.
+    ns_open_first=1
+    for ns_f in "$@"; do
+        case "$ns_f" in
+            /*) : ;;
+            *) ns_f="$PWD/$ns_f" ;;
+        esac
+        if [ "$ns_open_first" -eq 1 ]; then
+            set -- "$ns_f"
+            ns_open_first=0
+        else
+            set -- "$@" "$ns_f"
+        fi
+    done
 
-    ns_id=$(tmux new-pane -P -F '#{pane_id}' -x "$ns_w" -y "$ns_h" -X "$ns_x" -Y "$ns_y" \
-        "$SELF" attach "$ns_name") || {
-        error "nvim-scratch: tmux new-pane failed"
-        return 1
-    }
-    tmux select-pane -t "$ns_id" -T "nvim-scratch:$ns_name"
+    ns_paths "$ns_open_name"
+    ns_ensure_server "$ns_open_name"
+
+    # One --remote call so nvim's own arglist handling opens every file,
+    # rather than N separate client invocations.
+    "$NVIM_SCRATCH_NVIM" --server "$ns_sock" --remote "$@"
 }
 
-ns_surface_open_popup() {
-    ns_name=$1
-    ns_parse_size
-    # A popup is modal: while it is open it swallows input outside its
-    # border, so unlike a floating pane it cannot be closed from elsewhere
-    # in tmux. `toggle` on this tier therefore only ever opens, and `close`
-    # is a no-op — `doctor` calls this out as a limitation of this tier.
-    tmux display-popup -E -w "${ns_pct_w}%" -h "${ns_pct_h}%" \
-        -T "nvim-scratch:$ns_name" "$SELF" attach "$ns_name"
+# --------------------------------------------------------------------------
+# eval
+# --------------------------------------------------------------------------
+
+ns_cmd_eval() {
+    case "${1:-}" in
+        -h | --help)
+            ns_usage
+            exit 0
+            ;;
+    esac
+
+    case $# in
+        1)
+            ns_eval_name=scratch
+            ns_eval_expr=$1
+            ;;
+        2)
+            ns_eval_name=$1
+            ns_eval_expr=$2
+            ;;
+        *)
+            error "nvim-scratch: eval takes 'EXPR' or 'NAME EXPR'"
+            ns_usage >&2
+            exit 2
+            ;;
+    esac
+
+    ns_validate_name "$ns_eval_name"
+    ns_paths "$ns_eval_name"
+    ns_check_sock_owner "$ns_sock"
+
+    if ! { [ -S "$ns_sock" ] && ns_probe_live "$ns_sock"; }; then
+        error "nvim-scratch: '$ns_eval_name' is not running — eval never spawns a server; use 'open' or 'attach' first"
+        exit 1
+    fi
+
+    # $ns_eval_expr reaches --remote-expr as a single argv value, never
+    # through a shell `eval`: whatever it contains is Vimscript for nvim to
+    # evaluate, not shell syntax for this script to interpret.
+    "$NVIM_SCRATCH_NVIM" --server "$ns_sock" --remote-expr "$ns_eval_expr"
+}
+
+# --------------------------------------------------------------------------
+# toggle / close — compatibility forwards to the tmux helper
+# --------------------------------------------------------------------------
+
+ns_helper_path() {
+    printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/scripts/nvim-scratch-toggle"
 }
 
 ns_cmd_toggle() {
-    ns_name=$1
-    if ! has_cmd tmux; then
-        error "nvim-scratch: toggle needs tmux"
+    ns_helper=$(ns_helper_path)
+    if [ ! -x "$ns_helper" ]; then
+        error "nvim-scratch: toggle needs the tmux helper: $ns_helper"
         exit 2
     fi
-    if [ -z "${TMUX:-}" ]; then
-        error "nvim-scratch: toggle must run inside tmux; run 'nvim-scratch attach $ns_name' instead"
-        exit 2
-    fi
-
-    ns_open=$(ns_surface_find "$ns_name") || ns_open=""
-    if [ -n "$ns_open" ]; then
-        for ns_id in $ns_open; do
-            tmux kill-pane -t "$ns_id" 2>/dev/null || true
-        done
-        return 0
-    fi
-
-    ns_resolve_surface_kind
-    case "$ns_kind" in
-        float) ns_surface_open_float "$ns_name" ;;
-        popup) ns_surface_open_popup "$ns_name" ;;
-    esac
+    "$ns_helper" toggle "$1"
 }
 
 ns_cmd_close() {
-    # Never an error when nothing is open — this runs unconditionally from
-    # tmux's client-detached hook.
-    ns_name=$1
-    has_cmd tmux || return 0
-    ns_open=$(ns_surface_find "$ns_name") || ns_open=""
-    [ -n "$ns_open" ] || return 0
-    for ns_id in $ns_open; do
-        tmux kill-pane -t "$ns_id" 2>/dev/null || true
-    done
-    return 0
+    # Never an error when the helper is unavailable — this runs
+    # unconditionally from tmux's client-detached hook, which must not
+    # fail just because there is no surface to close.
+    ns_helper=$(ns_helper_path)
+    [ -x "$ns_helper" ] || return 0
+    "$ns_helper" close "$1"
 }
 
 # --------------------------------------------------------------------------
@@ -439,8 +613,21 @@ ns_cmd_close() {
 
 ns_cmd_stop() {
     ns_paths "$1"
-    ns_cmd_close "$1" 2>/dev/null || true
+    ns_check_sock_owner "$ns_sock"
+    # Presentation is not this command's concern: killing the server makes
+    # any attached remote UI exit on its own, and the tmux helper's pane
+    # closes naturally as a result — no need to call ns_cmd_close here.
 
+    if ! ns_lock_acquire "$1"; then
+        error "nvim-scratch: '$1' is locked by another invocation, not stopping: $ns_lock"
+        return 1
+    fi
+
+    # Holding the lock: the pre-acquire ownership check above is stale
+    # after any wait, so re-check before making any liveness decision.
+    ns_check_sock_owner "$ns_sock"
+
+    ns_rc=0
     if [ -S "$ns_sock" ] && ns_probe_live "$ns_sock"; then
         # The server dies mid-call, so its response is garbage (or none) —
         # that is expected, not an error.
@@ -451,13 +638,20 @@ ns_cmd_stop() {
             sleep 0.1
             ns_i=$((ns_i + 1))
         done
-        rm -f "$ns_sock" 2>/dev/null || true
-        success "nvim-scratch: stopped '$1'"
+        if ns_probe_live "$ns_sock"; then
+            error "nvim-scratch: '$1' did not stop within 2s — its socket is still live, leaving it in place: $ns_sock"
+            ns_rc=1
+        else
+            rm -f "$ns_sock" 2>/dev/null || true
+            success "nvim-scratch: stopped '$1'"
+        fi
     else
         rm -f "$ns_sock" 2>/dev/null || true
         info "nvim-scratch: '$1' was not running"
     fi
-    rm -rf "$ns_lock" 2>/dev/null || true
+
+    ns_lock_release
+    return "$ns_rc"
 }
 
 # --------------------------------------------------------------------------
@@ -466,7 +660,14 @@ ns_cmd_stop() {
 
 ns_cmd_status() {
     ns_sock_dir_compute
-    [ -d "$ns_sock_dir" ] || return 0
+    ns_sock_dir_state "$ns_sock_dir" && ns_dirstate=0 || ns_dirstate=$?
+    case "$ns_dirstate" in
+        2) return 0 ;;
+        1)
+            error "nvim-scratch: $ns_secure_reason"
+            return 1
+            ;;
+    esac
     for ns_f in "$ns_sock_dir"/*.sock; do
         [ -e "$ns_f" ] || continue
         ns_n=${ns_f##*/}
@@ -501,16 +702,21 @@ ns_cmd_doctor() {
 
     printf '\ntmux:\n'
     if has_cmd tmux; then
-        printf '  version        %s\n' "$(tmux -V 2>/dev/null || printf unknown)"
-        if ns_has_new_pane; then
-            printf '  new-pane       yes\n'
-            printf '  surface(auto)  float\n'
-        else
-            printf '  new-pane       no\n'
-            printf '  surface(auto)  popup — a popup is modal, so on this tier "toggle" only ever opens and "close" is a no-op\n'
-        fi
+        printf '  version  %s\n' "$(tmux -V 2>/dev/null || printf unknown)"
     else
-        printf '  not installed (toggle/close are unavailable; attach/stop/status/doctor still work)\n'
+        printf '  not installed (toggle/close are unavailable; attach/open/eval/stop/status/doctor still work)\n'
+    fi
+
+    printf '\ntmux helper:\n'
+    ns_helper=$(ns_helper_path)
+    if [ -x "$ns_helper" ]; then
+        printf '  path  %s\n' "$ns_helper"
+        ns_helper_out=$("$ns_helper" doctor 2>&1) && ns_helper_rc=0 || ns_helper_rc=$?
+        printf '%s\n' "$ns_helper_out" | sed 's/^/  /'
+        [ "$ns_helper_rc" -eq 0 ] || ns_fault=1
+    else
+        printf '  not found or not executable: %s\n' "$ns_helper"
+        printf '  toggle/close are unavailable; attach/open/eval/stop/status/doctor still work\n'
     fi
 
     printf '\nhelpers:\n'
@@ -522,22 +728,26 @@ ns_cmd_doctor() {
     if [ "$ns_has_setsid" -eq 1 ]; then
         printf '  setsid   yes\n'
     else
-        printf '  setsid   no — spawn falls back to a "( cmd & )" subshell double-fork\n'
+        printf '  setsid   no — spawn falls back to a redirected background subshell that execs nvim directly (no new session)\n'
     fi
 
     ns_sock_dir_compute
     printf '\nsocket dir: %s\n' "$ns_sock_dir"
-    if [ -d "$ns_sock_dir" ]; then
-        ns_smode=$(stat -c '%a' "$ns_sock_dir" 2>/dev/null || stat -f '%Lp' "$ns_sock_dir" 2>/dev/null || printf '?')
-        if [ "$ns_smode" = "700" ]; then
+    ns_sock_dir_state "$ns_sock_dir" && ns_dirstate=0 || ns_dirstate=$?
+    case "$ns_dirstate" in
+        2)
+            printf '  does not exist yet (created on first spawn)\n'
+            ;;
+        0)
+            printf '  owner uid %s (ok)\n' "$(id -u)"
             printf '  mode 700 (ok)\n'
-        else
-            printf '  mode %s — WANT 700, this is an unauthenticated RPC endpoint\n' "$ns_smode"
+            ;;
+        *)
+            printf '  INSECURE — %s\n' "$ns_secure_reason"
+            printf '  refusing to traverse or probe sockets in this directory\n'
             ns_fault=1
-        fi
-    else
-        printf '  does not exist yet (created on first spawn)\n'
-    fi
+            ;;
+    esac
 
     ns_sdir=$(ns_default_state_dir)
     ns_cdir="${XDG_CACHE_HOME:-$HOME/.cache}/nvim-scratch"
@@ -571,21 +781,25 @@ ns_cmd_doctor() {
 
     printf '\ninstances:\n'
     ns_any=0
-    if [ -d "$ns_sock_dir" ]; then
-        for ns_f in "$ns_sock_dir"/*.sock; do
-            [ -e "$ns_f" ] || continue
-            ns_any=1
-            ns_n=${ns_f##*/}
-            ns_n=${ns_n%.sock}
-            if ns_probe_live "$ns_f"; then
-                ns_d=$("$NVIM_SCRATCH_NVIM" --server "$ns_f" --remote-expr 'exists(":detach")' 2>/dev/null || printf '?')
-                printf '  %-12s live, exists(":detach")=%s — ":q" quits this server, ":detach" (or just closing the pane) does not\n' "$ns_n" "$ns_d"
-            else
-                printf '  %-12s stale socket\n' "$ns_n"
-            fi
-        done
-    fi
-    [ "$ns_any" -eq 1 ] || printf '  (none)\n'
+    case "$ns_dirstate" in
+        0)
+            for ns_f in "$ns_sock_dir"/*.sock; do
+                [ -e "$ns_f" ] || continue
+                ns_any=1
+                ns_n=${ns_f##*/}
+                ns_n=${ns_n%.sock}
+                if ns_probe_live "$ns_f"; then
+                    ns_d=$("$NVIM_SCRATCH_NVIM" --server "$ns_f" --remote-expr 'exists(":detach")' 2>/dev/null || printf '?')
+                    printf '  %-12s live, exists(":detach")=%s — ":q" quits this server, ":detach" (or just closing the pane) does not\n' "$ns_n" "$ns_d"
+                else
+                    printf '  %-12s stale socket\n' "$ns_n"
+                fi
+            done
+            [ "$ns_any" -eq 1 ] || printf '  (none)\n'
+            ;;
+        2) printf '  (none)\n' ;;
+        *) printf '  skipped — socket dir is insecure\n' ;;
+    esac
 
     printf '\nstatus:\n'
     ns_cmd_status | sed 's/^/  /'
@@ -610,6 +824,10 @@ ns_validate_name() {
             error "nvim-scratch: NAME must not be empty"
             exit 2
             ;;
+        . | ..)
+            error "nvim-scratch: NAME '$1' must not be '.' or '..'"
+            exit 2
+            ;;
         *[!a-zA-Z0-9_.-]*)
             error "nvim-scratch: NAME '$1' must match [A-Za-z0-9_.-]+"
             exit 2
@@ -617,12 +835,28 @@ ns_validate_name() {
     esac
 }
 
+# `open` and `eval` take shapes the generic [SUBCOMMAND] [NAME] loop below
+# cannot express (a FILE... list; an EXPR that may itself contain spaces),
+# so they are dispatched here, before that loop ever sees argv.
+case "${1:-}" in
+    open)
+        shift
+        ns_cmd_open "$@"
+        exit $?
+        ;;
+    eval)
+        shift
+        ns_cmd_eval "$@"
+        exit $?
+        ;;
+esac
+
 ns_sub=""
 ns_name=""
 ns_end_opts=0
 
 while [ $# -gt 0 ]; do
-    case "$1" in
+    case $1 in
         --)
             if [ "$ns_end_opts" -eq 0 ]; then
                 ns_end_opts=1

@@ -125,3 +125,48 @@ no live sidebar is active (`@workmux_sidebar_enabled`), and only panes matching
 the sidebar signature (full-height, left-edge, narrow ≤50 cols, bare shell, in a
 multi-pane window). Verified safe against the tmuxp layouts, none of which use a
 narrow-left split. If you move the sidebar to `position: top`, update the script.
+
+## Scratchpad
+
+| Binding      | Action                             |
+| ------------ | ---------------------------------- |
+| `prefix + e` | Toggle the nvim scratchpad         |
+
+Annotated `Utilities | …`, so it also appears in `prefix + h`.
+
+### `nvim-scratch-toggle`
+
+The scratchpad server itself (`~/.config/runtime/scripts/nvim-scratch`) is a
+persistent, tmux-independent service: a headless `nvim --listen` instance per
+named scratchpad, with its own `attach`/`open`/`eval`/`stop`/`status`/`doctor`
+commands, that outlives the tmux server entirely. `scripts/nvim-scratch-toggle`
+is the tmux-side presentation layer on top of it — the only piece that knows
+about panes, popups, or window geometry. The core `nvim-scratch toggle|close
+NAME` commands just forward to this script for backward compatibility; it is
+the canonical owner of tmux presentation.
+
+It owns two knobs: `NVIM_SCRATCH_SURFACE` (`auto`/`float`/`popup`) and
+`NVIM_SCRATCH_SIZE` (percent of the window, default `80x70`). `auto` opens a
+centred floating pane (tmux 3.7 `new-pane`) when available, else falls back to
+a `display-popup`. An explicit `NVIM_SCRATCH_SURFACE=float` hard-fails instead
+of silently downgrading when `new-pane` is unavailable — same tier-fallback
+shape as the Workmux dashboard.
+
+Like the Workmux dashboard, the open pane/popup is found by its title
+(`nvim-scratch:NAME`) rather than a stored id, so `toggle`/`close` stay
+stateless and self-healing across server restarts. A popup is modal — it
+swallows input outside its border — so on that tier `toggle` only ever opens
+and `close` is a no-op; `nvim-scratch-toggle doctor NAME` calls this out.
+
+### Scratchpad + tmux-resurrect
+
+The pane's foreground command is always `nvim-scratch attach NAME`, never a
+raw `nvim --server ... --remote-ui`. `@resurrect-strategy-nvim 'session'` (see
+above) would otherwise try to restore that bare `--remote-ui` invocation as a
+UI client pointed at a socket that no longer exists after a reboot —
+`nvim-scratch` is a program resurrect does not special-case, so a restored
+pane just re-runs the wrapper, which transparently re-attaches (or respawns)
+the server instead. `nvim-scratch-toggle close` also runs unconditionally from
+the `client-detached` hook (alongside the Workmux dashboard's own close), so
+tmux-resurrect never saves a floating pane it cannot restore.
+
