@@ -38,12 +38,18 @@ macros:
   #                swallows the next arg.
   # --jinja      : use the chat template embedded in the GGUF
   # --mlock omitted: RLIMIT_MEMLOCK is too low for it to work anyway, and
-  #                  with 94 GB RAM there's zero swap pressure.
-  chat_args: "-ngl 99 -fa on --jinja"
-
+  #                  with 62 GiB RAM (64.8 GiB unified, GPU-visible) there's
+  #                  zero swap pressure.
+  #
+  # -np 1 is load-bearing, not a default: parallel slots divide -c between
+  # them, so -np 2 silently halved every context below. Measured 2026-09-12.
+  chat_args: "-ngl 99 -fa on --jinja -np 1 --cache-ram 2048"
   # Embedding models need different flags.
-  embed_args: "-ngl 99 --embeddings --pooling mean"
-
+  embed_args: "-ngl 99 --embeddings --pooling mean -np 1 --cache-ram 0"
+  # Qwen3-Embedding models are trained with *last-token* pooling; feeding
+  # them --pooling mean silently yields degraded vectors with no error, so
+  # they get their own macro instead of reusing embed_args.
+  embed_args_last: "-ngl 99 --embeddings --pooling last -np 1 --cache-ram 0"
   # Common server prefix. ${PORT} is auto-assigned per model.
   server_base: "llama-server --port ${PORT} --host 127.0.0.1"
 
@@ -84,17 +90,34 @@ models:
     cmd: |
       ${server_base}
       -m ${models_dir}/qwen2.5-coder-7b/qwen2.5-coder-7b-instruct-q4_k_m.gguf
-      -c 16384
+      -c 32768
       ${chat_args}
 
-  # ── Qwen3-Coder 30B-A3B Instruct (Q4_K_M, 18 GB, MoE) ─────────────────
-  # 30B total, 3B active params — runs close to 7B speed with bigger
-  # reasoning. Primary role for heavy code work (refactor, optimize,
-  # generate, review).
-  "qwen3-coder-30b":
-    name: "Qwen3-Coder 30B-A3B Instruct (Q4_K_M, MoE)"
+  # ── Qwen3.6-35B-A3B Instruct (Q4_K_M, 19 GiB, MoE) ────────────────────
+  # Current primary heavy coder — 35B total, 3B active, so it still runs at
+  # roughly 7B speed while being a generation ahead of qwen3-coder-30b.
+  # `-rea off` disables reasoning deliberately: this is the implement/refactor
+  # workhorse and thinking blocks only burn tokens in that role (use `plan`
+  # or `reason` when you actually want a chain of thought).
+  "qwen3.6-35b-a3b":
+    name: "Qwen3.6-35B-A3B Instruct (Q4_K_M, MoE)"
     description: "Heavy coder — refactor / optimize / implement / review"
     aliases: ["code"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-Q4_K_M.gguf
+      -c 65536
+      ${chat_args}
+      -rea off
+
+  # ── Qwen3-Coder 30B-A3B Instruct (Q4_K_M, 18 GB, MoE) ─────────────────
+  # Previous-generation heavy coder, kept as a fallback under `code-old`
+  # for comparisons and for the rare case where the 35B regresses on a
+  # task. Not loaded by any default role any more.
+  "qwen3-coder-30b":
+    name: "Qwen3-Coder 30B-A3B Instruct (Q4_K_M, MoE)"
+    description: "Previous-gen heavy coder — fallback / A-B comparison"
+    aliases: ["code-old"]
     cmd: |
       ${server_base}
       -m ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
@@ -111,7 +134,7 @@ models:
     cmd: |
       ${server_base}
       -m ${models_dir}/gpt-oss-20b/gpt-oss-20b-mxfp4.gguf
-      -c 32768
+      -c 65536
       ${chat_args}
 
   # ── Qwen3-30B-A3B-Thinking-2507 (Q4_K_M, 18 GB, MoE) ──────────────────
@@ -125,7 +148,7 @@ models:
     cmd: |
       ${server_base}
       -m ${models_dir}/qwen3-30b-thinking/Qwen3-30B-A3B-Thinking-2507-Q4_K_M.gguf
-      -c 32768
+      -c 65536
       ${chat_args}
 
   # ── Nomic Embed Text v1.5 (Q8_0, 140 MB) ──────────────────────────────
@@ -133,35 +156,48 @@ models:
   "nomic-embed":
     name: "Nomic Embed Text v1.5 (Q8_0)"
     description: "Text embeddings for search / RAG"
-    aliases: ["embed"]
     cmd: |
       ${server_base}
       -m ${models_dir}/nomic-embed/nomic-embed-text-v1.5.Q8_0.gguf
       -c 8192
       ${embed_args}
 
+  # ── Qwen3-Embedding 0.6B (Q8_0, 610 MiB) ──────────────────────────────
+  # Current `embed` model. Emits 1024-dim vectors where nomic-embed emits
+  # 768-dim, so the two are NOT interchangeable against an existing index —
+  # re-embed the corpus, or query nomic-embed by its real ID.
+  "qwen3-embedding-0.6b":
+    name: "Qwen3-Embedding 0.6B (Q8_0)"
+    description: "Text embeddings for search / RAG (1024-dim)"
+    aliases: ["embed"]
+    cmd: |
+      ${server_base}
+      -m ${models_dir}/qwen3-embedding-0.6b/Qwen3-Embedding-0.6B-Q8_0.gguf
+      -c 8192
+      ${embed_args_last}
+
 # ─────────────────────────────────────────────────────────────────────────
 # Groups
 # ─────────────────────────────────────────────────────────────────────────
 #
-# OpenCode uses two models per turn: `model` (code -> qwen3-coder-30b) for
+# OpenCode uses two models per turn: `model` (code -> qwen3.6-35b-a3b) for
 # the answer, and `small_model` (fast -> qwen2.5-coder-7b) for session
 # titles and summaries. Without a group they evict each other on every
-# turn, and each eviction costs an 18 GB reload (~50 s cold, of which
+# turn, and each eviction costs a 19 GB reload (~50 s cold, of which
 # ~30 s is prompt eval at 0.34 tok/s while the weights page in).
 #
-# swap: false      -> members stay resident together (18 + 4.4 GB)
+# swap: false      -> members stay resident together (~19.0 + 4.4 GiB)
 # exclusive: false -> loading this group does not unload other groups
 #
 # globalTTL still unloads them after 15 min idle. Add `persistent: true`
 # if a request for `reason`/`plan` evicting this pair becomes a problem —
-# at the cost of pinning ~22 GB.
+# at the cost of pinning ~23.4 GiB.
 groups:
   opencode:
     swap: false
     exclusive: false
     members:
-      - qwen3-coder-30b
+      - qwen3.6-35b-a3b
       - qwen2.5-coder-7b
 
 # ─────────────────────────────────────────────────────────────────────────
