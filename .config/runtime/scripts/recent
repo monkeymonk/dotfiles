@@ -1,4 +1,8 @@
 #!/usr/bin/env sh
+# Open the most recently modified file in the current directory.
+# Usage: recent
+#
+# Opener: $CLI_OPEN_CMD, else xdg-open, else open.
 
 set -eu
 

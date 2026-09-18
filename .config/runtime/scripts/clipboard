@@ -1,4 +1,8 @@
 #!/usr/bin/env sh
+# Copy stdin to the system clipboard, or paste from it.
+# Usage: cmd | clipboard    |    clipboard get
+#
+# Backends, in order: wl-copy, xclip, xsel, pbcopy, clip.exe, OSC 52 escape.
 
 set -eu
 

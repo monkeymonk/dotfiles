@@ -1,0 +1,316 @@
+#!/usr/bin/env sh
+# Alert when a long-running command finishes: desktop notification, sound, bell.
+# Usage: notify <cmd> [args...]   |   <cmd>; notify   |   notify --help
+
+set -eu
+
+_notify_help() {
+    cat <<'EOF'
+notify — alert when a long-running command finishes.
+
+Three ways to use it
+  notify <cmd> [args...]     run cmd, then report ✓/✗ with how long it took
+  <cmd>; notify              report the exit status of the command before it
+  notify -m <any text>       fire a one-off alert, no command involved
+
+Options
+  -s, --silent        no sound, keep the popup       (alias: --no-sound)
+  -p, --no-popup      no desktop notification, keep the sound
+      --sound NAME    play this sound instead; NAME is a theme name, a path
+                      to an audio file, or `none`
+      --sounds        list the theme names available on this machine
+  -h, --help          this text
+
+  -m, --message       everything after -m is the message, so no quoting is
+                      needed. It must therefore come last, and cannot be
+                      combined with a wrapped command — a wrapped command
+                      already labels itself with its own command line.
+      --              end of options, for a command whose name starts with
+                      a dash: notify -- -weird-binary arg
+      --status N      exit status to report (set for you by the shell
+      --took N        elapsed seconds to report   function; rarely typed)
+
+Channels — all three fire unless suppressed
+  popup   notify-send → your notification daemon. Skipped when there is no
+          DBus or display (over SSH, in cron). A failure is sent with
+          critical urgency so it stays on screen until dismissed.
+  sound   pw-play → paplay → canberra-gtk-play → ffplay → aplay.
+  bell    \a to /dev/tty. This is what makes tmux flag the window it
+          happened in, which is the only channel that tells you *where*.
+
+Picking sounds
+  Default: `complete` on success, `dialog-error` on failure. Change them
+  per-run with --sound, or permanently by exporting either of these — each
+  takes a theme name or a path, same as --sound:
+
+      NOTIFY_SOUND_OK=bell
+      NOTIFY_SOUND_FAIL=~/sounds/uh-oh.wav
+
+  Names are looked up in $NOTIFY_SOUND_DIR, ~/.local/share/sounds, then
+  /usr/share/sounds/freedesktop/stereo, trying .oga .ogg .wav .mp3 .flac.
+  `notify --sounds` lists what is installed.
+
+Exit status is always passed through unchanged, so notify is transparent:
+`notify make && deploy` still gates on make.
+
+Gotchas
+  A bare `notify` reports whatever ran immediately before it — that is why
+  it shows "exit 1" when the last thing you did failed. It is reading $?,
+  which is the point of the shell function in plugins/notify.sh.
+
+  Shell aliases cannot be wrapped: `notify ll` cannot see `ll`, because
+  aliases are expanded while the line is parsed, not when it runs. Run it
+  and append instead: `ll; notify`.
+
+Examples
+  notify make -j8                      wrap a build
+  notify docker compose up --build     args go through untouched
+  notify -p cargo test                 sound only, no popup
+  notify --sound bell rsync -a a/ b/   pick a different sound
+  ./long-job.sh; notify                append after the fact
+  notify -m deploy finished, go look   one-off alert, no quotes needed
+EOF
+}
+
+_notify_usage() {
+    printf 'usage: notify [-s] [-p] [--sound NAME] [--] <cmd> [args...]\n' >&2
+    printf '       notify [-s] [-p] [--sound NAME] -m <message text>\n' >&2
+    printf "try 'notify --help'\n" >&2
+}
+
+# Where theme names are looked up, in order.
+_notify_dirs() {
+    [ -n "${NOTIFY_SOUND_DIR-}" ] && printf '%s\n' "$NOTIFY_SOUND_DIR"
+    printf '%s\n' \
+        "$HOME/.local/share/sounds" \
+        /usr/share/sounds/freedesktop/stereo \
+        /usr/share/sounds
+}
+
+_notify_list_sounds() {
+    _notify_dirs | while IFS= read -r _dir; do
+        [ -d "$_dir" ] || continue
+        printf '%s\n' "$_dir:"
+        find "$_dir" -maxdepth 1 \( -type f -o -type l \) 2>/dev/null |
+            sed -E 's,.*/,,; s,\.(oga|ogg|wav|mp3|flac)$,,' |
+            sort -u |
+            sed 's/^/  /'
+    done
+}
+
+_notify_find_sound() {
+    # $1 = theme name or path -> prints a readable file path, or nothing
+    case "$1" in
+        */*|~*)
+            [ -r "$1" ] && printf '%s' "$1"
+            return 0
+            ;;
+    esac
+    _notify_dirs | while IFS= read -r _dir; do
+        [ -d "$_dir" ] || continue
+        for _ext in oga ogg wav mp3 flac; do
+            if [ -r "$_dir/$1.$_ext" ]; then
+                printf '%s' "$_dir/$1.$_ext"
+                return 0
+            fi
+        done
+        if [ -r "$_dir/$1" ]; then
+            printf '%s' "$_dir/$1"
+            return 0
+        fi
+    done
+}
+
+_notify_number() {
+    # $1 = option name, $2 = candidate value
+    case "${2-}" in
+        '' | *[!0-9]*)
+            printf 'notify: %s needs a non-negative integer\n' "$1" >&2
+            exit 2
+            ;;
+    esac
+}
+
+_notify_duration() {
+    # $1 = elapsed seconds -> human string
+    _d=$1
+    if [ "$_d" -lt 60 ]; then
+        printf '%ds' "$_d"
+    elif [ "$_d" -lt 3600 ]; then
+        printf '%dm%ds' $((_d / 60)) $((_d % 60))
+    else
+        printf '%dh%dm' $((_d / 3600)) $(((_d % 3600) / 60))
+    fi
+}
+
+_notify_truncate() {
+    # $1 = label -> truncated to 60 chars with a trailing ellipsis
+    _c=$1
+    if [ ${#_c} -gt 60 ]; then
+        printf '%s…' "$(printf '%s' "$_c" | cut -c1-60)"
+    else
+        printf '%s' "$_c"
+    fi
+}
+
+_notify_popup() {
+    # $1 = title, $2 = body, $3 = urgency, $4 = icon
+    [ "$opt_no_popup" -eq 1 ] && return 0
+    command -v notify-send >/dev/null 2>&1 || return 0
+    [ -n "${DBUS_SESSION_BUS_ADDRESS-}" ] || [ -n "${WAYLAND_DISPLAY-}" ] || [ -n "${DISPLAY-}" ] || return 0
+    notify-send -a notify -u "$3" -i "$4" "$1" "$2" >/dev/null 2>&1 || true
+}
+
+_notify_play() {
+    # $1 = exit status being reported
+    [ "$opt_silent" -eq 1 ] && return 0
+    if [ -n "$opt_sound" ]; then
+        _want=$opt_sound
+    elif [ "$1" -eq 0 ]; then
+        _want=${NOTIFY_SOUND_OK:-complete}
+    else
+        _want=${NOTIFY_SOUND_FAIL:-dialog-error}
+    fi
+    case "$_want" in
+        none|off|'') return 0 ;;
+    esac
+
+    _file=$(_notify_find_sound "$_want")
+    if [ -z "$_file" ]; then
+        printf "notify: sound not found: %s (try 'notify --sounds')\n" "$_want" >&2
+        return 0
+    fi
+
+    if command -v pw-play >/dev/null 2>&1; then
+        pw-play "$_file" >/dev/null 2>&1 || true
+    elif command -v paplay >/dev/null 2>&1; then
+        paplay "$_file" >/dev/null 2>&1 || true
+    elif command -v canberra-gtk-play >/dev/null 2>&1; then
+        canberra-gtk-play -f "$_file" >/dev/null 2>&1 || true
+    elif command -v ffplay >/dev/null 2>&1; then
+        ffplay -nodisp -autoexit -loglevel quiet "$_file" >/dev/null 2>&1 || true
+    elif command -v aplay >/dev/null 2>&1; then
+        aplay "$_file" >/dev/null 2>&1 || true
+    fi
+}
+
+_notify_bell() {
+    # Group redirect: a bare `> /dev/tty 2>/dev/null` still lets the shell
+    # print its own "no such device" diagnostic, because redirections apply
+    # left to right. Wrapping silences it in cron and over a bare pipe.
+    { printf '\a' > /dev/tty; } 2>/dev/null || true
+}
+
+opt_no_popup=0
+opt_silent=0
+opt_sound=
+opt_msg=
+opt_status=0
+opt_took=-1
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            _notify_help
+            exit 0
+            ;;
+        --sounds)
+            _notify_list_sounds
+            exit 0
+            ;;
+        -s|--silent|--no-sound)
+            opt_silent=1
+            shift
+            ;;
+        -p|--no-popup)
+            opt_no_popup=1
+            shift
+            ;;
+        --sound)
+            if [ $# -lt 2 ]; then
+                printf 'notify: --sound needs a name, a path, or none\n' >&2
+                exit 2
+            fi
+            opt_sound=$2
+            shift 2
+            ;;
+        -m|--message)
+            # Takes the whole rest of the line, so an unquoted message reads
+            # the way anyone would expect: `notify -m this took forever`.
+            # That means -m must come last, and cannot label a wrapped
+            # command — a wrapped command already labels itself.
+            shift
+            if [ $# -eq 0 ]; then
+                printf 'notify: -m needs a message\n' >&2
+                exit 2
+            fi
+            opt_msg=$*
+            set --
+            break
+            ;;
+        --status)
+            _notify_number --status "${2-}"
+            opt_status=$2
+            shift 2
+            ;;
+        --took)
+            _notify_number --took "${2-}"
+            opt_took=$2
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            printf 'notify: unknown option: %s\n' "$1" >&2
+            _notify_usage
+            exit 2
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ $# -gt 0 ]; then
+    # Wrapper mode: run the command, measure wall time, report its status.
+    label=$*
+    start=$(date +%s)
+    st=0
+    "$@" || st=$?
+    opt_took=$(($(date +%s) - start))
+else
+    # Bare mode: report the status handed in via --status.
+    st=$opt_status
+    label=${opt_msg:-done}
+fi
+
+if [ "$opt_took" -ge 0 ]; then
+    body=$(_notify_duration "$opt_took")
+else
+    body=
+fi
+
+if [ "$st" -eq 0 ]; then
+    mark='✓'
+    urgency=normal
+    icon=dialog-information
+else
+    mark='✗'
+    urgency=critical
+    icon=dialog-error
+    if [ -n "$body" ]; then
+        body="$body, exit $st"
+    else
+        body="exit $st"
+    fi
+fi
+
+title="$mark $(_notify_truncate "$label")"
+
+_notify_popup "$title" "$body" "$urgency" "$icon"
+_notify_play "$st"
+_notify_bell
+
+exit "$st"

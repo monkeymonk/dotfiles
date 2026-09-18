@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
+# Print a curl timing breakdown (DNS, connect, TLS, TTFB, total) for a URL.
+# Usage: benchurl <url> [curl options...]
 
 set -eu
 

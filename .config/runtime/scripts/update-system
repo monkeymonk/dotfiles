@@ -1,7 +1,9 @@
 #!/usr/bin/env sh
 
-# System-wide update script. Each section is independent — failures
-# are logged but do not abort subsequent sections.
+# Update everything installed system-wide.
+#
+# Each section is independent — failures are logged but do not abort
+# subsequent sections.
 
 . "${0%/*}/../core/lib.sh"
 

@@ -15,7 +15,8 @@ runtime/
 │   └── integrations/     # Shell integrations (zsh tips)
 ├── tips/                 # Pluggable tip aggregator (static + LLM providers)
 ├── secrets/              # Environment files (*.env)
-└── scripts/              # Standalone executables (on PATH)
+├── scripts/              # Commands meant to be typed (on PATH, cmdx catalog)
+└── libexec/              # Internal helpers (on PATH, not cataloged)
 ```
 
 ## Bootstrap (Single Entry Point)
@@ -33,7 +34,7 @@ runtime/
 9. Runs `setup` hooks
 10. Loads secrets (`secrets/*.env`)
 11. Runs `post_secrets` hooks
-12. Prepends `scripts/` to `PATH`
+12. Prepends `libexec/` then `scripts/` to `PATH`
 13. Sources `cdx` if installed
 14. Runs `interactive` hooks
 15. Deduplicates `PATH`
@@ -139,6 +140,7 @@ When [alx](https://github.com/monkeymonk/alx) is installed, `plugins/alx.sh` ove
 | `mail.sh`            | Mail stack — aerc + isync (mbsync) + notmuch                           | setup                  |
 | `mise.sh`            | mise — polyglot version manager                                        | setup                  |
 | `neovim.sh`          | Neovim (EDITOR/VISUAL/SUDO_EDITOR, SSH fallback)                       | setup                  |
+| `nvim-scratch.sh`    | Persistent nvim scratchpad server (`nvim-scratch`); contributes `RUNTIME_SCRATCH_RUNNING` | setup |
 | `node.sh`            | Node.js (contributes `RUNTIME_NODE_VERSION`)                           | setup                  |
 | `ollama.sh`          | Ollama (`OLLAMA_HOST`, `OLLAMA_MODELS`, daemon aliases)                | setup                  |
 | `omp.sh`             | oh-my-pi (`omp`) coding agent — cached shell completions               | interactive            |
@@ -222,30 +224,51 @@ Commands once sourced: `tips`, `tips list [--source X]`, `tips count`, `tips ref
 
 ## Scripts
 
-`scripts/` contains executable, self-contained commands prepended to `PATH`.
+Two directories, both prepended to `PATH`:
 
-Scripts can bootstrap logging and utils via `core/lib.sh`:
+- **`scripts/`** — commands meant to be typed. This is the only directory the
+  `cmdx` catalog reads (`~/.config/cmdx/config.toml`), so anything here shows up
+  in `cmdx list`, `cmdx <TAB>` and the picker.
+- **`libexec/`** — internal helpers: invoked by name from plugins, keybinds and
+  other scripts, or run by hand rarely enough that they are noise in a catalog.
+  On `PATH` exactly like `scripts/`, never cataloged.
+
+Moving a file between the two is the whole mechanism — `cmdx` has no ignore
+list, and every caller in this repo resolves helpers by name via `PATH`, not by
+directory. `libexec/` sits at the same depth as `scripts/`, so `core/lib.sh`
+bootstrapping keeps working unchanged:
 
 ```sh
 . "${0%/*}/../core/lib.sh"
 ```
 
-| Script                  | Purpose                                                              |
-| ----------------------- | -------------------------------------------------------------------- |
-| `aerc-harden-creds`     | Replace plaintext aerc passwords with `rbw get` lookups (Bitwarden)  |
-| `ai-symlinks-refresh`   | Symlink AI CLIs from non-standard paths into `~/.local/bin`          |
-| `benchurl`              | URL benchmark timing                                                 |
-| `cache-run`             | Caching wrapper with configurable TTL                                |
-| `cherrylab`             | Manage the CherryLab docker stack and project compose files          |
-| `clipboard`             | Copy: `stdin \| clipboard`; Paste: `clipboard get`                   |
-| `is-project-dir`        | Check if a directory is a project root (exit 0/1)                    |
-| `project-context`       | Extract project metadata                                             |
-| `recent`                | Show recently modified files                                         |
-| `serve`                 | Simple HTTP server                                                   |
-| `tips-generate`         | Generate dynamic shell tips (ollama or llama.cpp)                    |
-| `tips-refresh`          | Force-regenerate dynamic tips: `tips-refresh [dir]`                  |
-| `update-system`         | System package manager updates                                       |
-| `yazi-launch`           | Run yazi and emit final cwd (used by the `y` cd-on-exit shim)        |
+### `scripts/` — cataloged commands
+
+| Script            | Purpose                                                       |
+| ----------------- | -------------------------------------------------------------- |
+| `benchurl`        | URL benchmark timing                                          |
+| `cherrylab`       | Manage the CherryLab docker stack and project compose files   |
+| `clipboard`       | Copy: `stdin \| clipboard`; Paste: `clipboard get`             |
+| `notify`          | Alert when a long job ends: popup, sound, tmux bell            |
+| `nvim-scratch`    | Persistent nvim scratchpad: spawn-or-attach a headless nvim server |
+| `project-context` | Extract project metadata                                      |
+| `recent`          | Open the most recently modified file                          |
+| `serve`           | Simple HTTP server                                             |
+| `system-checkup`  | Write a machine configuration snapshot to a file               |
+| `term`            | Launch `$TERMINAL` (indirection point for keybinds)            |
+| `update-system`   | System package manager updates                                 |
+
+### `libexec/` — internal helpers
+
+| Helper                | Purpose                                                             | Called by                     |
+| --------------------- | ------------------------------------------------------------------- | ----------------------------- |
+| `aerc-harden-creds`   | Replace plaintext aerc passwords with `rbw get` lookups (Bitwarden) | by hand, rarely               |
+| `ai-symlinks-refresh` | Symlink AI CLIs from non-standard paths into `~/.local/bin`         | `plugins/ai.sh`               |
+| `cache-run`           | Caching wrapper with configurable TTL                               | `zsh-tips.zsh`, `tips-refresh`|
+| `is-project-dir`      | Check if a directory is a project root (exit 0/1)                   | `tips-generate`               |
+| `tips-generate`       | Generate dynamic shell tips (ollama or llama.cpp)                   | `zsh-tips.zsh`, `tips-refresh`|
+| `tips-refresh`        | Force-regenerate dynamic tips: `tips-refresh [dir]`                 | by hand                       |
+| `yazi-launch`         | Run yazi and emit final cwd                                         | `plugins/yazi.sh`, niri `Mod+F`|
 
 ## Dependencies
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
+# Serve the current directory over HTTP and open it in the browser.
+# Usage: serve [port]        (default 8000)
 
 set -eu
 

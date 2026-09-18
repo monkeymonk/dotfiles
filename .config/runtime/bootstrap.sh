@@ -92,7 +92,12 @@ if [ -d "$RUNTIME_ROOT/secrets" ]; then
 fi
 hook_run post_secrets
 
-# Prepend scripts to PATH.
+# Prepend executables to PATH. libexec/ holds internal helpers (invoked by name
+# from plugins, keybinds and other scripts); scripts/ holds the commands meant
+# to be typed, and is the only directory cmdx catalogs.
+if [ -d "$RUNTIME_ROOT/libexec" ]; then
+    path_prepend "$RUNTIME_ROOT/libexec"
+fi
 if [ -d "$RUNTIME_ROOT/scripts" ]; then
     path_prepend "$RUNTIME_ROOT/scripts"
 fi

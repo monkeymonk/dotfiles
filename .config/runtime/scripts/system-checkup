@@ -1,0 +1,319 @@
+#!/usr/bin/env bash
+# Write a full snapshot of this machine's configuration to a file.
+# Usage: system-checkup [outfile]        (default ~/setup-state.txt)
+
+set -u
+
+OUT="${1:-$HOME/setup-state.txt}"
+
+section() {
+    printf '\n\n===== %s =====\n\n' "$1"
+}
+
+have() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+version() {
+    local name="$1"
+    shift
+
+    if have "$name"; then
+        printf '%-18s ' "$name"
+        "$@" 2>&1 | head -n 1
+    fi
+}
+
+{
+    ############################################################################
+    section "SYSTEM"
+
+    grep -E '^(PRETTY_NAME|BUILD_ID)=' /etc/os-release 2>/dev/null || true
+
+    printf 'kernel=%s\n' "$(uname -r)"
+    printf 'shell=%s\n' "${SHELL:-unknown}"
+    printf 'desktop=%s\n' "${XDG_CURRENT_DESKTOP:-unknown}"
+    printf 'session=%s\n' "${XDG_SESSION_TYPE:-unknown}"
+
+    ############################################################################
+    section "HARDWARE"
+
+    lscpu | grep -E \
+        'Architecture|Model name|CPU\(s\)|Core\(s\) per socket|Thread\(s\) per core' ||
+        true
+
+    echo
+    free -h | grep -E 'Mem:|Swap:' || true
+
+    echo
+    lspci 2>/dev/null | grep -Ei 'VGA|3D|Display' || true
+
+    if have nvidia-smi; then
+        echo
+        nvidia-smi \
+            --query-gpu=name,memory.total,driver_version \
+            --format=csv,noheader \
+            2>/dev/null || true
+    fi
+
+    ############################################################################
+    section "AI ACCELERATORS"
+
+    if lspci 2>/dev/null | grep -qiE 'NPU|XDNA|Neural'; then
+        lspci 2>/dev/null | grep -iE 'NPU|XDNA|Neural' || true
+    else
+        echo "No PCI NPU/XDNA device detected by this check"
+    fi
+
+    echo
+
+    for cmd in xrt-smi xbutil; do
+        if have "$cmd"; then
+            printf '%-18s %s\n' "$cmd" "$(command -v "$cmd")"
+        fi
+    done
+
+    ############################################################################
+    section "CORE TOOL VERSIONS"
+
+    version niri niri --version
+    version qs qs --version
+    version nvim nvim --version
+    version tmux tmux -V
+    version git git --version
+    version python python --version
+    version uv uv --version
+    version mise mise --version
+    version node node --version
+    version npm npm --version
+    version bun bun --version
+    version cargo cargo --version
+    version rustc rustc --version
+    version rustup rustup --version
+    version go go version
+    version docker docker --version
+    version podman podman --version
+    version distrobox distrobox --version
+    version ollama ollama --version
+    version llama-cli llama-cli --version
+    version llama-swap llama-swap --version
+
+    ############################################################################
+    section "TERMINALS / SHELL TOOLS"
+
+    for cmd in \
+        ghostty \
+        kitty \
+        foot \
+        alacritty \
+        wezterm \
+        fish \
+        zsh \
+        bash \
+        starship \
+        zoxide \
+        fzf \
+        fd \
+        rg \
+        bat \
+        eza \
+        yazi \
+        lazygit \
+        jq \
+        curl \
+        wget; do
+        if have "$cmd"; then
+            printf '%s\n' "$cmd"
+        fi
+    done
+
+    ############################################################################
+    section "RUNTIME / VERSION MANAGEMENT"
+
+    if have mise; then
+        echo "[mise]"
+        mise --version 2>&1 || true
+        mise current 2>&1 || true
+        echo
+    fi
+
+    if have uv; then
+        echo "[uv]"
+        uv --version 2>&1 || true
+        echo
+    fi
+
+    if have rustup; then
+        echo "[rustup]"
+        rustup show active-toolchain 2>&1 || true
+        echo
+    fi
+
+    ############################################################################
+    section "LOCAL AI"
+
+    for cmd in \
+        ollama \
+        llama-cli \
+        llama-server \
+        llama-swap \
+        python \
+        uv \
+        nvidia-smi \
+        rocminfo \
+        clinfo \
+        vulkaninfo \
+        xrt-smi \
+        xbutil; do
+        if have "$cmd"; then
+            printf '%-18s %s\n' "$cmd" "$(command -v "$cmd")"
+        fi
+    done
+
+    if have ollama; then
+        echo
+        echo "Ollama models:"
+        ollama list 2>/dev/null || true
+    fi
+
+    if have python; then
+        echo
+        echo "Python AI libraries:"
+
+        python <<'PY'
+modules = [
+    "torch",
+    "transformers",
+    "llama_cpp",
+    "sentence_transformers",
+    "onnxruntime",
+]
+
+for name in modules:
+    try:
+        module = __import__(name)
+        version = getattr(module, "__version__", "installed")
+        print(f"{name}: {version}")
+    except Exception:
+        pass
+PY
+    fi
+
+    ############################################################################
+    section "VULKAN GPU"
+
+    if have vulkaninfo; then
+        vulkaninfo --summary 2>/dev/null |
+            grep -E \
+                'deviceName|deviceType|driverName|driverInfo|apiVersion' ||
+            true
+    else
+        echo "vulkaninfo: not installed"
+    fi
+
+    ############################################################################
+    section "IMPORTANT CONFIGS PRESENT"
+
+    configs=(
+        niri
+        noctalia
+        quickshell
+        nvim
+        tmux
+        ghostty
+        kitty
+        foot
+        alacritty
+        wezterm
+        fish
+        zsh
+        starship
+        git
+        yazi
+        lazygit
+    )
+
+    for config in "${configs[@]}"; do
+        if [[ -e "$HOME/.config/$config" ]]; then
+            printf '%s\n' "~/.config/$config"
+        fi
+    done
+
+    [[ -f "$HOME/.tmux.conf" ]] && echo "~/.tmux.conf"
+    [[ -f "$HOME/.zshrc" ]] && echo "~/.zshrc"
+    [[ -f "$HOME/.bashrc" ]] && echo "~/.bashrc"
+
+    ############################################################################
+    section "CONFIG STRUCTURE"
+
+    for config in \
+        niri \
+        noctalia \
+        nvim \
+        tmux; do
+        dir="$HOME/.config/$config"
+
+        if [[ -d "$dir" ]]; then
+            echo
+            echo "[$config]"
+
+            find "$dir" \
+                -maxdepth 2 \
+                -type f \
+                -printf '%P\n' \
+                2>/dev/null |
+                sort |
+                head -n 100
+        fi
+    done
+
+    ############################################################################
+    section "CUSTOM SCRIPTS"
+
+    for dir in \
+        "$HOME/.local/bin" \
+        "$HOME/bin" \
+        "$HOME/scripts" \
+        "$HOME/.scripts"; do
+        if [[ -d "$dir" ]]; then
+            echo
+            echo "[$dir]"
+
+            find "$dir" \
+                -maxdepth 2 \
+                -type f \
+                -printf '%P\n' \
+                2>/dev/null |
+                sort
+        fi
+    done
+
+    ############################################################################
+    section "RELEVANT PACKAGES"
+
+    if have pacman; then
+        pacman -Q 2>/dev/null |
+            grep -Ei \
+                '^(niri|noctalia|quickshell|neovim|tmux|tmuxp|ghostty|kitty|foot|alacritty|wezterm|fish|zsh|starship|zoxide|fzf|ripgrep|fd |bat |eza |yazi|lazygit|git |docker|docker-compose|podman|distrobox|ollama|llama\.cpp|llama-swap|cuda|cudnn|rocm|hip|opencl|vulkan-radeon|vulkan-tools|mesa |rustup|go |nodejs|npm |bun |mise|uv |xrt|xdna)' ||
+            true
+    fi
+
+    ############################################################################
+    section "DEFAULTS"
+
+    printf 'EDITOR=%s\n' "${EDITOR:-}"
+    printf 'VISUAL=%s\n' "${VISUAL:-}"
+    printf 'TERMINAL=%s\n' "${TERMINAL:-}"
+    printf 'BROWSER=%s\n' "${BROWSER:-}"
+
+    ############################################################################
+    section "SUMMARY"
+
+    echo "This file is intended as a high-level environment inventory."
+    echo "It does not include actual config contents, shell history, logs,"
+    echo "network details, secrets, or complete package/environment dumps."
+
+} >"$OUT"
+
+echo "Wrote:"
+echo "  $OUT"

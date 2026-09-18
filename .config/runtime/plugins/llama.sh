@@ -14,8 +14,7 @@ runtime_plugin_llama() {
     for _dir in \
         "$HOME/.local/share/llama.cpp/build/bin" \
         "$HOME/llama.cpp/build/bin" \
-        "$HOME/src/llama.cpp/build/bin" \
-    ; do
+        "$HOME/src/llama.cpp/build/bin"; do
         [ -d "$_dir" ] && path_prepend "$_dir"
     done
 
@@ -52,6 +51,9 @@ runtime_plugin_llama() {
     fi
     export LLAMA_MODELS_DIR
     export LLAMA_HOST="${LLAMA_HOST:-127.0.0.1:11435}"
+
+    # OMP's implicit llama.cpp provider expects the OpenAI-compatible /v1 base.
+    export LLAMA_CPP_BASE_URL="${LLAMA_CPP_BASE_URL:-http://${LLAMA_HOST}/v1}"
 
     # --- 5. llama-swap wiring -------------------------------------------
     if has_cmd llama-swap; then
